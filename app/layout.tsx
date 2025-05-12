@@ -5,7 +5,7 @@ import { ThemeProvider } from 'next-themes';
 import { ActionProvider } from '@/context/ActionContext';
 import { Toaster } from 'sonner';
 import { Analytics } from '@vercel/analytics/react';
-import ClientInitializer from '@/components/custom/ClientInitializer';
+import ClientInitializer from '@/components/dashboard/ClientInitializer';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',

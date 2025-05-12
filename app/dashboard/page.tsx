@@ -24,10 +24,10 @@ import { useWallet } from '@/context/WalletContext';
 import { useProject } from '@/context/ProjectContext';
 
 import { Button } from '@/components/ui/button';
-import Chatview from '@/components/custom/Chatview';
-import Codeview from '@/components/custom/Codeview';
-import TitleBar from '@/components/custom/TitleBar';
-import StatusBar from '@/components/custom/StatusBar';
+import Chatview from '@/components/dashboard/Chatview';
+import Codeview from '@/components/dashboard/Codeview';
+import TitleBar from '@/components/dashboard/TitleBar';
+import StatusBar from '@/components/dashboard/StatusBar';
 
 // Define types for overlay
 type OverlayType = 'loading' | 'wallet' | 'creating';

@@ -515,7 +515,7 @@ export async function connectWallet(): Promise<WalletConnectionResponse> {
         'DECRYPT',
         'DISPATCH',
         'SIGNATURE',
-        'ACCESS_TOKENS',
+        // 'ACCESS_TOKENS',
         'ACCESS_ADDRESS',
         'SIGN_TRANSACTION',
         'ACCESS_PUBLIC_KEY',

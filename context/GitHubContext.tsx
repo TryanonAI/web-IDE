@@ -3,7 +3,7 @@ import { Octokit } from '@octokit/core';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { ActiveProjectType } from '@/types/types';
-import { defaultFiles_3 } from '@/data/defaultFiles';
+import { defaultFiles_3 } from '@/constant/defaultFiles';
 
 // Define specific error types instead of using 'any'
 interface GitHubError extends Error {

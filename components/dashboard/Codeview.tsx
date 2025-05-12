@@ -17,7 +17,7 @@ import { useContext, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ActionContext } from '@/context/ActionContext';
 import SandPackPreviewClient from './SandPackPreviewClient';
-import { DEPENDENCIES, defaultFiles_3 } from '@/data/defaultFiles';
+import { DEPENDENCIES, defaultFiles_3 } from '@/constant/defaultFiles';
 import {
   Loader2Icon,
   CodeIcon,
