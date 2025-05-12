@@ -51,3 +51,34 @@ export interface OverlayConfig {
   };
   statusTimeline?: StatusTimelineEvent[];
 }
+
+// Request Access Types
+export enum RequestStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected'
+}
+
+export interface RequestAccessForm {
+  name: string;
+  email: string;
+  // reason: string;
+  walletAddress: string;
+}
+
+export interface RequestAccessResponse {
+  success: boolean;
+  message: string;
+  request?: RequestAccess;
+}
+
+export interface RequestAccess {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  reason: string;
+  status: RequestStatus;
+  createdAt: string;
+  updatedAt: string;
+}

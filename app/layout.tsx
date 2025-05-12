@@ -6,6 +6,9 @@ import { ActionProvider } from '@/context/ActionContext';
 import { Toaster } from 'sonner';
 import { Analytics } from '@vercel/analytics/react';
 import ClientInitializer from '@/components/dashboard/ClientInitializer';
+import { WalletProvider } from '@/context/WalletContext';
+// import AccessControlWrapper from '@/components/AccessControlWrapper';
+// import RouteGuard from '@/components/RouteGuard';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -37,12 +40,18 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem={true}
         >
+          <WalletProvider>
             <ActionProvider>
+              {/* <AccessControlWrapper> */}
+              {/* <RouteGuard> */}
               {children}
+              {/* </RouteGuard> */}
               <Toaster position="bottom-center" />
               <ClientInitializer />
               <Analytics />
+              {/* </AccessControlWrapper> */}
             </ActionProvider>
+          </WalletProvider>
         </ThemeProvider>
       </body>
     </html>

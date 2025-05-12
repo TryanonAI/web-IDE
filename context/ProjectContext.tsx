@@ -344,15 +344,18 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         ],
       });
 
-      console.log('Successfully added DbAdmin support to project:', luaResult.id);
+      console.log(
+        'Successfully added DbAdmin support to project:',
+        luaResult.id
+      );
 
       // Create the project in the backend
       addStatusEvent('Saving project to backend...');
       const res = await axios.post(`${backendUrl}/projects`, {
         processId,
-        sandboxId: 'null',
-        name: projectName,
+        title: projectName,
         walletAddress: walletAddress,
+        framework: 'react',
       });
 
       if (!res.data?.project) {
