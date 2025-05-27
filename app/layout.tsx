@@ -1,14 +1,11 @@
-import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
 import '@/styles/globals.css';
-import { ThemeProvider } from 'next-themes';
-import { ActionProvider } from '@/context/ActionContext';
 import { Toaster } from 'sonner';
+import type { Metadata, Viewport } from 'next';
+import { ThemeProvider } from 'next-themes';
 import { Analytics } from '@vercel/analytics/react';
+import { Geist, Geist_Mono } from 'next/font/google';
 import ClientInitializer from '@/components/dashboard/ClientInitializer';
-import { WalletProvider } from '@/context/WalletContext';
-// import AccessControlWrapper from '@/components/AccessControlWrapper';
-// import RouteGuard from '@/components/RouteGuard';
+import CheckConnection from '@/components/CheckConnection';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -19,6 +16,10 @@ const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
 });
+
+export const viewport: Viewport = {
+  themeColor: '#3e7452',
+};
 
 export const metadata: Metadata = {
   title: 'Anon',
@@ -40,18 +41,12 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem={true}
         >
-          <WalletProvider>
-            <ActionProvider>
-              {/* <AccessControlWrapper> */}
-              {/* <RouteGuard> */}
-              {children}
-              {/* </RouteGuard> */}
-              <Toaster position="bottom-center" />
-              <ClientInitializer />
-              <Analytics />
-              {/* </AccessControlWrapper> */}
-            </ActionProvider>
-          </WalletProvider>
+          <CheckConnection>
+            {children}
+            <Toaster position="bottom-center" />
+          </CheckConnection>
+          <ClientInitializer />
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>

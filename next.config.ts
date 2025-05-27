@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_BACKEND_URL:
       process.env.NODE_ENV === 'development'
         ? 'http://localhost:5000'
-        : 'https://vybeide-be.onrender.com',
+        : 'https://vybeide-be.onrender.com'
   },
 
   // Optimize webpack configuration for large modules
@@ -31,8 +31,8 @@ const nextConfig: NextConfig = {
     // Increase size limits for performance hints
     config.performance = {
       ...config.performance,
-      maxAssetSize: 1000000, // 1MB
-      maxEntrypointSize: 1000000, // 1MB
+      maxAssetSize: 30000000, // 30MB
+      maxEntrypointSize: 30000000, // 30MB
       hints: 'warning', // 'error' or false to disable
     };
 
@@ -69,6 +69,14 @@ const nextConfig: NextConfig = {
     if (!isServer) {
       // Client-side specific optimizations
       console.log('Optimizing client-side webpack config for large modules...');
+
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        'canvas': false
+      };
     }
 
     return config;

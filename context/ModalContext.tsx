@@ -14,21 +14,27 @@ interface ModalContextType {
 
 const ModalContext = createContext<ModalContextType | undefined>(undefined);
 
+export function useModal() {
+  const context = useContext(ModalContext);
+  if (context === undefined) {
+    throw new Error('useModal must be used within a ModalProvider');
+  }
+  return context;
+}
+
 export function ModalProvider({ children }: { children: ReactNode }) {
+  const [projectName, setProjectName] = useState<string>('');
   const [isOpen, setIsOpen] = useState<Record<ModalType, boolean>>({
     createProject: false,
     github: false,
     projectInfo: false,
   });
-  const [projectName, setProjectName] = useState<string>('');
 
   const openModal = (type: ModalType) => {
-    // console.log(`Opening modal: ${type}`);
     setIsOpen((prev) => ({ ...prev, [type]: true }));
   };
 
   const closeModal = (type: ModalType) => {
-    // console.log(`Closing modal: ${type}`);
     setIsOpen((prev) => ({ ...prev, [type]: false }));
   };
 
@@ -36,21 +42,13 @@ export function ModalProvider({ children }: { children: ReactNode }) {
     <ModalContext.Provider
       value={{
         isOpen,
-        projectName,
         openModal,
         closeModal,
+        projectName,
         setProjectName,
       }}
     >
       {children}
     </ModalContext.Provider>
   );
-}
-
-export function useModal() {
-  const context = useContext(ModalContext);
-  if (context === undefined) {
-    throw new Error('useModal must be used within a ModalProvider');
-  }
-  return context;
 }

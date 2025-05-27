@@ -1,35 +1,35 @@
 export const DEPENDENCIES = {
   dependencies: {
-    'eslint-plugin-prettier': '5.2.3',
-    axios: '1.8.1',
-    eslint: '9.21.0',
-    'esbuild-wasm': '0.25.0',
-    'eslint-plugin-react': '7.37.4',
-    '@vitejs/plugin-react': '4.3.4',
-    'eslint-plugin-import': '2.31.0',
-    'eslint-config-prettier': '10.0.2',
-    'eslint-plugin-react-refresh': '0.4.19',
-    'react-router-dom': '7.2.0',
-    'framer-motion': '12.4.10',
-    esbuild: '0.25.0',
-    typescript: '5.8.2',
-    react: '^19.0.0',
-    'react-dom': '^19.0.0',
-    '@permaweb/aoconnect': '0.0.82',
+    // 'eslint-plugin-prettier': '5.2.3',
+    // // axios: '1.8.1',
+    // eslint: '9.21.0',
+    // 'esbuild-wasm': '0.25.0',
+    // 'eslint-plugin-react': '7.37.4',
+    // '@vitejs/plugin-react': '4.3.4',
+    // 'eslint-plugin-import': '2.31.0',
+    // 'eslint-config-prettier': '10.0.2',
+    // 'eslint-plugin-react-refresh': '0.4.19',
+    // // 'react-router-dom': '7.2.0',
+    // // 'framer-motion': '12.4.10',
+    // esbuild: '0.25.0',
+    // typescript: '5.8.2',
+    // // react: '^19.0.0',
+    // // 'react-dom': '^19.0.0',
+    // // '@permaweb/aoconnect': '0.0.82',
   },
   devDependencies: {
-    'typescript-eslint': '8.26.0',
-    '@types/react-dom': '19.0.4',
-    '@vitejs/plugin-react-swc': '3.8.0',
-    '@eslint/js': '9.21.0',
-    '@types/react': '19.0.10',
-    '@types/node': '22.13.9',
-    '@typescript-eslint/parser': '8.26.0',
-    '@typescript-eslint/eslint-plugin': '8.26.0',
-    globals: '^15.15.0',
-    'eslint-plugin-react-hooks': '^5.1.0',
-    'eslint-plugin-react-refresh': '^0.4.19',
-    vite: '^6.2.0',
+    // 'typescript-eslint': '8.26.0',
+    // '@types/react-dom': '19.0.4',
+    // '@vitejs/plugin-react-swc': '3.8.0',
+    // '@eslint/js': '9.21.0',
+    // '@types/react': '19.0.10',
+    // '@types/node': '22.13.9',
+    // '@typescript-eslint/parser': '8.26.0',
+    // '@typescript-eslint/eslint-plugin': '8.26.0',
+    // globals: '^15.15.0',
+    // 'eslint-plugin-react-hooks': '^5.1.0',
+    // 'eslint-plugin-react-refresh': '^0.4.19',
+    // vite: '^6.2.0',
   },
 };
 
@@ -102,6 +102,7 @@ export default tseslint.config(
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
   `.trim(),
@@ -119,22 +120,21 @@ export default tseslint.config(
       },
       dependencies: {
         'eslint-plugin-prettier': '5.2.3',
-        axios: '1.8.1',
         eslint: '9.21.0',
         'esbuild-wasm': '0.25.0',
         'eslint-plugin-react': '7.37.4',
         '@vitejs/plugin-react': '4.3.4',
         'eslint-plugin-import': '2.31.0',
-        arweave: '1.15.5',
-        '@permaweb/aoconnect': '0.0.82',
         'eslint-config-prettier': '10.0.2',
         'eslint-plugin-react-refresh': '0.4.19',
-        'react-router-dom': '7.2.0',
-        'framer-motion': '12.4.10',
         esbuild: '0.25.0',
         typescript: '5.8.2',
+        axios: '1.8.1',
+        'react-router-dom': '7.2.0',
+        'framer-motion': '12.4.10',
         react: '^19.0.0',
         'react-dom': '^19.0.0',
+        // '@permaweb/aoconnect': '0.0.82',
       },
       devDependencies: {
         'typescript-eslint': '8.26.0',
@@ -161,24 +161,68 @@ function App() {
   const [isHovered, setIsHovered] = useState(false)
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white px-4">
       <div 
-        className="p-8 rounded-lg border border-green-800/30 bg-black/50 backdrop-blur-sm transform transition-all duration-300 hover:border-green-600/50"
+        className="p-8 w-full max-w-md rounded-xl border border-green-800/30 bg-black/50 backdrop-blur-sm transform transition-all duration-300 hover:border-green-600/50"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <h1 className="text-4xl font-light text-green-500 mb-2">
+        <h1 className="text-4xl font-light text-green-500 mb-2 text-center">
           Vibe Coding on AO
         </h1>
-        <h2 className="text-lg text-green-400/80">
+        <h2 className="text-lg text-green-400/80 text-center mb-6">
           {isHovered ? "Ready to create?" : "Waiting for you..."}
         </h2>
+
+        <button
+          onClick={async () => {
+            try{
+              await window.arweaveWallet.connect(
+              [
+                'ENCRYPT',
+                'DECRYPT',
+                'DISPATCH',
+                'SIGNATURE',
+                'ACCESS_ADDRESS',
+                'SIGN_TRANSACTION',
+                'ACCESS_PUBLIC_KEY',
+                'ACCESS_ALL_ADDRESSES',
+                'ACCESS_ARWEAVE_CONFIG',
+              ],
+              {
+                name: 'Anon',
+                logo: 'https://arweave.net/pYIMnXpJRFUwTzogx_z5HCOPRRjCbSPYIlUqOjJ9Srs',
+              },
+              {
+                host: 'arweave.net',
+                port: 443,
+                protocol: 'https',
+              }
+            );
+            } 
+            catch(error){
+              const errorMessage = error instanceof Error ? error.message : String(error);
+               if (errorMessage.toLowerCase().includes('cancel') ||
+                errorMessage.toLowerCase().includes('rejected') ||
+                errorMessage.toLowerCase().includes('denied')) {
+                console.log('User cancelled the wallet connection request');
+              }
+                else{
+                console.log('Error connecting to wallet:', error);
+                return;
+              }
+            }
+            }}
+          className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-md transition duration-300 ease-in-out"
+        >
+          ✅ Connect Wallet
+        </button>
       </div>
-      </div>
+    </div>
   )
 }
 
-export default App
+export default App;
   `.trim(),
   'src/main.tsx': `
   import App from './App.tsx'
@@ -266,12 +310,15 @@ createRoot(document.getElementById('root')!).render(
     2
   ).trim(),
   'vite.config.ts': `
-  import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+  import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
 })
   `.trim(),
+  'Readme.md': `
+# Project by Anon
+`.trim(),
 };

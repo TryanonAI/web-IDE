@@ -3,9 +3,9 @@ import Arweave from 'arweave';
 import type { JWKInterface } from 'arweave/node/lib/wallet';
 
 // config constants
-export const HOST_NAME = 'arnode.asia';
-export const PORT_NUM = 443;
 export const PROTOCOL_TYPE = 'https';
+export const HOST_NAME = 'arweave.net';
+export const PORT_NUM = 443;
 export const CU_URL = 'https://cu6466.ao-testnet.xyz';
 export const MODE = 'legacy';
 
@@ -36,7 +36,7 @@ export interface Tag {
 
 export interface WalletDetails {
   walletAddress: string;
-  balance: number;
+  balance?: number;
 }
 
 export interface GraphQLEdge {
@@ -487,28 +487,35 @@ export async function connectWallet(): Promise<string | undefined> {
 */
 
 export enum WalletConnectionResult {
+  ERROR = 'error',
   CONNECTED = 'connected',
   USER_CANCELLED = 'cancelled',
-  ERROR = 'error'
+  WALLET_NOT_FOUND = 'wallet not found'
 }
 
 export interface WalletConnectionResponse {
   status: WalletConnectionResult;
-  message?: string;
+  message: string;
   error?: Error;
 }
 
 export async function connectWallet(): Promise<WalletConnectionResponse> {
-  if (typeof window === 'undefined' || !window.arweaveWallet) {
+  if (typeof window === 'undefined') {
     return {
       status: WalletConnectionResult.ERROR,
-      message: 'Cannot connect wallet in non-browser environment or wallet not found'
+      message: 'Cannot connect wallet in non-browser environment'
     };
   }
-  
+  if (!window.arweaveWallet) {
+    return {
+      status: WalletConnectionResult.WALLET_NOT_FOUND,
+      message: 'Arweave Wallet not found'
+    };
+  }
+
   try {
     console.log('Connecting wallet...');
-    
+
     await window.arweaveWallet.connect(
       [
         'ENCRYPT',
@@ -538,21 +545,22 @@ export async function connectWallet(): Promise<WalletConnectionResponse> {
       status: WalletConnectionResult.CONNECTED,
       message: 'Connected wallet successfully'
     };
-    
+
   } catch (error) {
     // More robust check for user cancellation
+    console.log('[arkit.ts] errorMessage', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
-    if (errorMessage.toLowerCase().includes('cancel') || 
-        errorMessage.toLowerCase().includes('rejected') || 
-        errorMessage.toLowerCase().includes('denied')) {
+
+    if (errorMessage.toLowerCase().includes('cancel') ||
+      errorMessage.toLowerCase().includes('rejected') ||
+      errorMessage.toLowerCase().includes('denied')) {
       console.log('User cancelled the wallet connection request');
       return {
         status: WalletConnectionResult.USER_CANCELLED,
         message: 'User cancelled the connection request'
       };
     }
-    
+
     console.error('Connect wallet error:', error);
     return {
       status: WalletConnectionResult.ERROR,
@@ -587,16 +595,19 @@ export async function getWalletDetails(): Promise<WalletDetails> {
   }
   try {
     console.log('Getting wallet details...');
-    const arweave = Arweave.init({
-      host: HOST_NAME,
-      port: PORT_NUM,
-      protocol: PROTOCOL_TYPE,
-    });
+    // const arweave = Arweave.init({
+    //   host: HOST_NAME,
+    //   port: PORT_NUM,
+    //   protocol: PROTOCOL_TYPE,
+    // });
     const walletAddress = await window.arweaveWallet.getActiveAddress();
-    const balanceRaw = await arweave.wallets.getBalance(walletAddress);
-    const balance = arweave.ar.winstonToAr(balanceRaw);
-    console.log('Wallet details retrieved:', { walletAddress, balance });
-    return { walletAddress, balance: Number(balance) };
+    // const balance = await arweave.wallets
+    //   .getBalance(walletAddress)
+    //   .then((balanceRaw) => {
+    //     const balance = arweave.ar.winstonToAr(balanceRaw);
+    //     return Number(balance);
+    //   });
+    return { walletAddress };
   } catch (error) {
     console.error('Get wallet details error:', error);
     throw error;
@@ -605,412 +616,543 @@ export async function getWalletDetails(): Promise<WalletDetails> {
 
 
 export const DbAdmin_LUA_CODE: string = `
--- ANON package integration code
-
-
--- ANON package integration code
-
-local apm_id = "DKF8oXtPvh3q8s0fJFIeHFyHNM6oKrwMCUrPxEMroak"
-local apm_version = "2.0.5"
-
-json = require("json")
-base64 = require(".base64")
-
-function Set(list)
-  local set = {}
-  for _, l in ipairs(list) do set[l] = true end
-  return set
-end
-
-function Hexencode(str)
-  return (str:gsub(".", function(char) return string.format("%02x", char:byte()) end))
-end
-
-function Hexdecode(hex)
-  return (hex:gsub("%x%x", function(digits) return string.char(tonumber(digits, 16)) end))
-end
-
-function IsValidVersion(variant)
-  -- version string or 43 char message_id
-  return variant:match("^%d+%.%d+%.%d+$") or (variant:match("^[a-zA-Z0-9%-%_]+$") and #variant == 43)
-end
-
-function IsValidPackageName(name)
-  return name:match("^[a-zA-Z0-9%-_]+$")
-end
-
-function IsValidVendor(name)
-  return name and name:match("^@[a-z0-9-]+$")
-end
-
--- can be @vendor/pkgname or pkgname
--- can be @vendor/pkgname@version or pkgname@version
--- can be @vendor/pkgname@message_id or pkgname@message_id
--- message_id length is 43 chars
-function SplitPackageName(query)
-  local vendor, pkgname, version
-
-  -- if only vendor is given
-  if query:find("^@%w+$") then
-    return query, nil, nil
-  end
-
-  -- check if version is provided
-  local version_index = query:find("@%d+.%d+.%d+$")
-  if version_index then
-    version = query:sub(version_index + 1)
-    query = query:sub(1, version_index - 1)
-  else
-    -- check if length > 43 and last 43 chars are message_id
-    if #query > 45 then
-      local message_id = query:sub(-43)
-      if message_id:match("^[a-zA-Z0-9%-%_]+$") then
-        version = message_id
-        query = query:sub(1, -44)
-      end
-    end
-  end
-
-  -- check if vendor is provided
-  vendor, pkgname = query:match("@(%w+)/([%w%-%_]+)")
-
-  if not vendor then
-    pkgname = query
-  else
-    vendor = "@" .. vendor
-  end
-
-  return vendor, pkgname, version
-end
-
--- common error handler
-function HandleRun(func, msg)
-  local ok, err = pcall(func, msg)
-  if not ok then
-    local clean_err = err:match(":%d+: (.+)") or err
-    print(msg.Action .. " - " .. err)
-    -- if not msg.Target == ao.id then
-    ao.send({
-      Target = msg.From,
-      Data = clean_err,
-      Result = "error"
-    })
-    -- end
-  end
-end
-
-function CheckUpdate(msg)
-  local latest_client_version = msg.LatestClientVersion
-  if not latest_client_version then
-    return
-  end
-  if latest_client_version and latest_client_version > apm._version then
-    print("⚠️ APM update available v:" .. latest_client_version .. " run 'apm.update()'")
-  end
-end
-
--------------------------------------------------------------
-
-function DownloadResponseHandler(msg)
-  local from = msg.From
-  if not from == apm.ID then
-    print("Attempt to download from illegal source")
-    return
-  end
-
-  if not msg.Result == "success" then
-    print("Download failed: " .. msg.Name)
-    return
-  end
-
-  local source = msg.Data
-  local name = msg.Name
-  local version = msg.Version
-  local warnings = msg.Warnings         -- {ModifiesGlobalState:boolean, Message:boolean}
-  local dependencies = msg.Dependencies -- {[name:string] = {version:string}}
-
-  if source then
-    source = Hexdecode(source)
-  end
-
-  if warnings and warnings.ModifiesGlobalState then
-    print("⚠️ Package modifies global state")
-  end
-
-  if warnings and warnings.Message then
-    print("⚠️ " .. warnings.Message)
-  end
-
-  -- if vendor is @apm remove it and just keep the name
-  local loaded_name = name:match("^@apm/(.+)$") or name
-
-  local func, err = load(string.format([[
-        local function _load()
-            %s
-        end
-        _G.package.loaded["%s"] = _load()
-    ]], source, loaded_name))
-  if not func then
-    error("Error compiling load function: " .. err)
-  end
-  func()
-
-  apm.installed[name] = version
-
-  if dependencies then
-    dependencies = json.decode(dependencies) -- "dependencies": {"test-pkg": {"version": "1.0.0"}}
-  end
-  -- print(dependencies)
-
-  for dep, depi in pairs(dependencies) do
-    -- print("📦 Checking dependency " .. dep .. "@" .. depi.version)
-    -- install dependency and make sure there is no circular install
-    if not (apm.installed[dep] == depi.version) then
-      print("ℹ️ Installing dependency " .. dep .. "@" .. depi.version)
-      apm.install(dep)
-    end
-  end
-
-  print("✅ Downloaded " .. name .. "@" .. version)
-  CheckUpdate(msg)
-end
-
-Handlers.add(
-  "APM.DownloadResponse",
-  Handlers.utils.hasMatchingTag("Action", "APM.DownloadResponse"),
-  function(msg)
-    HandleRun(DownloadResponseHandler, msg)
-  end
-)
-
--------------------------------------------------------------
-
-function SearchResponseHandler(msg)
-  if msg.From ~= apm.ID then
-    print("Attempt to search from illegal source")
-    return
-  end
-
-  local result = msg.Result
-  if not result == "success" then
-    print("Search failed: " .. msg.Data)
-    return
-  end
-
-  local res = json.decode(msg.Data)
-  if #res == 0 then
-    print("No packages found")
-    return
-  end
-
-  local p = ""
-  for _, pkg in ipairs(res) do
-    p = p .. pkg.Vendor .. "/" .. pkg.Name .. " | " .. pkg.Description .. ""
-  end
-  print(p)
-
-  CheckUpdate(msg)
-end
-
-Handlers.add(
-  "APM.SearchResponse",
-  Handlers.utils.hasMatchingTag("Action", "APM.SearchResponse"),
-  function(msg)
-    HandleRun(SearchResponseHandler, msg)
-  end
-)
-
--------------------------------------------------------------
-
-function InfoResponseHandler(msg)
-  if msg.From ~= apm.ID then
-    print("Attempt to get info from illegal source")
-    return
-  end
-
-  local result = msg.Result
-  if not result == "success" then
-    print("Info failed: " .. msg.Data)
-    return
-  end
-
-  local res = json.decode(msg.Data)
-  if not res then
-    print("No info found")
-    return
-  end
-
-  print("📦 " .. Colors.green .. res.Vendor .. "/" .. res.Name .. Colors.reset)
-  print("📄 Description    : " .. Colors.green .. res.Description .. Colors.reset)
-  print("🔖 Latest Version : " .. Colors.green .. res.Version .. Colors.reset)
-  print("📥 Installs       : " .. Colors.green .. res.TotalInstalls .. Colors.reset)
-  print("🔗 APM Url        : " .. Colors.green .. "https://apm.betteridea.dev/pkg?id=" .. res.PkgID .. Colors.reset)
-  print("🔗 Repository Url : " .. Colors.green .. res.Repository .. Colors.reset)
-
-  CheckUpdate(msg)
-end
-
-Handlers.add(
-  "APM.InfoResponse",
-  Handlers.utils.hasMatchingTag("Action", "APM.InfoResponse"),
-  function(msg)
-    HandleRun(InfoResponseHandler, msg)
-  end
-)
-
--------------------------------------------------------------
-
-function UpdateResponseHandler(msg)
-  local from = msg.From
-  if not from == apm.ID then
-    print("Attempt to update from illegal source")
-    return
-  end
-
-  if not msg.Result == "success" then
-    print("Update failed: " .. msg.Data)
-    return
-  end
-
-  local source = msg.Data
-  local version = msg.Version
-
-  if source then
-    source = Hexdecode(source)
-  end
-
-  local func, err = load(string.format([[
-        local function _load()
-            %s
-        end
-        -- apm = _load()
-        _load()
-    ]], source))
-  if not func then
-    error("Error compiling load function: " .. err)
-  end
-  func()
-
-  apm._version = version
-  print("✅ Updated APM to v:" .. version)
-  print("Please use 'apm' namespace for all commands")
-end
-
-Handlers.add(
-  "APM.UpdateResponse",
-  Handlers.utils.hasMatchingTag("Action", "APM.UpdateResponse"),
-  function(msg)
-    HandleRun(UpdateResponseHandler, msg)
-  end
-)
-
--------------------------------------------------------------
-
-apm = apm or {}
-apm.ID = apm_id
-apm._version = apm._version or apm_version
-apm.installed = apm.installed or {}
-
-function apm.install(name)
-  local vendor, pkgname, version = SplitPackageName(name)
-  if not vendor then
-    vendor = "@apm"
-  end
-  if not IsValidVendor(vendor) then
-    return error("Invalid vendor name")
-  end
-  if not IsValidPackageName(pkgname) then
-    return error("Invalid package name")
-  end
-  if version and not IsValidVersion(version) then
-    return error("Invalid version")
-  end
-
-  local pkgnv = vendor .. "/" .. pkgname
-  local pkg_ver = apm.installed[pkgnv]
-  if pkg_ver then
-    -- return error("Package already installed. Use apm.uninstall to remove it")
-    if version and pkg_ver == version then
-      return "✅ Package " .. pkgnv .. " already installed"
-    end
-  end
-
-  if version then
-    pkgnv = pkgnv .. "@" .. version
-  end
-
-  Send({
-    Target = apm.ID,
-    Action = "APM.Download",
-    Data = pkgnv
-  })
-  return "📦 Download requested for " .. pkgnv
-end
-
-function apm.search(query)
-  if not query then
-    return error("No search query provided")
-  end
-
-  Send({
-    Target = apm.ID,
-    Action = "APM.Search",
-    Data = query
-  })
-  return "🔍 Search requested for " .. query
-end
-
-function apm.update()
-  Send({
-    Target = apm.ID,
-    Action = "APM.Update"
-  })
-  return "📦 Update requested"
-end
-
-function apm.info(query)
-  if not query then
-    return error("No info query provided")
-  end
-
-  Send({
-    Target = apm.ID,
-    Action = "APM.Info",
-    Data = query
-  })
-  return "📦 Info requested for " .. query
-end
-
-function apm.uninstall(name)
-  local vendor, pkgname, _ = SplitPackageName(name)
-  if not vendor then
-    vendor = "@apm"
-  end
-  if not IsValidVendor(vendor) then
-    return error("Invalid vendor name")
-  end
-  if not IsValidPackageName(pkgname) then
-    return error("Invalid package name")
-  end
-
-  local pkgnv = vendor .. "/" .. pkgname
-  local pkg = apm.installed[pkgnv]
-
-  if not pkg then
-    return error("Package not installed")
-  end
-
-
-  apm.installed[pkgnv] = nil
-  if vendor == "@apm" then
-    _G.package.loaded[name] = nil
-  else
-    _G.package.loaded[pkgnv] = nil
-  end
-  return "🗑️ Uninstalled " .. pkgnv
-end
-
-print("✅ APM client v" .. apm._version .. " loaded")
-print("usage: apm.install <package name>")
+// // -- ANON package integration code
+
+
+// // -- ANON package integration code
+
+// // local apm_id = "DKF8oXtPvh3q8s0fJFIeHFyHNM6oKrwMCUrPxEMroak"
+// // local apm_version = "2.0.5"
+
+// // json = require("json")
+// // base64 = require(".base64")
+
+// // function Set(list)
+// //   local set = {}
+// //   for _, l in ipairs(list) do set[l] = true end
+// //   return set
+// // end
+
+// // function Hexencode(str)
+// //   return (str:gsub(".", function(char) return string.format("%02x", char:byte()) end))
+// // end
+
+// // function Hexdecode(hex)
+// //   return (hex:gsub("%x%x", function(digits) return string.char(tonumber(digits, 16)) end))
+// // end
+
+// // function IsValidVersion(variant)
+// //   -- version string or 43 char message_id
+// //   return variant:match("^%d+%.%d+%.%d+$") or (variant:match("^[a-zA-Z0-9%-%_]+$") and #variant == 43)
+// // end
+
+// // function IsValidPackageName(name)
+// //   return name:match("^[a-zA-Z0-9%-_]+$")
+// // end
+
+// // function IsValidVendor(name)
+// //   return name and name:match("^@[a-z0-9-]+$")
+// // end
+
+// // -- can be @vendor/pkgname or pkgname
+// // -- can be @vendor/pkgname@version or pkgname@version
+// // -- can be @vendor/pkgname@message_id or pkgname@message_id
+// // -- message_id length is 43 chars
+// // function SplitPackageName(query)
+// //   local vendor, pkgname, version
+
+// //   -- if only vendor is given
+// //   if query:find("^@%w+$") then
+// //     return query, nil, nil
+// //   end
+
+// //   -- check if version is provided
+// //   local version_index = query:find("@%d+.%d+.%d+$")
+// //   if version_index then
+// //     version = query:sub(version_index + 1)
+// //     query = query:sub(1, version_index - 1)
+// //   else
+// //     -- check if length > 43 and last 43 chars are message_id
+// //     if #query > 45 then
+// //       local message_id = query:sub(-43)
+// //       if message_id:match("^[a-zA-Z0-9%-%_]+$") then
+// //         version = message_id
+// //         query = query:sub(1, -44)
+// //       end
+// //     end
+// //   end
+
+// //   -- check if vendor is provided
+// //   vendor, pkgname = query:match("@(%w+)/([%w%-%_]+)")
+
+// //   if not vendor then
+// //     pkgname = query
+// //   else
+// //     vendor = "@" .. vendor
+// //   end
+
+// //   return vendor, pkgname, version
+// // end
+
+// // -- common error handler
+// // function HandleRun(func, msg)
+// //   local ok, err = pcall(func, msg)
+// //   if not ok then
+// //     local clean_err = err:match(":%d+: (.+)") or err
+// //     print(msg.Action .. " - " .. err)
+// //     -- if not msg.Target == ao.id then
+// //     ao.send({
+// //       Target = msg.From,
+// //       Data = clean_err,
+// //       Result = "error"
+// //     })
+// //     -- end
+// //   end
+// // end
+
+// // function CheckUpdate(msg)
+// //   local latest_client_version = msg.LatestClientVersion
+// //   if not latest_client_version then
+// //     return
+// //   end
+// //   if latest_client_version and latest_client_version > apm._version then
+// //     print("⚠️ APM update available v:" .. latest_client_version .. " run 'apm.update()'")
+// //   end
+// // end
+
+// // -------------------------------------------------------------
+
+// // function DownloadResponseHandler(msg)
+// //   local from = msg.From
+// //   if not from == apm.ID then
+// //     print("Attempt to download from illegal source")
+// //     return
+// //   end
+
+// //   if not msg.Result == "success" then
+// //     print("Download failed: " .. msg.Name)
+// //     return
+// //   end
+
+// //   local source = msg.Data
+// //   local name = msg.Name
+// //   local version = msg.Version
+// //   local warnings = msg.Warnings         -- {ModifiesGlobalState:boolean, Message:boolean}
+// //   local dependencies = msg.Dependencies -- {[name:string] = {version:string}}
+
+// //   if source then
+// //     source = Hexdecode(source)
+// //   end
+
+// //   if warnings and warnings.ModifiesGlobalState then
+// //     print("⚠️ Package modifies global state")
+// //   end
+
+// //   if warnings and warnings.Message then
+// //     print("⚠️ " .. warnings.Message)
+// //   end
+
+// //   -- if vendor is @apm remove it and just keep the name
+// //   local loaded_name = name:match("^@apm/(.+)$") or name
+
+// //   local func, err = load(string.format([[
+// //         local function _load()
+// //             %s
+// //         end
+// //         _G.package.loaded["%s"] = _load()
+// //     ]], source, loaded_name))
+// //   if not func then
+// //     error("Error compiling load function: " .. err)
+// //   end
+// //   func()
+
+// //   apm.installed[name] = version
+
+// //   if dependencies then
+// //     dependencies = json.decode(dependencies) -- "dependencies": {"test-pkg": {"version": "1.0.0"}}
+// //   end
+// //   -- print(dependencies)
+
+// //   for dep, depi in pairs(dependencies) do
+// //     -- print("📦 Checking dependency " .. dep .. "@" .. depi.version)
+// //     -- install dependency and make sure there is no circular install
+// //     if not (apm.installed[dep] == depi.version) then
+// //       print("ℹ️ Installing dependency " .. dep .. "@" .. depi.version)
+// //       apm.install(dep)
+// //     end
+// //   end
+
+// //   print("✅ Downloaded " .. name .. "@" .. version)
+// //   CheckUpdate(msg)
+// // end
+
+// // Handlers.add(
+// //   "APM.DownloadResponse",
+// //   Handlers.utils.hasMatchingTag("Action", "APM.DownloadResponse"),
+// //   function(msg)
+// //     HandleRun(DownloadResponseHandler, msg)
+// //   end
+// // )
+
+// // -------------------------------------------------------------
+
+// // function SearchResponseHandler(msg)
+// //   if msg.From ~= apm.ID then
+// //     print("Attempt to search from illegal source")
+// //     return
+// //   end
+
+// //   local result = msg.Result
+// //   if not result == "success" then
+// //     print("Search failed: " .. msg.Data)
+// //     return
+// //   end
+
+// //   local res = json.decode(msg.Data)
+// //   if #res == 0 then
+// //     print("No packages found")
+// //     return
+// //   end
+
+// //   local p = ""
+// //   for _, pkg in ipairs(res) do
+// //     p = p .. pkg.Vendor .. "/" .. pkg.Name .. " | " .. pkg.Description .. ""
+// //   end
+// //   print(p)
+
+// //   CheckUpdate(msg)
+// // end
+
+// // Handlers.add(
+// //   "APM.SearchResponse",
+// //   Handlers.utils.hasMatchingTag("Action", "APM.SearchResponse"),
+// //   function(msg)
+// //     HandleRun(SearchResponseHandler, msg)
+// //   end
+// // )
+
+// // -------------------------------------------------------------
+
+// // function InfoResponseHandler(msg)
+// //   if msg.From ~= apm.ID then
+// //     print("Attempt to get info from illegal source")
+// //     return
+// //   end
+
+// //   local result = msg.Result
+// //   if not result == "success" then
+// //     print("Info failed: " .. msg.Data)
+// //     return
+// //   end
+
+// //   local res = json.decode(msg.Data)
+// //   if not res then
+// //     print("No info found")
+// //     return
+// //   end
+
+// //   print("📦 " .. Colors.green .. res.Vendor .. "/" .. res.Name .. Colors.reset)
+// //   print("📄 Description    : " .. Colors.green .. res.Description .. Colors.reset)
+// //   print("🔖 Latest Version : " .. Colors.green .. res.Version .. Colors.reset)
+// //   print("📥 Installs       : " .. Colors.green .. res.TotalInstalls .. Colors.reset)
+// //   print("🔗 APM Url        : " .. Colors.green .. "https://apm.betteridea.dev/pkg?id=" .. res.PkgID .. Colors.reset)
+// //   print("🔗 Repository Url : " .. Colors.green .. res.Repository .. Colors.reset)
+
+// //   CheckUpdate(msg)
+// // end
+
+// // Handlers.add(
+// //   "APM.InfoResponse",
+// //   Handlers.utils.hasMatchingTag("Action", "APM.InfoResponse"),
+// //   function(msg)
+// //     HandleRun(InfoResponseHandler, msg)
+// //   end
+// // )
+
+// // -------------------------------------------------------------
+
+// // function UpdateResponseHandler(msg)
+// //   local from = msg.From
+// //   if not from == apm.ID then
+// //     print("Attempt to update from illegal source")
+// //     return
+// //   end
+
+// //   if not msg.Result == "success" then
+// //     print("Update failed: " .. msg.Data)
+// //     return
+// //   end
+
+// //   local source = msg.Data
+// //   local version = msg.Version
+
+// //   if source then
+// //     source = Hexdecode(source)
+// //   end
+
+// //   local func, err = load(string.format([[
+// //         local function _load()
+// //             %s
+// //         end
+// //         -- apm = _load()
+// //         _load()
+// //     ]], source))
+// //   if not func then
+// //     error("Error compiling load function: " .. err)
+// //   end
+// //   func()
+
+// //   apm._version = version
+// //   print("✅ Updated APM to v:" .. version)
+// //   print("Please use 'apm' namespace for all commands")
+// // end
+
+// // Handlers.add(
+// //   "APM.UpdateResponse",
+// //   Handlers.utils.hasMatchingTag("Action", "APM.UpdateResponse"),
+// //   function(msg)
+// //     HandleRun(UpdateResponseHandler, msg)
+// //   end
+// // )
+
+// // -------------------------------------------------------------
+
+// // apm = apm or {}
+// // apm.ID = apm_id
+// // apm._version = apm._version or apm_version
+// // apm.installed = apm.installed or {}
+
+// // function apm.install(name)
+// //   local vendor, pkgname, version = SplitPackageName(name)
+// //   if not vendor then
+// //     vendor = "@apm"
+// //   end
+// //   if not IsValidVendor(vendor) then
+// //     return error("Invalid vendor name")
+// //   end
+// //   if not IsValidPackageName(pkgname) then
+// //     return error("Invalid package name")
+// //   end
+// //   if version and not IsValidVersion(version) then
+// //     return error("Invalid version")
+// //   end
+
+// //   local pkgnv = vendor .. "/" .. pkgname
+// //   local pkg_ver = apm.installed[pkgnv]
+// //   if pkg_ver then
+// //     -- return error("Package already installed. Use apm.uninstall to remove it")
+// //     if version and pkg_ver == version then
+// //       return "✅ Package " .. pkgnv .. " already installed"
+// //     end
+// //   end
+
+// //   if version then
+// //     pkgnv = pkgnv .. "@" .. version
+// //   end
+
+// //   Send({
+// //     Target = apm.ID,
+// //     Action = "APM.Download",
+// //     Data = pkgnv
+// //   })
+// //   return "📦 Download requested for " .. pkgnv
+// // end
+
+// // function apm.search(query)
+// //   if not query then
+// //     return error("No search query provided")
+// //   end
+
+// //   Send({
+// //     Target = apm.ID,
+// //     Action = "APM.Search",
+// //     Data = query
+// //   })
+// //   return "🔍 Search requested for " .. query
+// // end
+
+// // function apm.update()
+// //   Send({
+// //     Target = apm.ID,
+// //     Action = "APM.Update"
+// //   })
+// //   return "📦 Update requested"
+// // end
+
+// // function apm.info(query)
+// //   if not query then
+// //     return error("No info query provided")
+// //   end
+
+// //   Send({
+// //     Target = apm.ID,
+// //     Action = "APM.Info",
+// //     Data = query
+// //   })
+// //   return "📦 Info requested for " .. query
+// // end
+
+// // function apm.uninstall(name)
+// //   local vendor, pkgname, _ = SplitPackageName(name)
+// //   if not vendor then
+// //     vendor = "@apm"
+// //   end
+// //   if not IsValidVendor(vendor) then
+// //     return error("Invalid vendor name")
+// //   end
+// //   if not IsValidPackageName(pkgname) then
+// //     return error("Invalid package name")
+// //   end
+
+// //   local pkgnv = vendor .. "/" .. pkgname
+// //   local pkg = apm.installed[pkgnv]
+
+// //   if not pkg then
+// //     return error("Package not installed")
+// //   end
+
+
+// //   apm.installed[pkgnv] = nil
+// //   if vendor == "@apm" then
+// //     _G.package.loaded[name] = nil
+// //   else
+// //     _G.package.loaded[pkgnv] = nil
+// //   end
+// //   return "🗑️ Uninstalled " .. pkgnv
+// // end
+
+// // print("✅ APM client v" .. apm._version .. " loaded")
+// // print("usage: apm.install <package name>")
 
 `;
+
+
+// -------------- WALLET CONNECTION TYPES ---------------
+
+// switch (strategy) {
+//   case ConnectionStrategies.JWK: {
+//       const state = get();
+//       if (state.wanderInstance) {
+//           state.wanderInstance.destroy();
+//           set({ wanderInstance: null, connectionStrategy: null });
+//       }
+//       const jwk = JSON.parse(getLocalStorageValue("anon-jwk") || "{}");
+//       const requiredKeys = ["kty", "e", "n", "d", "p", "q", "dp", "dq", "qi"];
+//       const allKeysPresent = requiredKeys.every(key => jwk[key]);
+//       if (!allKeysPresent) {
+//           throw new Error("Missing required keys");
+//       }
+//       const ar = new Arweave({});
+//       const addr = await ar.wallets.getAddress(jwk);
+//       if (addr) {
+//           console.log("connecting to", addr);
+//           const d = {
+//               address: addr,
+//               shortAddress: addr.slice(0, 5) + "..." + addr.slice(-5),
+//               connected: true,
+//               connectionStrategy: ConnectionStrategies.JWK,
+//               jwk: jwk
+//           }
+//           set(d)
+//           setLocalStorageValue("anon-conn-strategy", JSON.stringify(ConnectionStrategies.JWK));
+//           return d as State;
+//       }
+//       else {
+//           throw new Error("Failed to get address");
+//       }
+//   };
+//   case ConnectionStrategies.ArWallet: {
+//       const state = get();
+//       if (state.wanderInstance) {
+//           state.wanderInstance.destroy();
+//           set({ wanderInstance: null, connectionStrategy: null });
+//       }
+//       console.log("Connecting to Arweave wallet");
+//       await window.arweaveWallet.connect(["SIGN_TRANSACTION", "ACCESS_ADDRESS", "ACCESS_PUBLIC_KEY"]);
+//       const address = await window.arweaveWallet.getActiveAddress();
+//       const shortAddress = address.slice(0, 5) + "..." + address.slice(-5);
+//       window.addEventListener("walletSwitch", (e) => {
+//           const addr = e.detail.address;
+//           const shortAddr = addr.slice(0, 5) + "..." + addr.slice(-5);
+//           set({
+//               address: addr,
+//               shortAddress: shortAddr,
+//               connected: true,
+//               connectionStrategy: ConnectionStrategies.ArWallet
+//           });
+//       })
+//       set({
+//           address,
+//           shortAddress: shortAddress,
+//           connected: true,
+//           connectionStrategy: ConnectionStrategies.ArWallet
+//       });
+//       setLocalStorageValue("anon-conn-strategy", JSON.stringify(ConnectionStrategies.ArWallet));
+//       return { address, shortAddress, connected: true, connectionStrategy: ConnectionStrategies.ArWallet } as State;
+//   };
+//   case ConnectionStrategies.WanderConnect: {
+//       // todo
+//       const state = get();
+//       if (state.wanderInstance) {
+//           state.wanderInstance.open()
+//       }
+//       else {
+//           const wander = new WanderConnect({
+//               clientId: "FREE_TRIAL",
+//               button: {
+//                   position: "static",
+//                   theme: "dark"
+//               },
+
+//               onAuth: async (userDetails) => {
+//                   console.log(userDetails)
+//                   if (!!userDetails) {
+//                       try {
+//                           await window.arweaveWallet.connect(["ACCESS_ADDRESS", "SIGN_TRANSACTION", "ACCESS_PUBLIC_KEY"]);
+//                           const addy = await window.arweaveWallet.getActiveAddress();
+//                           const shortAddr = addy.slice(0, 5) + "..." + addy.slice(-5);
+//                           const d = {
+//                               address: addy,
+//                               shortAddress: shortAddr,
+//                               connected: true,
+//                               connectionStrategy: ConnectionStrategies.WanderConnect
+//                           }
+//                           set(d);
+//                           setLocalStorageValue("anon-conn-strategy", JSON.stringify(ConnectionStrategies.WanderConnect));
+//                           return Promise.resolve(d);
+//                       } catch (e) {
+//                           console.error("Error", e);
+//                       }
+//                   }
+//               }
+//           })
+//           set({ wanderInstance: wander, connectionStrategy: ConnectionStrategies.WanderConnect });
+//           wander.open();
+//       }
+//       break;
+//   }
+// }
+
+// -------------- WALLET DISCONNECTION TYPES ---------------
+
+// switch (state.connectionStrategy) {
+//   case ConnectionStrategies.JWK: {
+//       removeLocalStorageValue("anon-jwk");
+//       break;
+//   }
+//   case ConnectionStrategies.ArWallet: {
+//       await window.arweaveWallet.disconnect();
+//       set({ address: null, shortAddress: null, connected: false, connectionStrategy: null });
+//       window.removeEventListener("walletSwitch", () => { });
+//       break;
+//   }
+//   case ConnectionStrategies.WanderConnect: {
+//       if (state.wanderInstance) {
+//           state.wanderInstance.destroy();
+//       }
+//       set({ wanderInstance: null, connectionStrategy: null });
+//       break;
+//   }
+// }
+// setLocalStorageValue("anon-conn-strategy", JSON.stringify(null));
+// window.location.reload();

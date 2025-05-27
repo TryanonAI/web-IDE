@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Octokit } from '@octokit/core';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ActiveProjectType } from '@/types/types';
+import { ActiveProject } from '@/types';
 import { defaultFiles_3 } from '@/constant/defaultFiles';
 
 // Define specific error types instead of using 'any'
@@ -30,7 +30,7 @@ interface TreeItem {
 }
 
 // GitHub workflow status
-type GitHubStatus =
+export type GitHubStatus =
   | 'disconnected' // Not connected to GitHub
   | 'authenticated' // Authenticated but no repo connected
   | 'checking_repo' // Checking if repo exists
@@ -50,7 +50,7 @@ type GitHubContextType = {
   checkRepository: (projectName: string) => Promise<boolean>;
   createRepository: (projectName: string) => Promise<boolean>;
   commitToRepository: (
-    activeProject: ActiveProjectType,
+    activeProject: ActiveProject,
     walletAddress: string,
     forcePush?: boolean,
     commitMessage?: string
@@ -124,6 +124,7 @@ export const GitHubProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   // Handle GitHub auth redirect
+  
   useEffect(() => {
     const handleGitHubAuth = () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -465,7 +466,7 @@ Project created with VybeAI
 
   // Step 4: Commit to repository
   const commitToRepository = async (
-    activeProject: ActiveProjectType,
+    activeProject: ActiveProject,
     walletAddress: string,
     forcePush: boolean = true,
     commitMessage?: string
@@ -482,21 +483,21 @@ Project created with VybeAI
 
     setGitHubStatus('committing');
     setError(null);
-    console.log(`Starting GitHub commit for project: ${activeProject.name}`);
+    console.log(`Starting GitHub commit for project: ${activeProject.title}`);
 
     try {
       // Verify or create repository
-      console.log(`Verifying repository: ${username}/${activeProject.name}`);
-      let repoExists = await checkRepository(activeProject.name);
+      console.log(`Verifying repository: ${username}/${activeProject.title}`);
+      let repoExists = await checkRepository(activeProject.title);
 
       if (!repoExists) {
         console.log(
-          `Repository ${username}/${activeProject.name} not found. Attempting to create.`
+          `Repository ${username}/${activeProject.title} not found. Attempting to create.`
         );
-        toast.info(`Repository not found. Creating ${activeProject.name}...`);
+        toast.info(`Repository not found. Creating ${activeProject.title}...`);
 
         try {
-          const repoCreated = await createRepository(activeProject.name);
+          const repoCreated = await createRepository(activeProject.title);
 
           if (!repoCreated) {
             const creationError =
@@ -508,10 +509,10 @@ Project created with VybeAI
           }
 
           console.log(
-            `Repository ${username}/${activeProject.name} created successfully.`
+            `Repository ${username}/${activeProject.title} created successfully.`
           );
           toast.success(
-            `Repository ${activeProject.name} created successfully`
+            `Repository ${activeProject.title} created successfully`
           );
           repoExists = true; // Update status, repo now exists
 
@@ -528,10 +529,10 @@ Project created with VybeAI
       // Check if repository is empty (will be true if just created)
       // Only check if the repository exists
       console.log(
-        `Checking if repository is empty: ${username}/${activeProject.name}`
+        `Checking if repository is empty: ${username}/${activeProject.title}`
       );
       const isEmptyRepo = repoExists
-        ? await checkIsEmptyRepository(username, activeProject.name).catch(
+        ? await checkIsEmptyRepository(username, activeProject.title).catch(
             (error) => {
               // If we can't determine if repo is empty, log and assume it's empty
               console.error(`Error checking if repository is empty:`, error);
@@ -550,7 +551,7 @@ Project created with VybeAI
         // Initialize with README.md
         const initResult = await initializeEmptyRepository(
           username,
-          activeProject.name
+          activeProject.title
         );
         currentCommitSha = initResult.commitSha;
         currentTreeSha = initResult.treeSha;
@@ -564,7 +565,7 @@ Project created with VybeAI
             'GET /repos/{owner}/{repo}/branches/{branch}',
             {
               owner: username,
-              repo: activeProject.name,
+              repo: activeProject.title,
               branch: 'main',
               headers: { 'X-GitHub-Api-Version': '2022-11-28' },
             }
@@ -660,7 +661,7 @@ Project created with VybeAI
           octokit
             .request('POST /repos/{owner}/{repo}/git/blobs', {
               owner: username,
-              repo: activeProject.name,
+              repo: activeProject.title,
               content: btoa(content),
               encoding: 'base64',
               headers: { 'X-GitHub-Api-Version': '2022-11-28' },
@@ -699,7 +700,7 @@ Project created with VybeAI
         'POST /repos/{owner}/{repo}/git/trees',
         {
           owner: username,
-          repo: activeProject.name,
+          repo: activeProject.title,
           tree: treeItems,
           base_tree: currentTreeSha, // Use current tree SHA if available
           headers: { 'X-GitHub-Api-Version': '2022-11-28' },
@@ -720,7 +721,7 @@ Project created with VybeAI
         'POST /repos/{owner}/{repo}/git/commits',
         {
           owner: username,
-          repo: activeProject.name,
+          repo: activeProject.title,
           message: finalCommitMessage,
           tree: treeResponse.data.sha,
           parents: currentCommitSha ? [currentCommitSha] : [],
@@ -735,7 +736,7 @@ Project created with VybeAI
           // For empty repos we just initialized, check if the reference exists first
           await octokit.request('GET /repos/{owner}/{repo}/git/ref/{ref}', {
             owner: username,
-            repo: activeProject.name,
+            repo: activeProject.title,
             ref: 'heads/main',
             headers: { 'X-GitHub-Api-Version': '2022-11-28' },
           });
@@ -743,7 +744,7 @@ Project created with VybeAI
           // If the reference exists, update it
           await octokit.request('PATCH /repos/{owner}/{repo}/git/refs/{ref}', {
             owner: username,
-            repo: activeProject.name,
+            repo: activeProject.title,
             ref: 'heads/main',
             sha: commitResponse.data.sha,
             force: forcePush,
@@ -754,7 +755,7 @@ Project created with VybeAI
           if ((refError as GitHubError).status === 404) {
             await octokit.request('POST /repos/{owner}/{repo}/git/refs', {
               owner: username,
-              repo: activeProject.name,
+              repo: activeProject.title,
               ref: 'refs/heads/main',
               sha: commitResponse.data.sha,
               headers: { 'X-GitHub-Api-Version': '2022-11-28' },
@@ -767,7 +768,7 @@ Project created with VybeAI
         // For non-empty repos, simply update the reference
         await octokit.request('PATCH /repos/{owner}/{repo}/git/refs/{ref}', {
           owner: username,
-          repo: activeProject.name,
+          repo: activeProject.title,
           ref: 'heads/main',
           sha: commitResponse.data.sha,
           force: forcePush,
@@ -793,11 +794,11 @@ Project created with VybeAI
       if (errorMessage.includes('Git Repository is empty')) {
         errorMessage = 'Repository is empty. Initializing failed.';
       } else if (errorMessage.includes('Not Found') || error.status === 404) {
-        errorMessage = `Repository "${activeProject.name}" not found. It may have been deleted or renamed on GitHub.`;
+        errorMessage = `Repository "${activeProject.title}" not found. It may have been deleted or renamed on GitHub.`;
         // Reset to authenticated state so user can create the repo
         setGitHubStatus('authenticated');
         toast.error('Repository Not Found', {
-          description: `The repository "${activeProject.name}" was not found on GitHub. You can create it using the GitHub menu.`,
+          description: `The repository "${activeProject.title}" was not found on GitHub. You can create it using the GitHub menu.`,
         });
         throw new Error(errorMessage); // Exit early to avoid showing duplicate toasts
       } else if (errorMessage.includes('reference already exists')) {

@@ -1,21 +1,52 @@
-import * as React from 'react';
+'use client';
 
-const MOBILE_BREAKPOINT = 768;
+import { useState, useEffect } from 'react';
 
-export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState(undefined);
+export function useMobile(breakpoint: number = 768) {
+  const [isMobile, setIsMobile] = useState<boolean>(false);
 
-  React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-    const onChange = () => {
-      // @ts-expect-error ignore,
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+  useEffect(() => {
+    // Set initial value on mount
+    setIsMobile(window.innerWidth < breakpoint);
+
+    // Handler for window resize events
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < breakpoint);
     };
-    mql.addEventListener('change', onChange);
-    // @ts-expect-error ignore,
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-    return () => mql.removeEventListener('change', onChange);
-  }, []);
 
-  return !!isMobile;
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [breakpoint]);
+
+  return isMobile;
 }
+
+export function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
+}
+
+export default useMobile;
+
+import { toast } from 'sonner';
+
+export const notifyNoWallet = () => {
+  toast.error('No wallet detected', {
+    description: 'Please install the Wander app to continue',
+    action: {
+      label: 'Install',
+      onClick: () => {
+        window.open(
+          'https://www.wander.app/download?tab=download-browser',
+          '_blank'
+        );
+      },
+    },
+  });
+};

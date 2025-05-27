@@ -1,13 +1,14 @@
 import React from 'react';
+import { WalletStatus } from '@/types';
+import { useWallet } from '@/hooks/use-wallet';
+import { useGlobalState } from '@/hooks/global-state';
 import { Loader2Icon, GitBranchIcon } from 'lucide-react';
 
-const StatusBar = ({
-  // @ts-expect-error ignore,
-  activeProject,
-  // @ts-expect-error ignore,
-  status, // New status prop
-  connectionStatus = 'connected', // 'connected' | 'disconnected' | 'connecting',
-}) => {
+const StatusBar = () => {
+  const status = useGlobalState((state) => state.status);
+  const activeProject = useGlobalState((state) => state.activeProject);
+  const walletStatus = useWallet((state) => state.walletStatus);
+
   return (
     <div className="h-8 shrink-0 bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 border-t border-border/50 px-4 flex items-center text-xs font-medium text-muted-foreground">
       <div className="flex-1 flex items-center gap-6">
@@ -15,7 +16,7 @@ const StatusBar = ({
         <div className="flex items-center gap-2">
           <GitBranchIcon size={13} className="text-primary/70" />
           <span className="hover:text-foreground transition-colors">
-            {activeProject ? activeProject.name : 'No project selected'}
+            {activeProject ? activeProject.title : 'No project selected'}
           </span>
         </div>
 
@@ -28,25 +29,24 @@ const StatusBar = ({
         )}
       </div>
 
-      {/* Connection Status */}
       <div className="flex items-center gap-2">
-        {connectionStatus === 'connected' && (
+        {walletStatus === WalletStatus.CONNECTED && (
           <>
-            <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px] shadow-primary"></div>
+            <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px] shadow-primary" />
             <span className="hover:text-foreground transition-colors">
               Connected
             </span>
           </>
         )}
-        {connectionStatus === 'connecting' && (
+        {walletStatus === WalletStatus.CONNECTING && (
           <>
             <Loader2Icon size={13} className="animate-spin text-primary/70" />
             <span className="text-primary/90">Connecting...</span>
           </>
         )}
-        {connectionStatus === 'disconnected' && (
+        {walletStatus === WalletStatus.DISCONNECTED && (
           <>
-            <div className="w-2 h-2 rounded-full bg-destructive shadow-[0_0_6px] shadow-destructive"></div>
+            <div className="w-2 h-2 rounded-full bg-destructive shadow-[0_0_6px] shadow-destructive" />
             <span className="text-destructive/90">Disconnected</span>
           </>
         )}

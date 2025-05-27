@@ -1,7 +1,6 @@
 'use client';
 
 import React, { Suspense, lazy, useMemo, useEffect } from 'react';
-import { ActionContext } from '@/context/ActionContext';
 import {
   useSandpack,
   type SandpackPreviewRef,
@@ -15,6 +14,8 @@ import {
 import SandpackErrorBoundary from './SandpackErrorBoundary';
 import SandpackModuleLoader from './SandpackModuleLoader';
 import { registerSandpackCacheListener } from '@/lib/sandpack/sandpackCache';
+import { useGlobalState } from '@/hooks/global-state';
+import { SandpackAction } from '@/types';
 
 // Dynamically import the SandpackPreview component to reduce initial bundle size
 const SandpackPreview = lazy(() =>
@@ -35,30 +36,22 @@ const SandpackLoading = () => (
 
 const SandPackPreviewClient = () => {
   const { sandpack } = useSandpack();
-  const actionContext = React.useContext(ActionContext);
-  // @ts-expect-error ignore
-  const { action } = actionContext;
+  const { sandpackAction } = useGlobalState();
   const previewRef = React.useRef<SandpackPreviewRef>(null);
   const [error, setError] = React.useState<Error | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [cacheEnabled, setCacheEnabled] = React.useState(true);
 
-  // Extract dependencies from Sandpack
   const dependencies = useMemo(() => {
-    // Access dependencies safely
-    // Define a type for the extended SandpackState
     interface ExtendedSandpack {
       sandboxInfo?: {
         dependencies?: Record<string, string>;
       };
     }
-
-    // Use type assertion with a more specific type
     const extendedSandpack = sandpack as unknown as ExtendedSandpack;
     return extendedSandpack.sandboxInfo?.dependencies || {};
   }, [sandpack]);
 
-  // Register cache listener when dependencies change
   useEffect(() => {
     if (cacheEnabled && Object.keys(dependencies).length > 0) {
       console.log('Setting up cache listener for dependencies:', dependencies);
@@ -69,7 +62,10 @@ const SandPackPreviewClient = () => {
   const handleSandpackAction = async () => {
     try {
       setIsLoading(true);
-      console.log('Handling SandPack action:', action?.Action);
+      console.log(
+        '[SandPackPreviewClient] Handling SandPack action:',
+        sandpackAction
+      );
 
       const clientData = await getSandpackClient(previewRef);
       if (!clientData) {
@@ -79,7 +75,6 @@ const SandPackPreviewClient = () => {
 
       const { client, clientId } = clientData;
 
-      // Verify client is registered with sandpack
       if (!sandpack.clients[clientId]) {
         console.warn('Client not found in sandpack clients');
         toast.error('Preview client not properly initialized');
@@ -93,28 +88,28 @@ const SandPackPreviewClient = () => {
         return;
       }
 
-      if (action?.Action === 'deploy') {
+      if (sandpackAction === SandpackAction.DEPLOY) {
         copyDeploymentLink(result.sandboxId);
-      } else if (action?.Action === 'export') {
+      } else if (sandpackAction === SandpackAction.EXPORT) {
         window.open(result.editorUrl);
       }
     } catch (err) {
-      console.error('Error in handleSandpackAction:', err);
+      console.error('[SandPackPreviewClient] Error in handling action:', err);
       setError(err instanceof Error ? err : new Error(String(err)));
-      toast.error(
-        'Failed to perform action: ' +
-          (err instanceof Error ? err.message : 'Unknown error')
-      );
+      toast.error(`Failed to ${sandpackAction}`);
     } finally {
       setIsLoading(false);
     }
   };
 
   React.useEffect(() => {
-    if (action?.Action === 'deploy' || action?.Action === 'export') {
+    if (
+      sandpackAction === SandpackAction.DEPLOY ||
+      sandpackAction === SandpackAction.EXPORT
+    ) {
       handleSandpackAction();
     }
-  }, [action, sandpack]);
+  }, [sandpackAction, sandpack]);
 
   // Toggle cache method
   const toggleCache = () => {

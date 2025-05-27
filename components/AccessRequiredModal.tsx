@@ -15,7 +15,7 @@ export default function AccessRequiredModal({
 }: AccessRequiredModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent aria-description="Access Required" className="sm:max-w-md">
         <RestrictedAccessView 
           containerClassName="py-4"
           isModal={true}
