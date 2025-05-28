@@ -22,6 +22,9 @@ import {
   ExternalLink,
   MessageSquare,
   Rocket,
+  Eye,
+  Copy,
+  Check,
 } from 'lucide-react';
 import {
   Dialog,
@@ -32,7 +35,7 @@ import {
 } from '@/components/ui/dialog';
 import { useWallet } from '@/hooks/use-wallet';
 import { Button } from '@/components/ui/button';
-import { Commit } from '@/types';
+import { Commit, Framework } from '@/types';
 import { useModal } from '@/context/ModalContext';
 import React, { useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
@@ -47,6 +50,7 @@ import Link from 'next/link';
 import { Badge } from '../ui/badge';
 import { uploadToTurbo } from '@/lib/turbo-utils';
 import axios from 'axios';
+import { useCopyToClipboard } from '@uidotdev/usehooks';
 
 type StatusStep = {
   id: string;
@@ -72,6 +76,11 @@ const TitleBar = () => {
   const [commitInProgress, setCommitInProgress] = useState<boolean>(false);
   const [statusSteps, setStatusSteps] = useState<StatusStep[]>([]);
   const [isDeploying, setIsDeploying] = useState<boolean>(false);
+  const [, copyToClipboard] = useCopyToClipboard();
+  const [copy, setCopy] = useState<boolean>(false);
+
+  const isCodeGenerating = useGlobalState((state) => state.isCodeGenerating);
+  const isLoading = useGlobalState((state) => state.isLoading);
 
   const { openModal } = useModal();
   const { connected, address, shortAddress } = useWallet();
@@ -100,7 +109,24 @@ const TitleBar = () => {
     codebase,
     deploymentUrl,
     setDeploymentUrl,
+    chatMessages,
   } = useGlobalState();
+
+  // Add unified disabled states
+  const commonDisabledState =
+    isCodeGenerating ||
+    isLoading ||
+    isDeploying ||
+    !connected ||
+    !activeProject;
+  const deployDisabledState =
+    commonDisabledState || !codebase || chatMessages.length === 0;
+  const githubButtonDisabledState =
+    !connected ||
+    githubStatus ===
+      (GITHUB_STATUS.CHECKING_REPO ||
+        GITHUB_STATUS.CREATING_REPO ||
+        GITHUB_STATUS.COMMITTING);
 
   // Get status dot color class
   const getStatusDotClass = () => {
@@ -325,16 +351,6 @@ const TitleBar = () => {
     openModal('createProject');
   };
 
-  // Determine if Github button should be disabled
-  const isGithubButtonDisabled = () => {
-    return (
-      githubStatus === GITHUB_STATUS.CHECKING_REPO ||
-      githubStatus === GITHUB_STATUS.CREATING_REPO ||
-      githubStatus === GITHUB_STATUS.COMMITTING ||
-      !connected
-    );
-  };
-
   // Determine if repo is ready to commit
   const isRepoReadyToCommit = githubStatus === GITHUB_STATUS.REPO_EXISTS;
 
@@ -357,7 +373,7 @@ const TitleBar = () => {
         console.log('Resetting Github state for new project check');
         resetGithubState();
       }
-
+      console.log(selectedProject);
       await loadProjectData(
         selectedProject,
         useWallet.getState().address as string
@@ -367,11 +383,6 @@ const TitleBar = () => {
     } else {
       console.error('Project not found with ID:', projectId);
     }
-  };
-
-  // Determine if project info button should be disabled
-  const isProjectInfoDisabled = () => {
-    return !activeProject || !connected;
   };
 
   // Refresh commits
@@ -649,7 +660,7 @@ const TitleBar = () => {
           <button
             className="h-9 min-w-[180px] px-3 flex items-center justify-between gap-2 bg-secondary/60 hover:bg-secondary/80 border border-border/50 rounded-md text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             onClick={() => setIsProjectDrawerOpen(true)}
-            disabled={!connected}
+            disabled={commonDisabledState}
             title="Select Project"
             aria-label="Select Project"
           >
@@ -668,7 +679,7 @@ const TitleBar = () => {
             className="group h-9 px-3 flex items-center gap-2 bg-secondary/30 hover:bg-secondary/70 rounded-md text-sm font-medium transition-all shadow-sm hover:shadow disabled:opacity-40 disabled:cursor-not-allowed"
             title="Create New Project"
             aria-label="Create New Project"
-            disabled={!connected}
+            disabled={commonDisabledState}
           >
             <PlusIcon
               size={16}
@@ -678,33 +689,23 @@ const TitleBar = () => {
           </button>
 
           {/* Project Info Button */}
-          <button
-            onClick={() => setIsProjectInfoDrawerOpen(true)}
-            disabled={isProjectInfoDisabled()}
-            className="h-9 px-3 flex items-center gap-2 bg-secondary/30 hover:bg-secondary/70 rounded-md text-sm font-medium transition-all shadow-sm hover:shadow disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
-            title="Active Project Information"
-            aria-label="Active Project Information"
-          >
-            <Info size={16} className="text-primary/80" />
-            <span>Info</span>
-          </button>
+          {activeProject?.framework === Framework.React && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setIsProjectInfoDrawerOpen(true)}
+                disabled={commonDisabledState}
+                title="Active Project Information"
+                aria-label="Active Project Information"
+              >
+                <Info size={16} className="text-primary/80" />
+                <span>Info</span>
+              </Button>
 
-          {/* Refresh Project Button */}
-          <button
-            onClick={onRefresh}
-            disabled={!activeProject || !connected}
-            className="h-9 px-3 flex items-center gap-2 bg-secondary/30 hover:bg-secondary/70 rounded-md text-sm font-medium transition-all shadow-sm hover:shadow disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
-            title="Refresh Projects"
-            aria-label="Refresh Projects"
-          >
-            <RefreshCwIcon size={16} className="text-primary/80" />
-            <span>Refresh</span>
-          </button>
-
-          {/* Github Button */}
-          <div className="relative">
-            <button
-              className={`
+              {/* Github Button */}
+              <div className="relative">
+                <button
+                  className={`
                 relative h-9 px-3 flex items-center gap-2 rounded-md shadow-sm
                 transition-all duration-200
                 ${
@@ -716,86 +717,142 @@ const TitleBar = () => {
                 }
                 disabled:opacity-40 disabled:cursor-not-allowed
               `}
-              onClick={handleGithubClick}
-              title={getGithubButtonTitle()}
-              disabled={isGithubButtonDisabled()}
-              aria-label={getGithubButtonTitle()}
-            >
-              {githubStatus === GITHUB_STATUS.CHECKING_REPO ||
-              githubStatus === GITHUB_STATUS.CREATING_REPO ||
-              githubStatus === GITHUB_STATUS.COMMITTING ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Github
-                  size={16}
-                  className={
-                    isRepoReadyToCommit
-                      ? 'text-green-500'
-                      : githubStatus === GITHUB_STATUS.ERROR
-                        ? 'text-destructive'
-                        : 'text-foreground'
-                  }
-                />
-              )}
-              {/* Status Dot */}
-              {githubToken && (
-                <div
-                  className={`
+                  onClick={handleGithubClick}
+                  title={getGithubButtonTitle()}
+                  disabled={githubButtonDisabledState}
+                  aria-label={getGithubButtonTitle()}
+                >
+                  {githubStatus === GITHUB_STATUS.CHECKING_REPO ||
+                  githubStatus === GITHUB_STATUS.CREATING_REPO ||
+                  githubStatus === GITHUB_STATUS.COMMITTING ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Github
+                      size={16}
+                      className={
+                        isRepoReadyToCommit
+                          ? 'text-green-500'
+                          : githubStatus === GITHUB_STATUS.ERROR
+                            ? 'text-destructive'
+                            : 'text-foreground'
+                      }
+                    />
+                  )}
+                  {/* Status Dot */}
+                  {githubToken && (
+                    <div
+                      className={`
                   absolute top-1.5 right-1.5 w-2 h-2 rounded-full 
                   ${getStatusDotClass()}
                   shadow-sm ring-1 ring-background
                 `}
-                />
-              )}
-              {!githubToken && <span>Github</span>}
-            </button>
-          </div>
-
-          {deploymentUrl && (
-            <Link
-              href={deploymentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button variant="outline" size="sm">
-                <ExternalLink size={16} />
-                <span>View</span>
-              </Button>
-            </Link>
+                    />
+                  )}
+                  {!githubToken && <span>Github</span>}
+                </button>
+              </div>
+            </>
           )}
 
-          {/* Deploy Button */}
-          <button
-            onClick={handleDeploy}
-            disabled={!activeProject || !connected || !address || isDeploying}
-            className="h-9 px-3 flex items-center gap-2 bg-secondary/30 hover:bg-secondary/70 rounded-md text-sm font-medium transition-all shadow-sm hover:shadow disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
-            title="Deploy Project"
-            aria-label="Deploy Project"
-          >
-            {isDeploying ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                <span>Deploying...</span>
-              </>
-            ) : (
-              <>
-                <Rocket size={16} className="text-primary/80" />
-                <span>Deploy</span>
-              </>
+          {/* Deploy Button and Status */}
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleDeploy}
+              disabled={deployDisabledState}
+              variant="outline"
+              className="relative"
+              title={
+                !connected
+                  ? 'Connect wallet to deploy'
+                  : !activeProject
+                    ? 'Select a project to deploy'
+                    : !codebase || chatMessages.length === 0
+                      ? 'Generate some code before deploying'
+                      : isDeploying
+                        ? 'Deployment in progress'
+                        : deploymentUrl
+                          ? 'Redeploy project with latest changes'
+                          : 'Deploy project'
+              }
+            >
+              {isDeploying ? (
+                <>
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  <span>Deploying...</span>
+                </>
+              ) : (
+                <>
+                  <Rocket size={16} className="mr-2" />
+                  <span>{deploymentUrl ? 'Redeploy' : 'Deploy'}</span>
+                </>
+              )}
+            </Button>
+
+            {deploymentUrl && (
+              <div className="flex items-center bg-secondary/20 rounded-md border border-border/50 p-1">
+                <Link
+                  href={deploymentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center px-3 py-1.5 hover:bg-secondary/40 rounded-sm transition-colors"
+                >
+                  <Eye size={16} className="text-primary/80 mr-2" />
+                  <span className="mr-1">View Live</span>
+                </Link>
+                <div className="h-4 w-px bg-border/50 mx-1" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="relative h-8 px-3 hover:bg-secondary/40"
+                  onClick={() => {
+                    setCopy(true);
+                    copyToClipboard(deploymentUrl);
+                    toast.success('Deployment URL copied to clipboard');
+                    setTimeout(() => setCopy(false), 2000);
+                  }}
+                  title="Copy deployment URL"
+                >
+                  {copy ? (
+                    <div className="flex items-center text-green-500">
+                      <Check size={16} className="mr-1.5" />
+                      <span className="text-sm">Copied!</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <Copy size={16} className="mr-1.5" />
+                      <span className="text-sm">Copy URL</span>
+                    </div>
+                  )}
+                </Button>
+              </div>
             )}
-          </button>
+          </div>
         </div>
         {connected && (
-          <Link href="/profile">
-            <Button
-              className="cursor-pointer bg-primary/70 hover:bg-primary/80 flex items-center gap-2"
-              disabled={!connected}
-              aria-label="User Profile"
+          <div className="flex items-center gap-2">
+            {/* Refresh Project Button */}
+            <button
+              onClick={onRefresh}
+              disabled={commonDisabledState}
+              className="h-9 px-3 flex items-center gap-2 bg-secondary/30 hover:bg-secondary/70 rounded-md text-sm font-medium transition-all shadow-sm hover:shadow disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+              title="Refresh Projects"
+              aria-label="Refresh Projects"
             >
-              <User size={16} />
-              {shortAddress}
-            </Button>
-          </Link>
+              <RefreshCwIcon size={16} className="text-primary/80" />
+              <span>Sync</span>
+            </button>
+
+            <Link href="/profile">
+              <Button
+                className="cursor-pointer bg-primary/70 hover:bg-primary/80 flex items-center gap-2"
+                disabled={!connected}
+                aria-label="User Profile"
+              >
+                <User size={16} />
+                {shortAddress}
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
 

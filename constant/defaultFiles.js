@@ -1,39 +1,31 @@
 export const DEPENDENCIES = {
   dependencies: {
-    // 'eslint-plugin-prettier': '5.2.3',
-    // // axios: '1.8.1',
-    // eslint: '9.21.0',
-    // 'esbuild-wasm': '0.25.0',
-    // 'eslint-plugin-react': '7.37.4',
-    // '@vitejs/plugin-react': '4.3.4',
-    // 'eslint-plugin-import': '2.31.0',
-    // 'eslint-config-prettier': '10.0.2',
-    // 'eslint-plugin-react-refresh': '0.4.19',
-    // // 'react-router-dom': '7.2.0',
-    // // 'framer-motion': '12.4.10',
-    // esbuild: '0.25.0',
-    // typescript: '5.8.2',
-    // // react: '^19.0.0',
-    // // 'react-dom': '^19.0.0',
-    // // '@permaweb/aoconnect': '0.0.82',
+    // "react": "^19.1.0",
+    // "react-dom": "^19.1.0",
+    // "motion": "^12.15.0",
+    // "esbuild": "0.25.0",
+    // "esbuild-wasm": "0.25.0",
+    // "react-router-dom": "7.2.0",
+    // "framer-motion": "12.4.10",
+    // "axios": "1.8.1",
+    // "@permaweb/aoconnect": "0.0.82"
   },
   devDependencies: {
-    // 'typescript-eslint': '8.26.0',
-    // '@types/react-dom': '19.0.4',
-    // '@vitejs/plugin-react-swc': '3.8.0',
-    // '@eslint/js': '9.21.0',
-    // '@types/react': '19.0.10',
-    // '@types/node': '22.13.9',
-    // '@typescript-eslint/parser': '8.26.0',
-    // '@typescript-eslint/eslint-plugin': '8.26.0',
-    // globals: '^15.15.0',
-    // 'eslint-plugin-react-hooks': '^5.1.0',
-    // 'eslint-plugin-react-refresh': '^0.4.19',
-    // vite: '^6.2.0',
+    // "@eslint/js": "^9.25.0",
+    // "@types/react": "^19.1.2",
+    // "@types/react-dom": "^19.1.2",
+    // "@vitejs/plugin-react": "^4.4.1",
+    // "eslint": "^9.25.0",
+    // "eslint-plugin-react-hooks": "^5.2.0",
+    // "eslint-plugin-react-refresh": "^0.4.19",
+    // "globals": "^16.0.0",
+    // "typescript": "~5.8.3",
+    // "typescript-eslint": "^8.30.1",
+    // "vite": "^6.3.5"
   },
 };
 
-export const defaultFiles_3 = {
+export const defaultFiles = {
   '.gitignore': `
 # Logs
 logs
@@ -95,13 +87,11 @@ export default tseslint.config(
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/public/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + React + TS</title>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
@@ -119,36 +109,27 @@ export default tseslint.config(
         preview: 'vite preview',
       },
       dependencies: {
-        'eslint-plugin-prettier': '5.2.3',
-        eslint: '9.21.0',
-        'esbuild-wasm': '0.25.0',
-        'eslint-plugin-react': '7.37.4',
-        '@vitejs/plugin-react': '4.3.4',
-        'eslint-plugin-import': '2.31.0',
-        'eslint-config-prettier': '10.0.2',
-        'eslint-plugin-react-refresh': '0.4.19',
-        esbuild: '0.25.0',
-        typescript: '5.8.2',
-        axios: '1.8.1',
-        'react-router-dom': '7.2.0',
-        'framer-motion': '12.4.10',
-        react: '^19.0.0',
-        'react-dom': '^19.0.0',
-        // '@permaweb/aoconnect': '0.0.82',
+        "react": "^19.1.0",
+        "react-dom": "^19.1.0",
+
+        "motion": "^12.15.0",
+        "react-router-dom": "7.2.0",
+        "framer-motion": "12.4.10",
+        "axios": "1.8.1",
+        "@permaweb/aoconnect": "0.0.82"
       },
       devDependencies: {
-        'typescript-eslint': '8.26.0',
-        '@types/react-dom': '19.0.4',
-        '@vitejs/plugin-react-swc': '3.8.0',
-        '@eslint/js': '9.21.0',
-        '@types/react': '19.0.10',
-        '@types/node': '22.13.9',
-        '@typescript-eslint/parser': '8.26.0',
-        '@typescript-eslint/eslint-plugin': '8.26.0',
-        globals: '^15.15.0',
-        'eslint-plugin-react-hooks': '^5.1.0',
-        'eslint-plugin-react-refresh': '^0.4.19',
-        vite: '^6.2.0',
+        "@eslint/js": "^9.25.0",
+        "@types/react": "^19.1.2",
+        "@types/react-dom": "^19.1.2",
+        "@vitejs/plugin-react": "^4.4.1",
+        "eslint": "^9.25.0",
+        "eslint-plugin-react-hooks": "^5.2.0",
+        "eslint-plugin-react-refresh": "^0.4.19",
+        "globals": "^16.0.0",
+        "typescript": "~5.8.3",
+        "typescript-eslint": "^8.30.1",
+        "vite": "^6.3.5"
       },
     },
     null,
@@ -242,30 +223,31 @@ createRoot(document.getElementById('root')!).render(
   `.trim(),
   'tsconfig.app.json': JSON.stringify(
     {
-      compilerOptions: {
-        tsBuildInfoFile: './node_modules/.tmp/tsconfig.app.tsbuildinfo',
-        target: 'ES2020',
-        useDefineForClassFields: true,
-        lib: ['ES2020', 'DOM', 'DOM.Iterable'],
-        module: 'ESNext',
-        skipLibCheck: true,
+      "compilerOptions": {
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+        "target": "ES2020",
+        "useDefineForClassFields": true,
+        "lib": ["ES2020", "DOM", "DOM.Iterable"],
+        "module": "ESNext",
+        "skipLibCheck": true,
 
         /* Bundler mode */
-        moduleResolution: 'bundler',
-        allowImportingTsExtensions: true,
-        isolatedModules: true,
-        moduleDetection: 'force',
-        noEmit: true,
-        jsx: 'react-jsx',
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": true,
+        "moduleDetection": "force",
+        "noEmit": true,
+        "jsx": "react-jsx",
 
         /* Linting */
-        strict: true,
-        noUnusedLocals: true,
-        noUnusedParameters: true,
-        noFallthroughCasesInSwitch: true,
-        noUncheckedSideEffectImports: true,
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "erasableSyntaxOnly": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedSideEffectImports": true
       },
-      include: ['src'],
+      "include": ["src"]
     },
     null,
     2
@@ -283,35 +265,36 @@ createRoot(document.getElementById('root')!).render(
   ).trim(),
   'tsconfig.node.json': JSON.stringify(
     {
-      compilerOptions: {
-        tsBuildInfoFile: './node_modules/.tmp/tsconfig.node.tsbuildinfo',
-        target: 'ES2022',
-        lib: ['ES2023'],
-        module: 'ESNext',
-        skipLibCheck: true,
+      "compilerOptions": {
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+        "target": "ES2022",
+        "lib": ["ES2023"],
+        "module": "ESNext",
+        "skipLibCheck": true,
 
         /* Bundler mode */
-        moduleResolution: 'bundler',
-        allowImportingTsExtensions: true,
-        isolatedModules: true,
-        moduleDetection: 'force',
-        noEmit: true,
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": true,
+        "moduleDetection": "force",
+        "noEmit": true,
 
         /* Linting */
-        strict: true,
-        noUnusedLocals: true,
-        noUnusedParameters: true,
-        noFallthroughCasesInSwitch: true,
-        noUncheckedSideEffectImports: true,
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "erasableSyntaxOnly": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedSideEffectImports": true
       },
-      include: ['vite.config.ts'],
+      "include": ["vite.config.ts"]
     },
     null,
     2
   ).trim(),
   'vite.config.ts': `
-  import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -322,3 +305,34 @@ export default defineConfig({
 # Project by Anon
 `.trim(),
 };
+
+export const templateHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+<title>Anon AI</title>
+<style>
+body {
+ background-color: #000;
+ color: #fff;
+ font-family: 'Courier New', Courier, monospace;
+ font-size: 16px;
+ line-height: 1.5;
+ padding: 20px;
+ margin: 0;
+ height: 100vh;
+ width: 100vw;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ flex-direction: column;
+ overflow: hidden;
+ box-sizing: border-box;                  
+}
+</style>
+</head>
+<body>
+<h1>Anon AI</h1>
+<p>Vibe Coding LFG!!!</p>
+</body>
+</html>`

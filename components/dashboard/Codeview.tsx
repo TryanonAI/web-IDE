@@ -22,9 +22,13 @@ import { useWallet } from '@/hooks/use-wallet';
 import { useEffect, useState, useRef } from 'react';
 import { cn, validateNpmPackage } from '@/lib/utils';
 import { useGlobalState } from '@/hooks/global-state';
-import { CurrentProject, ActiveProject } from '@/types';
+import { CurrentProject, ActiveProject, Framework } from '@/types';
 // import { PreviewComponent } from '../codesandbox/PreviewComponent';
-import { DEPENDENCIES, defaultFiles_3 } from '@/constant/defaultFiles';
+import {
+  DEPENDENCIES,
+  defaultFiles,
+  templateHtml,
+} from '@/constant/defaultFiles';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AnimatedGradientText } from '@/components/magicui/animated-gradient-text';
 
@@ -35,30 +39,17 @@ type CodebaseType = Record<string, string>;
 
 interface CodeviewProps {
   isSaving?: boolean;
-  isGenerating: boolean;
 }
 
-// type State =
-//   | {
-//       current: 'IDLE';
-//     }
-//   | {
-//       current: 'CREATING_SANDBOX';
-//       progress: string;
-//     }
-//   | {
-//       current: 'CONNECTING_TO_SANDBOX';
-//       sandboxId: string;
-//       progress: string;
-//     }
-//   | {
-//       current: 'CONNECTED';
-//       sandboxId: string;
-//       session: WebSocketSession;
-//       selectedExample: number | null;
-//     };
+export default function Codeview({ isSaving }: CodeviewProps) {
+  const address = useWallet((state) => state.address);
+  const codebase = useGlobalState((state) => state.codebase);
+  const isLoading = useGlobalState((state) => state.isLoading);
+  const setIsLoading = useGlobalState((state) => state.setIsLoading);
+  const codeVersions = useGlobalState((state) => state.codeVersions);
+  const activeProject = useGlobalState((state) => state.activeProject);
+  const isCodeGenerating = useGlobalState((state) => state.isCodeGenerating);
 
-export default function Codeview({ isSaving, isGenerating }: CodeviewProps) {
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
   const versionDropdownRef = useRef<HTMLDivElement>(null);
@@ -68,13 +59,6 @@ export default function Codeview({ isSaving, isGenerating }: CodeviewProps) {
   const [currentProject, setCurrentProject] = useState<CurrentProject | null>(
     null
   );
-
-  const address = useWallet((state) => state.address);
-  const codebase = useGlobalState((state) => state.codebase);
-  const isLoading = useGlobalState((state) => state.isLoading);
-  const setIsLoading = useGlobalState((state) => state.setIsLoading);
-  const codeVersions = useGlobalState((state) => state.codeVersions);
-  const activeProject = useGlobalState((state) => state.activeProject);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -120,11 +104,11 @@ export default function Codeview({ isSaving, isGenerating }: CodeviewProps) {
   };
 
   const isEditorDisabled = () => {
-    return isSaving || isGenerating || isLoading;
+    return isSaving || isCodeGenerating || isLoading;
   };
 
   const sandpackFiles = {
-    ...defaultFiles_3,
+    ...defaultFiles,
     ...currentProject?.codebase,
   };
 
@@ -290,6 +274,26 @@ export default function Codeview({ isSaving, isGenerating }: CodeviewProps) {
   //     alert('Failed to create sandbox');
   //   }
   // };
+
+  if (activeProject?.framework === Framework.Html) {
+    return (
+      <>
+        {/* {isCodeGenerating && (
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <Loading_Gif count={2} />
+          </div>
+        )} */}
+        <iframe
+          srcDoc={
+            typeof codebase === 'object' ? templateHtml : (codebase as string)
+          }
+          className={`w-full h-full`}
+          aria-label="Code Preview"
+          title="Code Preview"
+        />
+      </>
+    );
+  }
 
   return (
     <div className="flex bg-background h-full w-full">
@@ -508,6 +512,8 @@ export default function Codeview({ isSaving, isGenerating }: CodeviewProps) {
               },
               recompileMode: 'immediate',
               recompileDelay: 300,
+              autorun: true,
+              autoReload: true,
             }}
           >
             <TabsContent value="code" className="h-full m-0">
@@ -616,7 +622,7 @@ const OpenWithCursor = ({
 }) => {
   const handleOpenWithCursor = async () => {
     window.open(
-      `vscode://aykansal.anon/openProject?projectId=${activeProject?.projectId}`
+      `cursor://aykansal.tryanon/openProject?projectId=${activeProject?.projectId}`
     );
   };
 

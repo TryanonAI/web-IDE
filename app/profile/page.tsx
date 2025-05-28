@@ -320,6 +320,7 @@ const Profile = () => {
                           className="h-full w-full rounded-full object-cover group-hover:opacity-50 transition-opacity"
                           width={64}
                           height={64}
+                          priority={true}
                         />
                         <Upload
                           size={20}
@@ -451,7 +452,10 @@ const Profile = () => {
                       Available Tokens
                     </span>
                   </div>
-                  <p className="text-sm font-medium">{user.tokens}</p>
+                  <p className="text-sm font-medium">
+                    {/* {user.tokens} */}
+                    Unlimited
+                  </p>
                 </div>
 
                 {/* Join Date */}

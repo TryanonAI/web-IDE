@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { Octokit } from '@octokit/core';
 import { useWallet } from './use-wallet';
 import { devtools, persist } from 'zustand/middleware';
-import { defaultFiles_3 } from '@/constant/defaultFiles';
+import { defaultFiles } from '@/constant/defaultFiles';
 import { DbAdmin_LUA_CODE, runLua, spawnProcess } from '@/lib/arkit';
 import {
   ActiveProject,
@@ -111,6 +111,8 @@ interface ProjectState {
   loadProjectData: (project: ActiveProject | null, address: string) => Promise<void>;
   deploymentUrl: string | null;
   setDeploymentUrl: (url: string | null) => void;
+  isCodeGenerating: boolean;
+  setIsCodeGenerating: (isCodeGenerating: boolean) => void;
 }
 
 interface SandpackState {
@@ -158,7 +160,7 @@ const Initial_GithubState = {
 
 const Initial_ProjectState = {
   projects: [],
-  framework: Framework.Html,
+  framework: Framework.React,
   activeProject: null,
   isCreating: false,
   codebase: null,
@@ -167,6 +169,7 @@ const Initial_ProjectState = {
   statusTimeline: [],
   codeVersions: [],
   deploymentUrl: null,
+  isCodeGenerating: false,
 }
 
 export const useGlobalState = create<
@@ -381,7 +384,7 @@ export const useGlobalState = create<
               toast.error('No codebase data returned');
               throw new Error('No codebase data returned from server');
             }
-            codebaseData = { ...defaultFiles_3, ...codebaseData };
+            codebaseData = { ...defaultFiles, ...codebaseData };
 
             // Process files to commit
             const filesToCommit: Record<string, string> = {};
@@ -510,7 +513,8 @@ export const useGlobalState = create<
 
         // ----------------Project States----------------
         ...Initial_ProjectState,
-
+        setIsCodeGenerating: (isCodeGenerating: boolean) => set({ isCodeGenerating }),
+        setFramework: (framework: Framework) => set({ framework }),
         setDeploymentUrl: (url: string | null) => set({ deploymentUrl: url }),
         setCodebase: (codebase: CodebaseType | null) => set({ codebase }),
         setCodeVersions: (codeVersions: CodeVersion[]) => set({ codeVersions: codeVersions.length > 0 ? codeVersions : [] }),
@@ -529,6 +533,7 @@ export const useGlobalState = create<
             activeProject: project,
             isLoading: true,
             codeVersions: await fetchCodeVersions(project.projectId, address),
+            deploymentUrl: project.deploymentUrl,
           });
 
           // Get existing stored projects
@@ -595,8 +600,7 @@ export const useGlobalState = create<
                   })
                 );
               } else if (project.framework === Framework.Html) {
-                console.log('Html framework');
-                formattedMessages = messagesResponse.data.messages;
+                formattedMessages = messagesResponse.data.messages.filter((msg: ChatMessage) => msg.role === 'user');
 
               }
               set({ chatMessages: formattedMessages as ChatMessage[] });
@@ -651,7 +655,6 @@ export const useGlobalState = create<
                   (p: ActiveProject) =>
                     p.projectId === storedProjectIdForOwner
                 );
-                console.log('storedProject', storedProjectFetched);
                 if (storedProjectFetched) {
                   await get().loadProjectData(
                     storedProjectFetched,

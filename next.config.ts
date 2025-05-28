@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
     config.performance = {
       ...config.performance,
       maxAssetSize: 30000000, // 30MB
-      maxEntrypointSize: 30000000, // 30MB
+      maxEntrypointSize: 50000000, // 30MB
       hints: 'warning', // 'error' or false to disable
     };
 

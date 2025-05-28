@@ -1,9 +1,19 @@
 'use client';
 
 import { PlusCircle, Loader2, AlertCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import StatusBar from '@/components/dashboard/StatusBar';
+import Chatview from '@/components/dashboard/Chatview';
+import Codeview from '@/components/dashboard/Codeview';
+import TitleBar from '@/components/dashboard/TitleBar';
+import { useGlobalState } from '@/hooks/global-state';
+import { validateProjectName } from '@/lib/utils';
 import { useModal } from '@/context/ModalContext';
+import { AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { useWallet } from '@/hooks/use-wallet';
+import { Loading_Gif } from '@/app/loading';
+import { useEffect, useState } from 'react';
+import { Framework } from '@/types';
 import {
   Dialog,
   DialogContent,
@@ -11,34 +21,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import Chatview from '@/components/dashboard/Chatview';
-import Codeview from '@/components/dashboard/Codeview';
-import TitleBar from '@/components/dashboard/TitleBar';
-import StatusBar from '@/components/dashboard/StatusBar';
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
-import { useWallet } from '@/hooks/use-wallet';
-import { validateProjectName } from '@/lib/utils';
-import { useGlobalState } from '@/hooks/global-state';
-import { Loading_Gif } from '@/app/loading';
-import { Framework } from '@/types';
 
 const Dashboard = () => {
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [nameError, setNameError] = useState<string>('');
+
   const { isOpen, projectName, openModal, closeModal, setProjectName } =
     useModal();
-
   const connect = useWallet((state) => state.connect);
   const connected = useWallet((state) => state.connected);
-  const codebase = useGlobalState((state) => state.codebase);
   const isLoading = useGlobalState((state) => state.isLoading);
   const isCreating = useGlobalState((state) => state.isCreating);
-  const chatMessages = useGlobalState((state) => state.chatMessages);
   const fetchProjects = useGlobalState((state) => state.fetchProjects);
   const activeProject = useGlobalState((state) => state.activeProject);
   const createProject = useGlobalState((state) => state.createProject);
@@ -93,33 +90,18 @@ const Dashboard = () => {
 
       <div id="main-container" className="flex flex-1 min-h-0 overflow-hidden">
         {isLoading ? (
-          <Loading_Gif count={3} />
+          <Loading_Gif count={1} />
         ) : connected ? (
           activeProject ? (
             <ResizablePanelGroup direction="horizontal">
               <ResizablePanel defaultSize={60} minSize={30}>
-                {activeProject.framework === 'React' ? (
-                  <Codeview
-                    isSaving={isSavingCode}
-                    isGenerating={isGenerating}
-                  />
-                ) : (
-                  <iframe
-                    srcDoc={codebase as string}
-                    className="w-full h-full"
-                    aria-label="Code Preview"
-                    title="Code Preview"
-                  />
-                )}
+                <Codeview isSaving={isSavingCode} />
               </ResizablePanel>
               <ResizableHandle />
               <ResizablePanel defaultSize={30} minSize={18}>
                 <AnimatePresence>
                   <Chatview
-                    onGenerateStart={() => setIsGenerating(true)}
-                    onGenerateEnd={() => setIsGenerating(false)}
-                    showLuaToggle={true}
-                    chatMessages={chatMessages}
+                  // showLuaToggle={true}
                   />
                 </AnimatePresence>
               </ResizablePanel>
