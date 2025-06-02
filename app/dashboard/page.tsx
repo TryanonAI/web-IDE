@@ -7,13 +7,12 @@ import Codeview from '@/components/dashboard/Codeview';
 import TitleBar from '@/components/dashboard/TitleBar';
 import { useGlobalState } from '@/hooks/global-state';
 import { validateProjectName } from '@/lib/utils';
-import { useModal } from '@/context/ModalContext';
-import { AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useWallet } from '@/hooks/use-wallet';
 import { Loading_Gif } from '@/app/loading';
 import { useEffect, useState } from 'react';
 import { Framework } from '@/types';
+import { ProjectDrawer } from '@/components/drawers/ProjectDrawer';
 import {
   Dialog,
   DialogContent,
@@ -30,8 +29,9 @@ import {
 const Dashboard = () => {
   const [nameError, setNameError] = useState<string>('');
 
-  const { isOpen, projectName, openModal, closeModal, setProjectName } =
-    useModal();
+  const { activeModal, projectName, openModal, closeModal, setProjectName } =
+    useGlobalState();
+
   const connect = useWallet((state) => state.connect);
   const connected = useWallet((state) => state.connected);
   const isLoading = useGlobalState((state) => state.isLoading);
@@ -44,7 +44,7 @@ const Dashboard = () => {
 
   const handleCreateProject = async () => {
     if (!projectName.trim()) return;
-    closeModal('createProject');
+    closeModal();
     try {
       console.log('Creating project from modal:', projectName);
       await createProject(projectName.trim(), framework);
@@ -54,13 +54,6 @@ const Dashboard = () => {
       openModal('createProject');
     }
   };
-
-  const handleCreateNewProjectClick = () => {
-    setProjectName('');
-    openModal('createProject');
-  };
-
-  const isSavingCode: boolean = false;
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
@@ -95,15 +88,11 @@ const Dashboard = () => {
           activeProject ? (
             <ResizablePanelGroup direction="horizontal">
               <ResizablePanel defaultSize={60} minSize={30}>
-                <Codeview isSaving={isSavingCode} />
+                <Codeview />
               </ResizablePanel>
               <ResizableHandle />
               <ResizablePanel defaultSize={30} minSize={18}>
-                <AnimatePresence>
-                  <Chatview
-                  // showLuaToggle={true}
-                  />
-                </AnimatePresence>
+                <Chatview />
               </ResizablePanel>
             </ResizablePanelGroup>
           ) : (
@@ -115,7 +104,7 @@ const Dashboard = () => {
                 </p>
                 <Button
                   size="lg"
-                  onClick={handleCreateNewProjectClick}
+                  onClick={() => openModal('createProject')}
                   className="flex items-center gap-2 px-4 py-2.5 text-base h-auto cursor-pointer"
                 >
                   <PlusCircle size={20} />
@@ -138,13 +127,16 @@ const Dashboard = () => {
         <StatusBar />
       </div>
 
+      {/* Drawers */}
+      <ProjectDrawer />
+
       <Dialog
-        open={isOpen.createProject && !isCreating}
+        open={activeModal === 'createProject' && !isCreating}
         onOpenChange={(open) => {
           // Only allow closing if not in creating state
           if (!isCreating) {
             if (open) openModal('createProject');
-            else closeModal('createProject');
+            else closeModal();
           }
         }}
       >
@@ -195,8 +187,8 @@ const Dashboard = () => {
                   }}
                   className="w-full p-3 rounded-md border border-border bg-background text-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                 >
-                  <option value={Framework.Html}>Html</option>
-                  <option value={Framework.React}>React</option>
+                  <option value={Framework.Html}>Vibe Mode</option>
+                  <option value={Framework.React}>Code Mode</option>
                 </select>
               </div>
             </div>
@@ -204,7 +196,7 @@ const Dashboard = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => closeModal('createProject')}
+                onClick={() => closeModal()}
                 disabled={isCreating}
               >
                 Cancel

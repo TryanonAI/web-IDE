@@ -42,7 +42,7 @@ dist-ssr
 *.local
 
 # Editor directories and files
-.vscode/*
+.vscode
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -114,7 +114,6 @@ export default tseslint.config(
 
         "motion": "^12.15.0",
         "react-router-dom": "7.2.0",
-        "framer-motion": "12.4.10",
         "axios": "1.8.1",
         "@permaweb/aoconnect": "0.0.82"
       },

@@ -3,7 +3,7 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 import Markdown from 'react-markdown';
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Loader2Icon, RefreshCw } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Framework, ChatMessage } from '@/types';
@@ -11,16 +11,9 @@ import { useWallet } from '@/hooks/use-wallet';
 import { useGlobalState } from '@/hooks/global-state';
 import { Loading_Gif } from '@/app/loading';
 
-interface ChatApiResponse {
-  id: string;
-  code: string;
-  response: string;
-}
-
 const Chatview = () => {
   const [userInput, setUserInput] = useState('');
   const [isRetrying, setIsRetrying] = useState(false);
-  // const [isSubmitting, setIsSubmitting] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [message, setMessage] = useState<ChatMessage[]>([]);
   const [failedMessage, setFailedMessage] = useState<string | null>(null);
@@ -31,11 +24,8 @@ const Chatview = () => {
   const activeProject = useGlobalState((state) => state.activeProject);
   const addChatMessage = useGlobalState((state) => state.addChatMessage);
   const isCodeGenerating = useGlobalState((state) => state.isCodeGenerating);
-  const setIsCodeGenerating = useGlobalState(
-    (state) => state.setIsCodeGenerating
-  );
+  const setIsCodeGenerating = useGlobalState((state) => state.setIsCodeGenerating);
   const deploymentUrl = useGlobalState((state) => state.deploymentUrl);
-  // const setDeploymentUrl = useGlobalState((state) => state.setDeploymentUrl);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -172,14 +162,6 @@ const Chatview = () => {
                 toast.info('Code updated.', {
                   duration: 5000,
                   description: 'You can redeploy to see changes on permaweb',
-
-                  // action: {
-                  //   label: 'Redeploy',
-                  //   onClick: () => {
-                  //     // We'll handle this in TitleBar.tsx
-                  //     setDeploymentUrl(null);
-                  //   }
-                  // }
                 });
               }
             }
@@ -191,24 +173,58 @@ const Chatview = () => {
           );
         }
       } else if (activeProject?.framework === Framework.Html) {
-        const response = await axios.post<ChatApiResponse>(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/html/generate`,
-          requestBody
+        // const response = await axios.post<ChatApiResponse>(
+        //   `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/html/generate`,
+        //   requestBody
+        // );
+        // const responseContent = response.data.code;
+        // setCodebase(responseContent);
+
+        const eventSource = new EventSource(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/html/stream?projectId=${requestBody.projectId}&prompt=${encodeURIComponent(requestBody.prompt.content)}`
         );
 
-        const responseContent = response.data.code;
-        const responseId = response.data.id;
+        let finalText = '';
 
-        handleNewMessage(responseId, responseContent);
-        setCodebase(responseContent);
+        eventSource.onmessage = (e) => {
+          try {
+            const { text } = JSON.parse(e.data);
+            finalText += text;
+            setCodebase(finalText);
+          } catch (error) {
+            console.error('Error processing stream chunk:', error);
+          }
+        };
+
+        eventSource.addEventListener('end', () => {
+          console.log('✅ Stream ended');
+          setCodebase(finalText);
+          setIsCodeGenerating(false);
+          eventSource.close();
+
+          if (previousDeploymentUrl) {
+            toast.info('Code updated.', {
+              duration: 5000,
+              description: 'You can redeploy to see changes on permaweb',
+            });
+          }
+        });
+
+        eventSource.addEventListener('error', (e) => {
+          console.error('❌ Stream error', e);
+          eventSource.close();
+
+          setIsCodeGenerating(false);
+          toast.error('AI response failed. Try again.');
+        });
 
         // If there was a previous deployment, show redeploy option
-        if (previousDeploymentUrl) {
-          toast.info('Code updated.', {
-            duration: 5000,
-            description: 'You can redeploy to see changes on permaweb',
-          });
-        }
+        // if (previousDeploymentUrl) {
+        //   toast.info('Code updated.', {
+        //     duration: 5000,
+        //     description: 'You can redeploy to see changes on permaweb',
+        //   });
+        // }
       }
 
       // Scroll to bottom after receiving response
@@ -224,7 +240,6 @@ const Chatview = () => {
     } finally {
       // Reset states
       setIsRetrying(false);
-      setIsCodeGenerating(false);
     }
   };
 
@@ -254,25 +269,6 @@ const Chatview = () => {
       );
     }
   }, [chatMessages]);
-
-  // Replace the setMessage function with this optimized version
-  const handleNewMessage = useCallback(
-    (responseId: string, responseContent: string) => {
-      const newMessage = {
-        id: responseId,
-        content: responseContent,
-        role: 'model' as const,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        messageId: responseId,
-        projectId: activeProject?.projectId as string,
-      };
-      if (activeProject?.framework === Framework.React) {
-        addChatMessage(newMessage);
-      }
-    },
-    [activeProject?.projectId, addChatMessage]
-  );
 
   // Add message list memoization
   const memoizedMessages = useMemo(() => {

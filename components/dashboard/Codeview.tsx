@@ -41,6 +41,11 @@ interface CodeviewProps {
   isSaving?: boolean;
 }
 
+const extractHtmlFromMarkdown = (content: string): string => {
+  const htmlMatch = content.match(/```html\s*([\s\S]*?)```/);
+  return htmlMatch ? htmlMatch[1].trim() : '';
+};
+
 export default function Codeview({ isSaving }: CodeviewProps) {
   const address = useWallet((state) => state.address);
   const codebase = useGlobalState((state) => state.codebase);
@@ -276,18 +281,22 @@ export default function Codeview({ isSaving }: CodeviewProps) {
   // };
 
   if (activeProject?.framework === Framework.Html) {
+    let htmlContent = '';
+    if (isCodeGenerating) {
+      htmlContent =
+        typeof codebase === 'object' ? templateHtml : codebase || '';
+    } else {
+      htmlContent = typeof codebase === 'object' ? '' : codebase || '';
+    }
+
+    // Extract HTML from markdown code block
+    const extractedHtml = extractHtmlFromMarkdown(htmlContent);
+
     return (
       <>
-        {/* {isCodeGenerating && (
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
-            <Loading_Gif count={2} />
-          </div>
-        )} */}
         <iframe
-          srcDoc={
-            typeof codebase === 'object' ? templateHtml : (codebase as string)
-          }
-          className={`w-full h-full`}
+          srcDoc={extractedHtml}
+          className="w-full h-full"
           aria-label="Code Preview"
           title="Code Preview"
         />

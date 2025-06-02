@@ -11,7 +11,6 @@ import {
   AlertCircle,
   ChevronDown,
   FolderOpen,
-  Folder,
   Info,
   GitCommit,
   Clock,
@@ -36,7 +35,6 @@ import {
 import { useWallet } from '@/hooks/use-wallet';
 import { Button } from '@/components/ui/button';
 import { Commit, Framework } from '@/types';
-import { useModal } from '@/context/ModalContext';
 import React, { useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -47,7 +45,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Octokit } from '@octokit/core';
 import Link from 'next/link';
-import { Badge } from '../ui/badge';
 import { uploadToTurbo } from '@/lib/turbo-utils';
 import axios from 'axios';
 import { useCopyToClipboard } from '@uidotdev/usehooks';
@@ -66,8 +63,6 @@ const TitleBar = () => {
   const [isStatusDrawerOpen, setIsStatusDrawerOpen] = useState<boolean>(false);
   const [commitError, setCommitError] = useState<string | null>(null);
   const [isCommitDialogOpen, setIsCommitDialogOpen] = useState<boolean>(false);
-  const [isProjectDrawerOpen, setIsProjectDrawerOpen] =
-    useState<boolean>(false);
   const [isProjectInfoDrawerOpen, setIsProjectInfoDrawerOpen] =
     useState<boolean>(false);
   const [lastCheckedProject, setLastCheckedProject] = useState<string | null>(
@@ -79,15 +74,13 @@ const TitleBar = () => {
   const [, copyToClipboard] = useCopyToClipboard();
   const [copy, setCopy] = useState<boolean>(false);
 
-  const isCodeGenerating = useGlobalState((state) => state.isCodeGenerating);
   const isLoading = useGlobalState((state) => state.isLoading);
-
-  const { openModal } = useModal();
+  const isCodeGenerating = useGlobalState((state) => state.isCodeGenerating);
+  const { openDrawer } = useGlobalState();
   const { connected, address, shortAddress } = useWallet();
   const {
     setOctokit,
     checkRepository,
-    resetGithubState,
     commitToRepository,
     setIsLoadingCommits,
     setGithubStatus,
@@ -98,12 +91,11 @@ const TitleBar = () => {
     githubUsername,
     isLoadingCommits,
     setGithubUsername,
+    disconnectGithub,
   } = useGlobalState();
 
   const {
-    projects,
     activeProject,
-    loadProjectData,
     fetchProjects: onRefresh,
     setError,
     codebase,
@@ -346,44 +338,8 @@ const TitleBar = () => {
     }
   };
 
-  // Open create project dialog
-  const handleOpenCreateProjectDialog = () => {
-    openModal('createProject');
-  };
-
   // Determine if repo is ready to commit
   const isRepoReadyToCommit = githubStatus === GITHUB_STATUS.REPO_EXISTS;
-
-  // Handle project selection
-  const handleProjectSelect = async (projectId: string) => {
-    if (!Array.isArray(projects)) {
-      console.error('Projects is not an array');
-      return;
-    }
-    const selectedProject = projects.find((p) => p.projectId === projectId);
-    if (selectedProject) {
-      setLastCheckedProject(null);
-      setCommits([]);
-      setCommitError(null);
-
-      if (
-        githubStatus === GITHUB_STATUS.REPO_EXISTS ||
-        githubStatus === GITHUB_STATUS.ERROR
-      ) {
-        console.log('Resetting Github state for new project check');
-        resetGithubState();
-      }
-      console.log(selectedProject);
-      await loadProjectData(
-        selectedProject,
-        useWallet.getState().address as string
-      );
-
-      setIsProjectDrawerOpen(false);
-    } else {
-      console.error('Project not found with ID:', projectId);
-    }
-  };
 
   // Refresh commits
   const refreshCommits = async () => {
@@ -554,14 +510,10 @@ const TitleBar = () => {
   const handleGithubDisconnect = () => {
     try {
       // Use Zustand's setGithubToken instead of localStorage
-      setGithubToken(null);
-      setOctokit(null);
-      setGithubUsername(null);
-      setGithubStatus(GITHUB_STATUS.DISCONNECTED);
+      disconnectGithub();
       setLastCheckedProject(null);
       setIsStatusDrawerOpen(false);
-
-      toast.success('Disconnected from GitHub');
+      toast.info('Disconnected from GitHub');
     } catch (error) {
       console.error('Error disconnecting from GitHub:', error);
       toast.error('Failed to disconnect from GitHub');
@@ -651,6 +603,11 @@ const TitleBar = () => {
     }
   };
 
+  // Update project button click handler
+  const handleProjectButtonClick = () => {
+    openDrawer('project');
+  };
+
   return (
     <>
       <div className="border-b border-border/50 bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 flex justify-between items-center pl-2 pr-5">
@@ -659,7 +616,7 @@ const TitleBar = () => {
           {/* Project Selection Button - Opens Drawer */}
           <button
             className="h-9 min-w-[180px] px-3 flex items-center justify-between gap-2 bg-secondary/60 hover:bg-secondary/80 border border-border/50 rounded-md text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            onClick={() => setIsProjectDrawerOpen(true)}
+            onClick={handleProjectButtonClick}
             disabled={commonDisabledState}
             title="Select Project"
             aria-label="Select Project"
@@ -674,7 +631,8 @@ const TitleBar = () => {
           </button>
 
           {/* New Project Button */}
-          <button
+          {/* Hidden coz we have a button in the project drawer */}
+          {/* <button
             onClick={handleOpenCreateProjectDialog}
             className="group h-9 px-3 flex items-center gap-2 bg-secondary/30 hover:bg-secondary/70 rounded-md text-sm font-medium transition-all shadow-sm hover:shadow disabled:opacity-40 disabled:cursor-not-allowed"
             title="Create New Project"
@@ -686,10 +644,10 @@ const TitleBar = () => {
               className="text-primary group-hover:text-primary/90"
             />
             <span>New</span>
-          </button>
+          </button> */}
 
           {/* Project Info Button */}
-          {activeProject?.framework === Framework.React && (
+          {activeProject?.framework !== Framework.Html && (
             <>
               <Button
                 variant="outline"
@@ -755,78 +713,80 @@ const TitleBar = () => {
           )}
 
           {/* Deploy Button and Status */}
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={handleDeploy}
-              disabled={deployDisabledState}
-              variant="outline"
-              className="relative"
-              title={
-                !connected
-                  ? 'Connect wallet to deploy'
-                  : !activeProject
-                    ? 'Select a project to deploy'
-                    : !codebase || chatMessages.length === 0
-                      ? 'Generate some code before deploying'
-                      : isDeploying
-                        ? 'Deployment in progress'
-                        : deploymentUrl
-                          ? 'Redeploy project with latest changes'
-                          : 'Deploy project'
-              }
-            >
-              {isDeploying ? (
-                <>
-                  <Loader2 size={16} className="mr-2 animate-spin" />
-                  <span>Deploying...</span>
-                </>
-              ) : (
-                <>
-                  <Rocket size={16} className="mr-2" />
-                  <span>{deploymentUrl ? 'Redeploy' : 'Deploy'}</span>
-                </>
-              )}
-            </Button>
+          {activeProject?.framework === Framework.Html && (
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleDeploy}
+                disabled={deployDisabledState}
+                variant="outline"
+                className="relative"
+                title={
+                  !connected
+                    ? 'Connect wallet to deploy'
+                    : !activeProject
+                      ? 'Select a project to deploy'
+                      : !codebase || chatMessages.length === 0
+                        ? 'Generate some code before deploying'
+                        : isDeploying
+                          ? 'Deployment in progress'
+                          : deploymentUrl
+                            ? 'Redeploy project with latest changes'
+                            : 'Deploy project'
+                }
+              >
+                {isDeploying ? (
+                  <>
+                    <Loader2 size={16} className="mr-2 animate-spin" />
+                    <span>Deploying...</span>
+                  </>
+                ) : (
+                  <>
+                    <Rocket size={16} className="mr-2" />
+                    <span>{deploymentUrl ? 'Redeploy' : 'Deploy'}</span>
+                  </>
+                )}
+              </Button>
 
-            {deploymentUrl && (
-              <div className="flex items-center bg-secondary/20 rounded-md border border-border/50 p-1">
-                <Link
-                  href={deploymentUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center px-3 py-1.5 hover:bg-secondary/40 rounded-sm transition-colors"
-                >
-                  <Eye size={16} className="text-primary/80 mr-2" />
-                  <span className="mr-1">View Live</span>
-                </Link>
-                <div className="h-4 w-px bg-border/50 mx-1" />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="relative h-8 px-3 hover:bg-secondary/40"
-                  onClick={() => {
-                    setCopy(true);
-                    copyToClipboard(deploymentUrl);
-                    toast.success('Deployment URL copied to clipboard');
-                    setTimeout(() => setCopy(false), 2000);
-                  }}
-                  title="Copy deployment URL"
-                >
-                  {copy ? (
-                    <div className="flex items-center text-green-500">
-                      <Check size={16} className="mr-1.5" />
-                      <span className="text-sm">Copied!</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center">
-                      <Copy size={16} className="mr-1.5" />
-                      <span className="text-sm">Copy URL</span>
-                    </div>
-                  )}
-                </Button>
-              </div>
-            )}
-          </div>
+              {deploymentUrl && (
+                <div className="flex items-center bg-secondary/20 rounded-md border border-border/50 p-1">
+                  <Link
+                    href={deploymentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center px-3 py-1.5 hover:bg-secondary/40 rounded-sm transition-colors"
+                  >
+                    <Eye size={16} className="text-primary/80 mr-2" />
+                    <span className="mr-1">View Live</span>
+                  </Link>
+                  <div className="h-4 w-px bg-border/50 mx-1" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="relative h-8 px-3 hover:bg-secondary/40"
+                    onClick={() => {
+                      setCopy(true);
+                      copyToClipboard(deploymentUrl);
+                      toast.success('Deployment URL copied to clipboard');
+                      setTimeout(() => setCopy(false), 2000);
+                    }}
+                    title="Copy deployment URL"
+                  >
+                    {copy ? (
+                      <div className="flex items-center text-green-500">
+                        <Check size={16} className="mr-1.5" />
+                        <span className="text-sm">Copied!</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <Copy size={16} className="mr-1.5" />
+                        <span className="text-sm">Copy URL</span>
+                      </div>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         {connected && (
           <div className="flex items-center gap-2">
@@ -875,7 +835,10 @@ const TitleBar = () => {
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              transition={{
+                duration: 0.25,
+                ease: 'easeInOut',
+              }}
               className="fixed inset-y-0 right-0 w-96 bg-background border-l border-border shadow-xl z-50 overflow-hidden"
             >
               <div className="h-full flex flex-col">
@@ -1162,10 +1125,9 @@ const TitleBar = () => {
       </AnimatePresence>
 
       {/* Project Drawer */}
-      <AnimatePresence>
+      {/* <AnimatePresence>
         {isProjectDrawerOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1174,17 +1136,17 @@ const TitleBar = () => {
               className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
               onClick={() => setIsProjectDrawerOpen(false)}
             />
-
-            {/* Project Drawer */}
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              transition={{
+                duration: 0.22,
+                ease: 'easeInOut',
+              }}
               className="fixed inset-y-0 right-0 w-80 bg-background border-l border-border shadow-xl z-50 overflow-hidden"
             >
               <div className="h-full flex flex-col">
-                {/* Drawer Header */}
                 <div className="p-4 border-b border-border/70 flex items-center justify-between bg-secondary/30">
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <FolderOpen size={18} className="text-primary" />
@@ -1198,7 +1160,6 @@ const TitleBar = () => {
                   </button>
                 </div>
 
-                {/* Projects List */}
                 <div className="flex-1 overflow-y-auto p-2">
                   {Array.isArray(projects) && projects.length > 0 ? (
                     <div className="space-y-2">
@@ -1234,8 +1195,10 @@ const TitleBar = () => {
                                     project.createdAt
                                   ).toLocaleDateString()}
                                 </div>
-                                <Badge className="text-[10px] bg-primary/80">
-                                  {project.framework}
+                                <Badge className="text-[10px] bg-primary/80 tracking-wider">
+                                  {project.framework === 'React'
+                                    ? 'Code Mode'
+                                    : 'Vibe Mode'}
                                 </Badge>
                               </div>
                             </div>
@@ -1272,7 +1235,6 @@ const TitleBar = () => {
                   )}
                 </div>
 
-                {/* Drawer Footer */}
                 <div className="p-4 border-t border-border bg-secondary/20">
                   <Button
                     onClick={() => {
@@ -1289,7 +1251,7 @@ const TitleBar = () => {
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
 
       {/* Project Info Drawer */}
       <AnimatePresence>
@@ -1310,7 +1272,10 @@ const TitleBar = () => {
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              transition={{
+                duration: 0.25,
+                ease: 'easeInOut',
+              }}
               className="fixed inset-y-0 right-0 w-96 bg-background border-l border-border shadow-xl z-50 overflow-hidden"
             >
               <div className="h-full flex flex-col">
@@ -1350,7 +1315,7 @@ const TitleBar = () => {
                             size={14}
                             className="text-muted-foreground"
                           />
-                          <span>Created: </span>
+                          <span>{'Created: '}</span>
                           <span className="text-muted-foreground">
                             {new Date(
                               activeProject.createdAt

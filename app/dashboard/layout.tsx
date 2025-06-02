@@ -1,8 +1,7 @@
 import React from 'react';
-import { ModalProvider } from '@/context/ModalContext';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  return <ModalProvider>{children}</ModalProvider>;
+  return <>{children}</>;
 };
 
 export default Layout;

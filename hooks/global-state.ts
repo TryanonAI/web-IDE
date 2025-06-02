@@ -54,7 +54,26 @@ export type GitHubStatus =
   | 'checking_repo'
   | 'error';
 
-export interface GlobalState extends GithubState, ProjectState, SandpackState {
+export type DrawerType = 'project' | 'projectInfo' | 'githubStatus';
+
+export type ModalType = 'createProject' | 'github' | 'projectInfo';
+
+
+export interface ModalState {
+  activeModal: ModalType | null;
+  projectName: string;
+  openModal: (modal: ModalType) => void;
+  closeModal: () => void;
+  setProjectName: (name: string) => void;
+}
+
+export interface DrawerState {
+  activeDrawer: DrawerType | null;
+  openDrawer: (drawer: DrawerType) => void;
+  closeDrawer: () => void;
+}
+
+export interface GlobalState extends GithubState, ProjectState, SandpackState, ModalState, DrawerState {
   isLoading: boolean;
   setIsLoading: (isLoading: boolean) => void;
   error: string | null;
@@ -243,12 +262,11 @@ export const useGlobalState = create<
 
         disconnectGithub: () => {
           set({
-            githubToken: null,
             octokit: null,
-            githubStatus: GITHUB_STATUS.DISCONNECTED,
+            githubToken: null,
             githubUsername: null,
+            githubStatus: GITHUB_STATUS.DISCONNECTED,
           });
-          toast.info('Disconnected from GitHub');
         },
 
         resetGithubState: () => {
@@ -802,6 +820,18 @@ export const useGlobalState = create<
             chatMessages: [...state.chatMessages, message]
           }));
         },
+
+        // Drawer States
+        activeDrawer: null,
+        openDrawer: (drawer: DrawerType) => set({ activeDrawer: drawer }),
+        closeDrawer: () => set({ activeDrawer: null }),
+
+        // Modal States
+        activeModal: null,
+        projectName: '',
+        openModal: (modal: ModalType) => set({ activeModal: modal }),
+        closeModal: () => set({ activeModal: null }),
+        setProjectName: (name: string) => set({ projectName: name }),
       }),
       {
         name: 'global-state', // Name for devtools
