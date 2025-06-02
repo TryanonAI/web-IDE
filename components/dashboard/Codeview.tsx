@@ -281,21 +281,27 @@ export default function Codeview({ isSaving }: CodeviewProps) {
   // };
 
   if (activeProject?.framework === Framework.Html) {
+    // console.log(typeof codebase)
     let htmlContent = '';
     if (isCodeGenerating) {
       htmlContent =
         typeof codebase === 'object' ? templateHtml : codebase || '';
     } else {
-      htmlContent = typeof codebase === 'object' ? '' : codebase || '';
+      htmlContent =
+        typeof codebase === 'object' ? templateHtml : codebase || '';
     }
-
+    console.log(htmlContent);
     // Extract HTML from markdown code block
-    const extractedHtml = extractHtmlFromMarkdown(htmlContent);
+    if (htmlContent.startsWith('<!DOCTYPE html>')) {
+      htmlContent = htmlContent;
+    } else {
+      htmlContent = extractHtmlFromMarkdown(htmlContent);
+    }
 
     return (
       <>
         <iframe
-          srcDoc={extractedHtml}
+          srcDoc={htmlContent}
           className="w-full h-full"
           aria-label="Code Preview"
           title="Code Preview"
