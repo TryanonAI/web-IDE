@@ -2,7 +2,7 @@
 import { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  output: 'export',
+  // output: 'export',
   reactStrictMode: false,
   experimental: {
     // Enable more SWC optimizations
