@@ -153,7 +153,7 @@ const SandPackPreviewClient = () => {
               showNavigator={true}
               style={{ height: '100%' }}
               showRefreshButton={true}
-/>
+            />
             {isLoading && (
               <div className="absolute top-0 right-0 m-2">
                 <div className="flex items-center bg-blue-500 text-white px-3 py-1 rounded text-xs">

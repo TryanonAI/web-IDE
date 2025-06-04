@@ -8,7 +8,7 @@ import { defaultFiles, updateDefaultFiles } from '@/lib/filesUtils';
 import { mergeDependencies } from '@/constant/dependencies';
 import { DbAdmin_LUA_CODE, runLua, spawnProcess } from '@/lib/arkit';
 import {
-  ActiveProject,
+  Project,
   ChatMessage,
   StatusTimelineEvent,
   Framework,
@@ -102,7 +102,7 @@ interface GithubState {
   checkRepository: (projectName: string) => Promise<boolean>;
   createRepository: (projectName: string) => Promise<boolean>;
   commitToRepository: (
-    activeProject: ActiveProject,
+    activeProject: Project,
     walletAddress: string,
     forcePush?: boolean,
     commitMessage?: string
@@ -121,18 +121,18 @@ export interface ProjectState {
   setFramework: (framework: Framework) => void;
   status: string;
   isCreating: boolean;
-  projects: ActiveProject[];
+  projects: Project[];
   codeVersions: CodeVersion[];
   chatMessages: ChatMessage[];
   addChatMessage: (message: ChatMessage) => void;
   codebase: CodebaseType | null;
-  activeProject: ActiveProject | null;
+  activeProject: Project | null;
   statusTimeline: StatusTimelineEvent[];
   fetchProjects: () => Promise<void>;
   setCodebase: (codebase: CodebaseType | null) => void;
   setCodeVersions: (codeVersions: CodeVersion[]) => void;
-  createProject: (projectName: string, framework: Framework) => Promise<ActiveProject | null>;
-  loadProjectData: (project: ActiveProject | null, address: string) => Promise<void>;
+  createProject: (projectName: string, framework: Framework) => Promise<Project | null>;
+  loadProjectData: (project: Project | null, address: string) => Promise<void>;
   deploymentUrl: string | null;
   setDeploymentUrl: (url: string | null) => void;
   isCodeGenerating: boolean;
@@ -340,7 +340,7 @@ export const useGlobalState = create<
         },
 
         commitToRepository: async (
-          activeProject: ActiveProject,
+          activeProject: Project,
           walletAddress: string,
           forcePush: boolean = false,
           commitMessage?: string
@@ -545,7 +545,7 @@ export const useGlobalState = create<
         setDeploymentUrl: (url: string | null) => set({ deploymentUrl: url }),
         setCodebase: (codebase: CodebaseType | null) => set({ codebase }),
         setCodeVersions: (codeVersions: CodeVersion[]) => set({ codeVersions: codeVersions.length > 0 ? codeVersions : [] }),
-        loadProjectData: async (project: ActiveProject | null, address: string) => {
+        loadProjectData: async (project: Project | null, address: string) => {
           if (!project || !project.projectId || !address) {
             set({
               activeProject: null,
@@ -591,51 +591,19 @@ export const useGlobalState = create<
           try {
             // Fetch codebase
             console.log('Fetching codebase');
-            const codebasePromise = axios.get(
+            const codebaseResponse = await axios.get(
               `${backendUrl}/projects/${project.projectId}?walletAddress=${address}`
             );
 
-            // Fetch chat messages
-            console.log('Fetching chat messages');
-            const messagesPromise = axios.get(
-              `${backendUrl}/chat/history/${project.projectId}`
-            );
-
-            // Wait for both to complete
-            const [codebaseResponse, messagesResponse] = await Promise.all([
-              codebasePromise,
-              messagesPromise,
-            ]);
             console.log('codebaseResponse', codebaseResponse.data);
-
             if (codebaseResponse.data) {
               set({ codebase: codebaseResponse.data.codebase || {} });
               if (codebaseResponse.data.externalPackages && codebaseResponse.data.externalPackages.length > 0) {
                 get().updateDependencies(codebaseResponse.data.externalPackages);
               }
-            }
-
-            if (messagesResponse.data && messagesResponse.data.messages) {
-              let formattedMessages: ChatMessage[] = [];
-              if (project.framework === Framework.React) {
-                formattedMessages = messagesResponse.data.messages.map(
-                  (msg: ChatMessage) => ({
-                    ...msg,
-                    content:
-                      msg.role === 'model'
-                        ? typeof msg.content === 'string'
-                          ? JSON.parse(msg.content)
-                          : msg.content
-                        : msg.content,
-                  })
-                );
-              } else if (project.framework === Framework.Html) {
-                formattedMessages = messagesResponse.data.messages.filter((msg: ChatMessage) => msg.role === 'user');
-
+              if (codebaseResponse.data.messages && codebaseResponse.data.messages.length > 0) {
+                set({ chatMessages: codebaseResponse.data.messages as ChatMessage[] });
               }
-              set({ chatMessages: formattedMessages as ChatMessage[] });
-            } else {
-              set({ chatMessages: [] });
             }
           } catch (error) {
             console.error('Error loading project data:', error);
@@ -667,7 +635,7 @@ export const useGlobalState = create<
 
             if (res.data.projects.length > 0) {
               await res.data.projects.sort(
-                (a: ActiveProject, b: ActiveProject) => {
+                (a: Project, b: Project) => {
                   return (
                     new Date(b.createdAt).getTime() -
                     new Date(a.createdAt).getTime()
@@ -682,7 +650,7 @@ export const useGlobalState = create<
 
               if (isOwner && storedProjectIdForOwner) {
                 const storedProjectFetched = res.data.projects.find(
-                  (p: ActiveProject) =>
+                  (p: Project) =>
                     p.projectId === storedProjectIdForOwner
                 );
                 if (storedProjectFetched) {
@@ -719,7 +687,7 @@ export const useGlobalState = create<
         createProject: async (
           projectName: string,
           framework: Framework
-        ): Promise<ActiveProject | null> => {
+        ): Promise<Project | null> => {
           try {
             console.log('🚀 Starting createProject');
             get().validateWalletConnection();

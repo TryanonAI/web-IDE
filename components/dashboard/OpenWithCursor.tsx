@@ -1,4 +1,4 @@
-import { ActiveProject } from "@/types";
+import { Project } from "@/types";
 
 import { cn } from '@/lib/utils';
 
@@ -11,7 +11,7 @@ const OpenWithCursor = ({
   activeProject,
 }: {
   disabled: boolean;
-  activeProject: ActiveProject;
+  activeProject: Project;
 }) => {
   const handleOpenWithCursor = async () => {
     window.open(

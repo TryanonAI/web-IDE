@@ -14,7 +14,7 @@ import { useWallet } from '@/hooks/use-wallet';
 import { useEffect, useState, useRef } from 'react';
 import { cn, validateNpmPackage } from '@/lib/utils';
 import { useGlobalState } from '@/hooks/global-state';
-import { CurrentProject, ActiveProject, Framework } from '@/types';
+import { CurrentProject, Project, Framework } from '@/types';
 // import { PreviewComponent } from '../codesandbox/PreviewComponent';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AnimatedGradientText } from '@/components/magicui/animated-gradient-text';
@@ -562,7 +562,7 @@ export default function Codeview({ isSaving }: CodeviewProps) {
 //   activeProject,
 // }: {
 //   disabled: boolean;
-//   activeProject: ActiveProject;
+//   activeProject: Project;
 // }) => {
 //   const { sandpack } = useSandpack();
 //   const { files: sandpackFiles } = sandpack;
@@ -626,7 +626,7 @@ const OpenWithCursor = ({
   activeProject,
 }: {
   disabled: boolean;
-  activeProject: ActiveProject;
+  activeProject: Project;
 }) => {
   const handleOpenWithCursor = async () => {
     window.open(

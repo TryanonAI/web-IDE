@@ -54,12 +54,12 @@ export interface User {
   trialStatus: TrialStatus;
   plan: Plan;
   tokens: number;
-  projects: ActiveProject[];
+  projects: Project[];
   createdAt: string;
   updatedAt: string;
 }
 
-export type ActiveProject = {
+export type Project = {
   id: number;
   title: string;
   processId: string;
@@ -75,32 +75,32 @@ export type ActiveProject = {
   updatedAt: string;
   framework: Framework;
   versions: number;
+  externalPackages: string[];
+  codebase: CodebaseType;
 }
 
 export type Message = {
-  id: number;
+  id: number | string;
   messageId: string;
   role: Role;
   content: string;
   projectId: string;
-  project?: ActiveProject; // optional if not populated
+  project?: Project; // optional if not populated
   createdAt: string;
   updatedAt: string;
 }
 
 export type ChatMessage = {
-  id: string | number;
+  id: number;
   messageId: string;
+  role: Role;
+  content: string;
   projectId: string;
-  createdAt: string; // ISO format
-  updatedAt: string; // ISO format
-  role: 'user' | 'model';
-  content: string | {
-    description: string;
-    codebase: Record<string, string>;
-    externalPackages: { packageName: string; packageVersion: string }[];
-  };
+  project: Project;
+  createdAt: string;
+  updatedAt: string;
   isLoading?: boolean;
+  isStreaming?: boolean;
 }
 
 export type Commit = {
@@ -122,9 +122,9 @@ export type CodebaseType = Record<string, string | FileData> | FileData[] | File
 
 
 export enum Role {
-  System = 'system',
-  User = 'user',
-  Model = 'model',
+  system = 'system',
+  user = 'user',
+  model = 'model',
 }
 
 export enum Plan {

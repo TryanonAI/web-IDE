@@ -69,6 +69,107 @@ export const SHADCN_TEMPLATE_FILES = {
   "src/components/ui/sonner.tsx": `'use client';\n\nimport { useTheme } from 'next-themes';\nimport { Toaster as Sonner, ToasterProps } from 'sonner';\n\nconst Toaster = ({ ...props }: ToasterProps) => {\n  const { theme = 'system' } = useTheme();\n\n  return (\n    <Sonner\n      theme={theme as ToasterProps['theme']}\n      className="toaster group"\n      style={\n        {\n          '--normal-bg': 'var(--popover)',\n          '--normal-text': 'var(--popover-foreground)',\n          '--normal-border': 'var(--border)',\n        } as React.CSSProperties\n      }\n      {...props}\n    />\n  );\n};\n\nexport { Toaster };\n`,
   "src/hooks/use-toast.tsx": "import * as React from \"react\"\nimport type {\n  ToastActionElement,\n  ToastProps,\n} from \"../components/ui/toast\"\n\nconst TOAST_LIMIT = 1\nconst TOAST_REMOVE_DELAY = 1000000\n\ntype ToasterToast = ToastProps & {\n  id: string\n  title?: React.ReactNode\n  description?: React.ReactNode\n  action?: ToastActionElement\n}\n\nconst actionTypes = {\n  ADD_TOAST: \"ADD_TOAST\",\n  UPDATE_TOAST: \"UPDATE_TOAST\",\n  DISMISS_TOAST: \"DISMISS_TOAST\",\n  REMOVE_TOAST: \"REMOVE_TOAST\",\n} as const\n\nlet count = 0\n\nfunction genId() {\n  count = (count + 1) % Number.MAX_SAFE_INTEGER\n  return count.toString()\n}\n\ntype ActionType = typeof actionTypes\n\ntype Action =\n  | {\n      type: ActionType[\"ADD_TOAST\"]\n      toast: ToasterToast\n    }\n  | {\n      type: ActionType[\"UPDATE_TOAST\"]\n      toast: Partial<ToasterToast>\n    }\n  | {\n      type: ActionType[\"DISMISS_TOAST\"]\n      toastId?: ToasterToast[\"id\"]\n    }\n  | {\n      type: ActionType[\"REMOVE_TOAST\"]\n      toastId?: ToasterToast[\"id\"]\n    }\n\ninterface State {\n  toasts: ToasterToast[]\n}\n\nconst toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()\n\nconst addToRemoveQueue = (toastId: string) => {\n  if (toastTimeouts.has(toastId)) {\n    return\n  }\n\n  const timeout = setTimeout(() => {\n    toastTimeouts.delete(toastId)\n    dispatch({\n      type: \"REMOVE_TOAST\",\n      toastId: toastId,\n    })\n  }, TOAST_REMOVE_DELAY)\n\n  toastTimeouts.set(toastId, timeout)\n}\n\nexport const reducer = (state: State, action: Action): State => {\n  switch (action.type) {\n    case \"ADD_TOAST\":\n      return {\n        ...state,\n        toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),\n      }\n\n    case \"UPDATE_TOAST\":\n      return {\n        ...state,\n        toasts: state.toasts.map((t) =>\n          t.id === action.toast.id ? { ...t, ...action.toast } : t\n        ),\n      }\n\n    case \"DISMISS_TOAST\": {\n      const { toastId } = action\n      if (toastId) {\n        addToRemoveQueue(toastId)\n      } else {\n        state.toasts.forEach((toast) => {\n          addToRemoveQueue(toast.id)\n        })\n      }\n\n      return {\n        ...state,\n        toasts: state.toasts.map((t) =>\n          t.id === toastId || toastId === undefined\n            ? {\n                ...t,\n                open: false,\n              }\n            : t\n        ),\n      }\n    }\n    case \"REMOVE_TOAST\":\n      if (action.toastId === undefined) {\n        return {\n          ...state,\n          toasts: [],\n        }\n      }\n      return {\n        ...state,\n        toasts: state.toasts.filter((t) => t.id !== action.toastId),\n      }\n  }\n}\n\nconst listeners: Array<(state: State) => void> = []\n\nlet memoryState: State = { toasts: [] }\n\nfunction dispatch(action: Action) {\n  memoryState = reducer(memoryState, action)\n  listeners.forEach((listener) => {\n    listener(memoryState)\n  })\n}\n\ntype Toast = Omit<ToasterToast, \"id\">\n\nfunction toast({ ...props }: Toast) {\n  const id = genId()\n\n  const update = (props: ToasterToast) =>\n    dispatch({\n      type: \"UPDATE_TOAST\",\n      toast: { ...props, id },\n    })\n  const dismiss = () => dispatch({ type: \"DISMISS_TOAST\", toastId: id })\n\n  dispatch({\n    type: \"ADD_TOAST\",\n    toast: {\n      ...props,\n      id,\n      open: true,\n      onOpenChange: (open) => {\n        if (!open) dismiss()\n      },\n    },\n  })\n\n  return {\n    id: id,\n    dismiss,\n    update,\n  }\n}\n\nfunction useToast() {\n  const [state, setState] = React.useState<State>(memoryState)\n\n  React.useEffect(() => {\n    listeners.push(setState)\n    return () => {\n      const index = listeners.indexOf(setState)\n      if (index > -1) {\n        listeners.splice(index, 1)\n      }\n    }\n  }, [state])\n\n  return {\n    ...state,\n    toast,\n    dismiss: (toastId?: string) => dispatch({ type: \"DISMISS_TOAST\", toastId }),\n  }\n}\n\nexport { useToast, toast }",
   "src/hooks/use-mobile": 'import * as React from "react"; const MOBILE_BREAKPOINT = 768; export function useIsMobile() { const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined); React.useEffect(() => { const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`); const onChange = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT); mql.addEventListener("change", onChange); setIsMobile(window.innerWidth < MOBILE_BREAKPOINT); return () => mql.removeEventListener("change", onChange); }, []); return !!isMobile; }',
+  "src/components/ui/card.tsx": `
+
+import * as React from "react"
+import { ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+function Card({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card"
+      className={cn(
+        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-header"
+      className={cn(
+        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-title"
+      className={cn("leading-none font-semibold", className)}
+      {...props}
+    />
+  )
+}
+
+function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-description"
+      className={cn("text-muted-foreground text-sm", className)}
+      {...props}
+    />
+  )
+}
+
+function CardAction({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-action"
+      className={cn(
+        "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CardContent({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-content"
+      className={cn("px-6", className)}
+      {...props}
+    />
+  )
+}
+
+function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-footer"
+      className={cn("flex items-center px-6 [.border-t]:pt-6", className)}
+      {...props}
+    />
+  )
+}
+
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardAction,
+  CardDescription,
+  CardContent,
+}
+
+`,
+
   "src/components/ui/button.tsx": `
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
@@ -142,7 +243,12 @@ import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { XIcon } from 'lucide-react';
 
-import { cn } from '../../lib/utils';
+import { ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 function Dialog({
   ...props
@@ -305,7 +411,12 @@ function Label({
 export { Label }
   `,
   "src/components/ui/skeleton.tsx": `
-import { cn } from '../../lib/utils';
+import { ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 function Skeleton({ className, ...props }: React.ComponentProps<'div'>) {
   return (
@@ -322,7 +433,12 @@ export { Skeleton };
   `,
   "src/components/ui/input.tsx": `
 import * as React from 'react';
-import { cn } from '../../lib/utils';
+import { ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
   return (
@@ -577,84 +693,112 @@ export default tseslint.config(
     2
   ).trim(),
   "src/App.tsx": `
-import Index from "./Index";
+import { Toaster  } from "./components/ui/sonner";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Index from "./pages/Index";
 
-const App = () => {
-  return <Index />;
-};
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+      <Toaster />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+        </Routes>
+      </BrowserRouter>
+  </QueryClientProvider>
+);
 
 export default App;
   `,
-  // 'src/pages/Index.tsx': `
-  // import { useState } from 'react'
+  'src/pages/Index.tsx': `
+  import { useState } from 'react'
 
-  // function App() {
-  //   const [isHovered, setIsHovered] = useState(false)
+  function Index() {
+    const [isHovered, setIsHovered] = useState(false)
 
-  //   return (
-  //     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white px-4">
-  //       <div 
-  //         className="p-8 w-full max-w-md rounded-xl border border-green-800/30 bg-black/50 backdrop-blur-sm transform transition-all duration-300 hover:border-green-600/50"
-  //         onMouseEnter={() => setIsHovered(true)}
-  //         onMouseLeave={() => setIsHovered(false)}
-  //       >
-  //         <h1 className="text-4xl font-light text-green-500 mb-2 text-center">
-  //           Vibe Coding on AO
-  //         </h1>
-  //         <h2 className="text-lg text-green-400/80 text-center mb-6">
-  //           {isHovered ? "Ready to create?" : "Waiting for you..."}
-  //         </h2>
+    const [isConnected, setIsConnected] = useState(false)
 
-  //         <button
-  //           onClick={async () => {
-  //             try{
-  //               await window.arweaveWallet.connect(
-  //               [
-  //                 'ENCRYPT',
-  //                 'DECRYPT',
-  //                 'DISPATCH',
-  //                 'SIGNATURE',
-  //                 'ACCESS_ADDRESS',
-  //                 'SIGN_TRANSACTION',
-  //                 'ACCESS_PUBLIC_KEY',
-  //                 'ACCESS_ALL_ADDRESSES',
-  //                 'ACCESS_ARWEAVE_CONFIG',
-  //               ],
-  //               {
-  //                 name: 'Anon',
-  //                 logo: 'https://arweave.net/pYIMnXpJRFUwTzogx_z5HCOPRRjCbSPYIlUqOjJ9Srs',
-  //               },
-  //               {
-  //                 host: 'arweave.net',
-  //                 port: 443,
-  //                 protocol: 'https',
-  //               }
-  //             );
-  //             } 
-  //             catch(error){
-  //               const errorMessage = error instanceof Error ? error.message : String(error);
-  //                if (errorMessage.toLowerCase().includes('cancel') ||
-  //                 errorMessage.toLowerCase().includes('rejected') ||
-  //                 errorMessage.toLowerCase().includes('denied')) {
-  //                 console.log('User cancelled the wallet connection request');
-  //               }
-  //                 else{
-  //                 console.log('Error connecting to wallet:', error);
-  //                 return;
-  //               }
-  //             }
-  //             }}
-  //           className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-md transition duration-300 ease-in-out"
-  //         >
-  //           ✅ Connect Wallet
-  //         </button>
-  //       </div>
-  //     </div>
-  //   )
-  // }
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white px-4">
+        <div 
+          className="p-8 w-full max-w-md rounded-xl border border-green-800/30 bg-black/50 backdrop-blur-sm transform transition-all duration-300 hover:border-green-600/50"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          <h1 className="text-4xl font-light text-green-500 mb-2 text-center">
+            Vibe Coding on AO
+          </h1>
+          <h2 className="text-lg text-green-400/80 text-center mb-6">
+            {isHovered ? "Ready to create?" : "Waiting for you..."}
+          </h2>
 
-  // export default App;
-  //   `.trim(),
+          {!isConnected &&
+          <button
+            onClick={async () => {
+              try{
+                await window.arweaveWallet.connect(
+                [
+                  'ENCRYPT',
+                  'DECRYPT',
+                  'DISPATCH',
+                  'SIGNATURE',
+                  'ACCESS_ADDRESS',
+                  'SIGN_TRANSACTION',
+                  'ACCESS_PUBLIC_KEY',
+                  'ACCESS_ALL_ADDRESSES',
+                  'ACCESS_ARWEAVE_CONFIG',
+                ],
+                {
+                  name: 'Anon',
+                  logo: 'https://arweave.net/pYIMnXpJRFUwTzogx_z5HCOPRRjCbSPYIlUqOjJ9Srs',
+                },
+                {
+                  host: 'arweave.net',
+                  port: 443,
+                  protocol: 'https',
+                }
+              );
+              setIsConnected(true)
+              } 
+              catch(error){
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                setIsConnected(false)
+                 if (errorMessage.toLowerCase().includes('cancel') ||
+                  errorMessage.toLowerCase().includes('rejected') ||
+                  errorMessage.toLowerCase().includes('denied')) {
+                  console.log('User cancelled the wallet connection request');
+                }
+                  else{
+                  console.log('Error connecting to wallet:', error);
+                  return;
+                }
+              }
+              }}
+            className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-md transition duration-300 ease-in-out"
+          >
+            ✅ Connect Wallet
+          </button>
+          }
+          {isConnected && (
+            <button
+              onClick={() => {
+                window.arweaveWallet.disconnect()
+                setIsConnected(false)
+              }}
+            >
+              Disconnect Wallet
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  export default Index;
+    `.trim(),
   'src/main.tsx': `
   import App from './App.tsx'
   import { StrictMode } from 'react'
@@ -772,5 +916,462 @@ import { twMerge } from 'tailwind-merge';
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-`
+`,
+  "src/lib/arkit.ts": `
+import axios from 'axios';
+import Arweave from 'arweave';
+
+export enum WalletConnectionResult {
+  ERROR = 'error',
+  CONNECTED = 'connected',
+  USER_CANCELLED = 'cancelled',
+  WALLET_NOT_FOUND = 'wallet not found'
+}
+
+export interface WalletConnectionResponse {
+  status: WalletConnectionResult;
+  message: string;
+  error?: Error;
+}
+
+// config constants
+export const PROTOCOL_TYPE = 'https';
+export const HOST_NAME = 'arweave.net';
+export const PORT_NUM = 443;
+export const CU_URL = 'https://cu6466.ao-testnet.xyz';
+export const MODE = 'legacy';
+
+
+// export const AOModule = 'Do_Uc2Sju_ffp6Ev0AnLVdPtot15rvMjP-a9VVaA5fM'; 
+// // regular-module on arweave
+export const AOModule = '33d-3X8mpv6xYBlVB-eXMrPfH5Kzf6Hiwhcv0UA10sw'; // sqlite-module on arweave
+export const AOScheduler = '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA';
+
+// Types
+export interface DispatchResult {
+  id: string;
+  type?: 'BASE' | 'BUNDLED';
+}
+
+export interface Tag {
+  name: string;
+  value: string;
+}
+
+export interface WalletDetails {
+  walletAddress: string;
+  balance?: number;
+}
+
+export interface GraphQLEdge {
+  node: {
+    id: string;
+    ingested_at: number;
+    recipient: string;
+    block: {
+      timestamp: number;
+      height: number;
+    };
+    tags: Tag[];
+    data: { size: number };
+    owner: { address: string };
+  };
+}
+
+export interface MessageResponse {
+  id: string;
+  recipient: string;
+  tags: Tag[];
+  data: string;
+  owner: string;
+  ingested_at: number;
+}
+
+// Common tags used across the application
+export const CommonTags: Tag[] = [
+  { name: 'Name', value: 'Anon' },
+  { name: 'Version', value: '2.0.0' },
+  { name: 'Authority', value: 'fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY' },
+  { name: 'Scheduler', value: '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA' },
+];
+
+// Message operations
+export const fetchMessagesAR = async ({
+  process,
+}: {
+  process: string;
+}): Promise<MessageResponse[]> => {
+  try {
+    console.log('Fetching messages for process:', process);
+    baseData.variables.entityId = process;
+
+    const res = await fetchGraphQL({
+      query: baseData.query,
+      variables: baseData.variables,
+    });
+
+    const messages = res.data.transactions.edges.map((m: GraphQLEdge) => ({
+      id: m.node.id,
+      recipient: m.node.recipient,
+      tags: m.node.tags,
+      data: m.node.data,
+      owner: m.node.owner.address,
+      ingested_at: m.node.ingested_at,
+    }));
+
+    const detailed = await Promise.all(
+      messages.map(async (m: MessageResponse) => {
+        try {
+          const res = await axios.get(GATEWAY_URL +'/'+m.id);
+          return { ...m, data: res.data };
+        } catch (error) {
+          console.error('Failed to fetch message',m.id, error);
+          return null;
+        }
+      })
+    );
+
+    return detailed.filter((item): item is MessageResponse => item !== null);
+  } catch (error) {
+    console.error('Failed to fetch messages:', error);
+    throw error;
+  }
 };
+
+export const messageAR = async ({
+  tags = [],
+  data = '',
+  anchor = '',
+  process,
+}: {
+  tags?: Tag[];
+  data?: string;
+  anchor?: string;
+  process: string;
+}): Promise<string> => {
+  if (typeof window === 'undefined') {
+    throw new Error('Cannot send message in non-browser environment');
+  }
+  // Dynamically import aoconnect functions
+  const { connect, createSigner } = await import('@permaweb/aoconnect');
+
+  const ao = connect({
+    GATEWAY_URL,
+    GRAPHQL_URL,
+    MODE,
+    CU_URL,
+  });
+  try {
+    console.log('Sending message to process:', process);
+    if (!process) throw new Error('Process ID is required.');
+
+    const allTags = [...CommonTags, ...tags];
+    const messageId = await ao.message({
+      data,
+      anchor,
+      process,
+      tags: allTags,
+      signer: createSigner(window.arweaveWallet),
+    });
+
+    console.log('Message sent successfully:', messageId);
+    return messageId;
+  } catch (error) {
+    console.error('Error sending message:', error);
+    throw error;
+  }
+};
+
+// Process operations
+export const spawnProcess = async (
+  name: string,
+  tags: Tag[] = []
+): Promise<string> => {
+  if (typeof window === 'undefined') {
+    throw new Error('Cannot spawn process in non-browser environment');
+  }
+  // Dynamically import aoconnect functions
+  const { connect, createSigner } = await import('@permaweb/aoconnect');
+  const ao = connect({
+    GATEWAY_URL,
+    GRAPHQL_URL,
+    MODE,
+    CU_URL,
+
+  });
+  console.log('Spawning new process...');
+  const allTags = [...CommonTags, ...tags];
+  if (name) allTags.push({ name: 'Name', value: name });
+
+  try {
+    const processId = await ao.spawn({
+      module: AOModule,
+      scheduler: AOScheduler,
+      signer: createSigner(window.arweaveWallet),
+      tags: allTags,
+    });
+    console.log('processId', processId);
+
+    console.log('Process spawned successfully:', processId);
+    return processId;
+  } catch (error) {
+    console.error('Spawn process error:', error);
+    throw error;
+  }
+};
+
+// Transaction operations
+export const transactionAR = async ({
+  data,
+}: {
+  data: string;
+}): Promise<DispatchResult> => {
+  if (typeof window === 'undefined' || !window.arweaveWallet) {
+    throw new Error('Wallet connection required in browser environment');
+  }
+  const arweave = Arweave.init({
+    host: HOST_NAME,
+    port: PORT_NUM,
+    protocol: PROTOCOL_TYPE,
+  });
+
+  try {
+    console.log('Creating transaction...');
+    // connectWallet should ideally be called beforehand via useAuth().login()
+
+    const transaction = await arweave.createTransaction({ data });
+    // Assuming dispatch is available after connection
+    const signed: DispatchResult =
+      await window.arweaveWallet.dispatch(transaction);
+    console.log('Transaction signed and dispatched:', signed);
+    return signed;
+  } catch (error) {
+    console.error('Transaction error:', error);
+    throw error;
+  }
+};
+
+// Lua operations
+export async function runLua({
+  code,
+  process,
+  tags = [],
+}: {
+  code: string;
+  process: string;
+  tags?: Tag[];
+}): Promise<Record<string, unknown> & { id: string }> {
+  if (typeof window === 'undefined') {
+    throw new Error('Cannot run Lua in non-browser environment');
+  }
+  // Dynamically import aoconnect functions
+  const { connect, createSigner } = await import('@permaweb/aoconnect');
+  const ao = connect({
+    GATEWAY_URL,
+    GRAPHQL_URL,
+    MODE,
+    CU_URL,
+
+  });
+  try {
+    console.log('Running Lua code...');
+    const finalTags = [
+      ...CommonTags,
+      ...tags,
+      { name: 'Action', value: 'Eval' },
+    ];
+
+    const messageId: string = await ao.message({
+      process,
+      data: code,
+      signer: createSigner(window.arweaveWallet),
+      tags: finalTags,
+    });
+
+    // const messageResult: {
+    //   // @ts-expect-error ignore
+    //   Output
+    //   // @ts-expect-error ignore
+    //   Messages
+    //   // @ts-expect-error ignore
+    //   Spawns
+    //   // @ts-expect-error ignore
+    //   Error
+    // } = await ao.result({
+    //   process,
+    //   message: messageId,
+    // });
+
+    const finalResult = { id: messageId };
+    // console.log('messageResult', messageResult);
+    console.log('Lua execution completed:', finalResult);
+    return finalResult;
+  } catch (error) {
+    console.error('Lua execution error:', error);
+    throw error;
+  }
+}
+
+// Handler operations
+export async function readHandler({
+  process,
+  action,
+  tags = [],
+  data,
+}: {
+  process: string;
+  action: string;
+  tags?: Tag[];
+  data?: Record<string, unknown>;
+}): Promise<Record<string, unknown> | null> {
+  // Dynamically import aoconnect connect
+  const { connect } = await import('@permaweb/aoconnect');
+  const ao = connect({
+    GATEWAY_URL,
+    GRAPHQL_URL,
+    MODE,
+    CU_URL,
+
+  })
+  try {
+    console.log('Reading handler using legacy dryrun...');
+    const allTags = [{ name: 'Action', value: action }, ...tags];
+    const newData = JSON.stringify(data || {});
+
+    const response = await ao.dryrun({
+      process,
+      data: newData,
+      tags: allTags,
+    });
+
+    const message = response.Messages?.[0];
+    if (message?.Data) {
+      try {
+        return JSON.parse(message.Data);
+      } catch (parseError) {
+        console.error('Error parsing message data:', parseError);
+        return { rawData: message.Data };
+      }
+    }
+    if (message?.Tags) {
+      return message.Tags.reduce(
+        (acc: Record<string, string>, { name, value }: Tag) => {
+          acc[name] = value;
+          return acc;
+        },
+        {}
+      );
+    }
+    console.warn('Read handler dryrun returned no data or tags:', response);
+    return null;
+  } catch (error) {
+    console.error('Read handler error:', error);
+    throw error;
+  }
+}
+
+export async function connectWallet(): Promise<WalletConnectionResponse> {
+  if (typeof window === 'undefined') {
+    return {
+      status: WalletConnectionResult.ERROR,
+      message: 'Cannot connect wallet in non-browser environment'
+    };
+  }
+  if (!window.arweaveWallet) {
+    return {
+      status: WalletConnectionResult.WALLET_NOT_FOUND,
+      message: 'Arweave Wallet not found'
+    };
+  }
+
+  try {
+    console.log('Connecting wallet...');
+
+    await window.arweaveWallet.connect(
+      [
+        'ENCRYPT',
+        'DECRYPT',
+        'DISPATCH',
+        'SIGNATURE',
+        // 'ACCESS_TOKENS',
+        'ACCESS_ADDRESS',
+        'SIGN_TRANSACTION',
+        'ACCESS_PUBLIC_KEY',
+        'ACCESS_ALL_ADDRESSES',
+        'ACCESS_ARWEAVE_CONFIG',
+      ],
+      {
+        name: 'Anon',
+        logo: 'https://arweave.net/pYIMnXpJRFUwTzogx_z5HCOPRRjCbSPYIlUqOjJ9Srs',
+      },
+      {
+        host: HOST_NAME,
+        port: PORT_NUM,
+        protocol: PROTOCOL_TYPE,
+      }
+    );
+
+    console.log('Wallet connected successfully');
+    return {
+      status: WalletConnectionResult.CONNECTED,
+      message: 'Connected wallet successfully'
+    };
+
+  } catch (error) {
+    // More robust check for user cancellation
+    console.log('[arkit.ts] errorMessage', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    if (errorMessage.toLowerCase().includes('cancel') ||
+      errorMessage.toLowerCase().includes('rejected') ||
+      errorMessage.toLowerCase().includes('denied')) {
+      console.log('User cancelled the wallet connection request');
+      return {
+        status: WalletConnectionResult.USER_CANCELLED,
+        message: 'User cancelled the connection request'
+      };
+    }
+
+    console.error('Connect wallet error:', error);
+    return {
+      status: WalletConnectionResult.ERROR,
+      message: 'Failed to connect wallet',
+      error: error instanceof Error ? error : new Error(String(error))
+    };
+  }
+}
+
+export async function disconnectWallet(): Promise<void> {
+  if (typeof window === 'undefined' || !window.arweaveWallet) {
+    console.error(
+      'Cannot disconnect wallet in non-browser environment or wallet not found'
+    );
+    return;
+  }
+  try {
+    console.log('Disconnecting wallet...');
+    await window.arweaveWallet.disconnect();
+    console.log('Wallet disconnected successfully');
+  } catch (error) {
+    console.error('Disconnect wallet error:', error);
+    throw error;
+  }
+}
+
+export async function getWalletDetails(): Promise<WalletDetails> {
+  if (typeof window === 'undefined' || !window.arweaveWallet) {
+    throw new Error(
+      'Cannot get wallet details in non-browser environment or wallet not found'
+    );
+  }
+  try {
+    console.log('Getting wallet details...');
+    const walletAddress = await window.arweaveWallet.getActiveAddress();
+    return { walletAddress };
+  } catch (error) {
+    console.error('Get wallet details error:', error);
+    throw error;
+  }
+}
+`
+}

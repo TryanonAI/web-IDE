@@ -76,11 +76,11 @@ const Dashboard = () => {
           <Loading_Gif count={3} />
         ) : activeProject ? (
           <ResizablePanelGroup direction="horizontal">
-            <ResizablePanel defaultSize={70} minSize={30}>
+            <ResizablePanel defaultSize={50} minSize={30}>
               <Codeview />
             </ResizablePanel>
             <ResizableHandle />
-            <ResizablePanel defaultSize={30} minSize={18}>
+            <ResizablePanel defaultSize={50} minSize={20}>
               <Chatview />
             </ResizablePanel>
           </ResizablePanelGroup>

@@ -1,28 +1,25 @@
 'use client';
 
-import axios from 'axios';
 import { toast } from 'sonner';
-import Markdown from 'react-markdown';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Loader2Icon, RefreshCw } from 'lucide-react';
 import { Input } from '../ui/input';
-import { Framework, ChatMessage } from '@/types';
+import { Framework, ChatMessage, Role, Project } from '@/types';
 import { useWallet } from '@/hooks/use-wallet';
 import { useGlobalState } from '@/hooks/global-state';
-import { Loading_Gif } from '@/app/loading';
+import LLMRenderer from './chatview/LLMRenderer';
+
 const Chatview = () => {
   const [userInput, setUserInput] = useState('');
   const [isRetrying, setIsRetrying] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [message, setMessage] = useState<ChatMessage[]>([]);
   const [failedMessage, setFailedMessage] = useState<string | null>(null);
 
   const { user } = useWallet();
-  const { updateDependencies } = useGlobalState();
   const setCodebase = useGlobalState((state) => state.setCodebase);
-  const chatMessages = useGlobalState((state) => state.chatMessages);
+  const chatMessages = useGlobalState((state) => state.chatMessages); // From global state
+  const [messages, setMessages] = useState<ChatMessage[]>(chatMessages);
   const activeProject = useGlobalState((state) => state.activeProject);
-  const addChatMessage = useGlobalState((state) => state.addChatMessage);
   const isCodeGenerating = useGlobalState((state) => state.isCodeGenerating);
   const setIsCodeGenerating = useGlobalState(
     (state) => state.setIsCodeGenerating
@@ -35,199 +32,111 @@ const Chatview = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [message]);
+  }, [messages]);
 
   const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
     if (e) {
       e.preventDefault();
     }
 
-    if (!userInput.trim() && !failedMessage) return;
-
-    setIsCodeGenerating(true);
     const messageToSend = failedMessage || userInput;
+    if (!messageToSend.trim()) return;
 
-    // Store the current deployment URL to check if it changes
-    const previousDeploymentUrl = deploymentUrl;
-
-    addChatMessage({
-      id: Math.random(),
-      content: messageToSend,
-      role: 'user',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      messageId: Math.random().toString(),
-      projectId: activeProject?.projectId as string,
-    });
-
-    // Reset failed message if we're retrying
-    if (failedMessage) {
-      setFailedMessage(null);
+    // Determine if we are retrying a previously failed message
+    const currentlyRetrying = !!failedMessage && !userInput.trim();
+    if (currentlyRetrying) {
       setIsRetrying(true);
     }
 
-    // Clear input unless we're retrying
-    if (!isRetrying) {
-      setIsRetrying(false);
-      setUserInput('');
+    setIsCodeGenerating(true);
+    const previousDeploymentUrl = deploymentUrl;
+
+    // Add user message to local state if not retrying an existing one
+    if (!currentlyRetrying) {
+      const userMessageId = Date.now(); // Using timestamp as numeric ID
+      const userMessage: ChatMessage = {
+        id: userMessageId,
+        content: messageToSend,
+        role: Role.user,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messageId: userMessageId.toString(), // Convert to string for messageId
+        projectId: activeProject?.projectId as string,
+        project: activeProject as Project, // Type assertion since we check for null earlier
+      };
+      setMessages((prev) => [...prev, userMessage]);
     }
 
-    // Add the user message to the local messages immediately
-    const tempUserMessageId = Math.random();
+    setUserInput('');
+    setFailedMessage(null);
 
-    const userMessage: ChatMessage = {
-      id: tempUserMessageId,
-      content: messageToSend,
-      role: 'user',
+    const tempSystemMessageId = Date.now(); // Using timestamp as numeric ID
+    const systemMessagePlaceholder: ChatMessage = {
+      id: tempSystemMessageId,
+      content: 'Generating...',
+      role: Role.model,
+      isLoading: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      messageId: tempUserMessageId.toString(),
+      messageId: tempSystemMessageId.toString(), // Convert to string for messageId
       projectId: activeProject?.projectId as string,
+      project: activeProject as Project, // Type assertion since we check for null earlier
     };
+    setMessages((prev) => [...prev, systemMessagePlaceholder]);
 
-    // Only add user message to UI if we're not retrying
-    if (!isRetrying) {
-      setMessage((prev) => [...prev, userMessage]);
-    }
+    setTimeout(scrollToBottom, 100);
 
     try {
-      // Add a temporary loading message
-      const tempSystemMessageId = `temp-${Date.now() + 1}`;
-
-      setMessage((prev) => [
-        ...prev.filter(
-          (m) => !isRetrying || m.id !== Number(tempSystemMessageId)
-        ),
-        {
-          id: Number(tempSystemMessageId),
-          content: 'Generating...',
-          role: 'model',
-          isLoading: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          messageId: tempSystemMessageId,
-          projectId: activeProject?.projectId as string,
-        },
-      ]);
-
-      // Scroll to bottom after adding messages
-      setTimeout(scrollToBottom, 100);
-
-      // Make API call
       const requestBody = {
         framework: activeProject?.framework,
-        prompt: { role: 'user', content: messageToSend },
+        prompt: { role: 'user', content: messageToSend }, // Prompt object for backend
         projectId: activeProject?.projectId as string,
       };
 
-      if (activeProject?.framework === Framework.React) {
-        const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/`,
-          requestBody
-        );
-        const responseContent = response.data.codebase;
-        const externalPackagesFromBackend =
-          response.data.externalPackages || [];
+      const handleStreamEvents = (
+        eventSource: EventSource,
+        isHtmlStream: boolean = false
+      ) => {
+        let accumulatedText = '';
 
-        // Update dependencies from chat response
-        if (externalPackagesFromBackend.length > 0) {
-          console.log(
-            '📦 Updating dependencies from chat response:',
-            externalPackagesFromBackend
-          );
-          updateDependencies(externalPackagesFromBackend);
-        }
-
-        setMessage((prevMessages) => {
-          const messagesWithoutLoading = prevMessages.filter(
-            (m) => m.id !== Number(tempSystemMessageId)
-          );
-          const finalMessages = [...messagesWithoutLoading];
-          console.log('Updated messages after API response:', finalMessages);
-          return finalMessages;
-        });
-
-        try {
-          // for new prompt
-          if (responseContent) {
-            setCodebase(responseContent);
-            if (previousDeploymentUrl) {
-              toast.info('Code updated.', {
-                duration: 5000,
-                description: 'You can redeploy to see changes on permaweb',
-              });
-            }
-          } else {
-            setIsCodeGenerating(false);
-            throw new Error('No codebase received');
-          }
-
-          // if (
-          //   typeof responseContent === 'object' &&
-          //   responseContent?.codebase
-          // ) {
-          //   console.log('New codebase received, updating codebase state');
-          //   setCodebase(responseContent.codebase);
-
-          //   // If there was a previous deployment, show redeploy option
-          //   if (previousDeploymentUrl) {
-          //     toast.info('Code updated.', {
-          //       duration: 5000,
-          //       description: 'You can redeploy to see changes on permaweb',
-          //     });
-          //   }
-          // } else if (typeof responseContent === 'string') {
-          //   const parsedContent = JSON.parse(responseContent);
-          //   if (parsedContent?.codebase) {
-          //     console.log(
-          //       'New codebase received (parsed from string), updating codebase state'
-          //     );
-          //     setCodebase(parsedContent.codebase);
-
-          //     // If there was a previous deployment, show redeploy option
-          //     if (previousDeploymentUrl) {
-          //       toast.info('Code updated.', {
-          //         duration: 5000,
-          //         description: 'You can redeploy to see changes on permaweb',
-          //       });
-          //     }
-          //   }
-          // }
-        } catch (parseError) {
-          console.warn(
-            'Could not parse response content or find codebase:',
-            parseError
-          );
-        } finally {
-          setIsCodeGenerating(false);
-        }
-      } else if (activeProject?.framework === Framework.Html) {
-        // const response = await axios.post<ChatApiResponse>(
-        //   `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/html/generate`,
-        //   requestBody
-        // );
-        // const responseContent = response.data.code;
-        // setCodebase(responseContent);
-
-        const eventSource = new EventSource(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/html/stream?projectId=${requestBody.projectId}&prompt=${encodeURIComponent(requestBody.prompt.content)}`
-        );
-
-        let finalText = '';
-
-        eventSource.onmessage = (e) => {
+        eventSource.onmessage = (ev) => {
           try {
-            const { text } = JSON.parse(e.data);
-            finalText += text;
-            setCodebase(finalText);
+            const { text } = JSON.parse(ev.data);
+            accumulatedText += text;
+
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === tempSystemMessageId
+                  ? {
+                      ...msg,
+                      content: accumulatedText,
+                      isLoading: false,
+                      isStreaming: true,
+                    }
+                  : msg
+              )
+            );
+            if (isHtmlStream) {
+              // For HTML, we might want to update codebase progressively OR just at the end.
+              // Current fix: update codebase only at the end.
+            }
+            scrollToBottom();
           } catch (error) {
             console.error('Error processing stream chunk:', error);
+            // Potentially update message to show chunk error
           }
         };
 
         eventSource.addEventListener('end', () => {
           console.log('✅ Stream ended');
-          setCodebase(finalText);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === tempSystemMessageId
+                ? { ...msg, content: accumulatedText, isStreaming: false }
+                : msg
+            )
+          );
+          setCodebase(accumulatedText); // Update codebase once at the end for both types
           setIsCodeGenerating(false);
           eventSource.close();
 
@@ -239,109 +148,75 @@ const Chatview = () => {
           }
         });
 
-        eventSource.addEventListener('error', (e) => {
-          console.error('❌ Stream error', e);
+        eventSource.addEventListener('error', (err) => {
+          console.error('❌ Stream error', err);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === tempSystemMessageId
+                ? {
+                    ...msg,
+                    content: 'Error: AI response failed.',
+                    isLoading: false,
+                    isStreaming: false,
+                  }
+                : msg
+            )
+          );
           eventSource.close();
-
           setIsCodeGenerating(false);
+          setFailedMessage(messageToSend); // Allow user to retry this prompt
           toast.error('AI response failed. Try again.');
         });
+      };
 
-        // If there was a previous deployment, show redeploy option
-        // if (previousDeploymentUrl) {
-        //   toast.info('Code updated.', {
-        //     duration: 5000,
-        //     description: 'You can redeploy to see changes on permaweb',
-        //   });
-        // }
+      if (activeProject?.framework === Framework.React) {
+        console.log('Generating React code...');
+        const eventSource = new EventSource(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/stream?projectId=${requestBody.projectId}&prompt=${encodeURIComponent(requestBody.prompt.content)}`
+        );
+        handleStreamEvents(eventSource);
+      } else if (activeProject?.framework === Framework.Html) {
+        console.log('Generating HTML code...');
+        const eventSource = new EventSource(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/html/stream?projectId=${requestBody.projectId}&prompt=${encodeURIComponent(requestBody.prompt.content)}`
+        );
+        handleStreamEvents(eventSource, true);
       }
-
-      // Scroll to bottom after receiving response
       setTimeout(scrollToBottom, 100);
     } catch (error) {
       console.error('Failed to send message:', error);
-      // Remove the loading indicator
-      setMessage((prev) => prev.filter((m) => !m.isLoading));
-      // Store the failed message for retry
+      setMessages((prev) => prev.filter((m) => m.id !== tempSystemMessageId)); // Remove the placeholder
       setFailedMessage(messageToSend);
-      // Show error toast
       toast.error('Failed to send message. Please try again.');
+      setIsCodeGenerating(false); // Ensure this is reset
     } finally {
-      // Reset states
-      setIsRetrying(false);
+      if (currentlyRetrying) {
+        setIsRetrying(false); // Reset isRetrying after the attempt
+      }
     }
   };
 
-  // Function to handle retry
-  const handleRetry = () => {
-    if (failedMessage) {
-      handleSubmit();
+  const renderMessage = (message: ChatMessage) => {
+    if (message.role === 'model') {
+      if (message.isLoading) {
+        return (
+          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <Loader2Icon className="w-4 h-4 animate-spin" />
+            <span>Generating...</span>
+          </div>
+        );
+      }
+      return <LLMRenderer llmResponse={message.content} />;
     }
+    return <LLMRenderer llmResponse={message.content} />;
   };
 
-  // Add a new function to handle key press events
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
   };
-
-  useEffect(() => {
-    if (chatMessages) {
-      setMessage(
-        chatMessages.map((msg) => ({
-          ...msg,
-          // @ts-expect-error ignore this error
-          content: msg.role === 'user' ? msg.content : msg.content.description,
-        }))
-      );
-    }
-  }, [chatMessages]);
-
-  // Add message list memoization
-  const memoizedMessages = useMemo(() => {
-    return chatMessages.map((message) => (
-      <div
-        key={message.id}
-        className={`flex ${
-          message.role === 'user' ? 'justify-end' : 'justify-start'
-        }`}
-      >
-        <div
-          className={`max-w-[85%] sm:max-w-[75%] p-3 rounded-lg break-words ${
-            message.role === 'user'
-              ? 'bg-primary/10 text-primary'
-              : 'bg-muted text-foreground'
-          }`}
-        >
-          {message.isLoading ? (
-            <div className="flex items-center justify-center">
-              <Loader2Icon
-                className="animate-spin text-muted-foreground"
-                size={18}
-              />
-            </div>
-          ) : (
-            <>
-              {activeProject?.framework === Framework.React && (
-                <Markdown>
-                  {message.role === 'user'
-                    ? message.content
-                    : //@ts-expect-error ignore
-                      message.content.description}
-                </Markdown>
-              )}
-              {activeProject?.framework === Framework.Html && (
-                //@ts-expect-error ignore
-                <Markdown>{message.content}</Markdown>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    ));
-  }, [chatMessages, activeProject]);
 
   if (!activeProject) {
     return (
@@ -352,45 +227,48 @@ const Chatview = () => {
   }
 
   const disableChatInput = () => {
-    return !user || user.tokens === 0 || isCodeGenerating;
+    // Consider if user.tokens check is still relevant or if backend handles this
+    return !user /*|| user.tokens === 0 */ || isCodeGenerating || isRetrying;
   };
 
   return (
     <div className="h-full flex flex-col bg-background relative">
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="h-full p-4 space-y-4">
-          {message && Array.isArray(message) && message.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <p>No messages yet. Start a conversation!</p>
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`flex ${
+              message.role === 'user' ? 'justify-end' : 'justify-start'
+            } animate-in fade-in-0 slide-in-from-bottom-4`}
+          >
+            <div
+              className={`max-w-[85%] md:max-w-3xl rounded-lg p-5 shadow-sm ${
+                message.role === 'user'
+                  ? 'bg-primary text-primary-foreground ml-12'
+                  : 'bg-muted/50 dark:bg-gray-800/90 text-foreground mr-12 border border-border/50'
+              }`}
+            >
+              {renderMessage(message)}
             </div>
-          ) : (
-            <div className="space-y-4">
-              {memoizedMessages}
-
-              {/* Retry button for failed messages */}
-              {failedMessage && (
-                <div className="flex items-center justify-center mt-2">
-                  <button
-                    onClick={handleRetry}
-                    disabled={isRetrying || isCodeGenerating}
-                    className="flex items-center gap-2 bg-destructive/10 hover:bg-destructive/20 text-destructive py-1.5 px-3 rounded-md text-sm font-medium transition-colors"
-                  >
-                    {isRetrying ? (
-                      <Loader2Icon className="animate-spin" size={14} />
-                    ) : (
-                      <RefreshCw size={14} />
-                    )}
-                    Try again
-                  </button>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </div>
+          </div>
+        ))}
+        {failedMessage && !isCodeGenerating && (
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={() => {
+                setIsRetrying(true);
+                handleSubmit();
+              }}
+              className="px-4 py-2 text-sm bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-md flex items-center gap-2 shadow-sm transition-colors"
+            >
+              <RefreshCw size={14} className="animate-spin" />
+              Retry last failed message
+            </button>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
       <div className="shrink-0 bg-background border-t border-border p-4">
-        <div className="flex items-center gap-2 mb-2 hidden"></div>
         <form onSubmit={handleSubmit} className="w-full">
           <div className="flex gap-1.5 items-center">
             <div className="bg-background/50 border border-border/40 rounded-sm px-1.5 flex items-center gap-1 h-8">
@@ -408,17 +286,20 @@ const Chatview = () => {
                 onKeyDown={handleKeyPress}
                 className="w-full outline-none focus-visible:ring-0"
                 disabled={disableChatInput()}
-                placeholder="Type your prompt..."
+                placeholder={
+                  failedMessage
+                    ? 'AI response failed. Retry or type new prompt.'
+                    : 'Type your prompt...'
+                }
               />
             </div>
             <button
               type="submit"
               className="bg-primary text-primary-foreground px-4 py-2 rounded-md disabled:opacity-50 flex items-center justify-center"
               disabled={
-                (!userInput.trim() && !failedMessage) ||
-                isRetrying ||
-                isCodeGenerating ||
-                disableChatInput()
+                (!userInput.trim() && !failedMessage) || // Disable if no input and no failed message to retry
+                isCodeGenerating || // Disable during generation
+                disableChatInput() // General disable conditions
               }
             >
               {isCodeGenerating ? (
@@ -441,17 +322,6 @@ const Chatview = () => {
           </div>
         </form>
       </div>
-
-      {/* Blur overlay when code is generating */}
-      {isCodeGenerating && (
-        <div className=" absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
-          {/* <div className="flex items-center gap-2">
-            <Loader2Icon className="animate-spin" size={16} />
-            <p className="text-sm text-muted-foreground">Generating code...</p>
-          </div> */}
-          <Loading_Gif count={2} />
-        </div>
-      )}
     </div>
   );
 };
