@@ -55,7 +55,7 @@ const LLMRenderer: React.FC<Props> = ({ llmResponse, streamedContent }) => {
         }
 
         // Skip content between <anon-write> tags
-        if (chunk.content.includes('</anon-write>')) {
+        if (chunk.content?.includes('</anon-write>')) {
           return null;
         }
 

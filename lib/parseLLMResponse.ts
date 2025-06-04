@@ -17,7 +17,7 @@ export function parseLLMResponse(response: string): ParsedChunk[] {
 
   const anonWriteRegex = /<anon-write file_path="([^"]+)">[\s\S]*?<\/anon-write>/g;
   const anonDeleteRegex = /<anon-delete file_path="([^"]+)"\s*\/?>/g;
-  const anonRenameRegex = /<anon-rename original_path="([^"]+)" new_path="([^"]+)"\s*\/?>/g;
+  const anonRenameRegex = /<anon-rename original_file_path="([^"]+)" new_file_path="([^"]+)"\s*\/?>/g;
   const anonDependencyRegex = /<anon-add-dependency name="([^"]+)" version="([^"]+)"\s*\/?>/g;
 
   let lastIndex = 0;

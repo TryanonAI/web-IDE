@@ -254,7 +254,7 @@ const Chatview = () => {
 
   return (
     <div className="h-full flex flex-col bg-background relative">
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages &&
           messages.length > 0 &&
           messages.map((message) => (
@@ -262,30 +262,30 @@ const Chatview = () => {
               key={message.id}
               className={`flex ${
                 message.role === 'user' ? 'justify-end' : 'justify-start'
-              } animate-in fade-in-0 slide-in-from-bottom-4`}
+              } animate-in fade-in-0 slide-in-from-bottom-2`}
             >
               <div
-                className={`max-w-[85%] md:max-w-3xl rounded-lg p-5 shadow-sm ${
+                className={`max-w-[85%] md:max-w-2xl rounded-xl ${
                   message.role === 'user'
-                    ? 'bg-primary text-primary-foreground dark:text-primary-foreground/80 ml-12'
-                    : 'bg-muted/50 dark:bg-gray-800/90 text-foreground mr-12 border border-border/50'
-                }`}
+                    ? 'bg-primary/60 text-primary-foreground dark:text-primary-foreground/80 shadow-lg ml-8 transition-colors'
+                    : 'bg-card dark:bg-card/90 text-card-foreground shadow-sm mr-8 border border-border/10 hover:border-border/20 transition-all'
+                } p-4 backdrop-blur-sm`}
               >
                 {renderMessage(message)}
               </div>
             </div>
           ))}
         {failedMessage && !isCodeGenerating && (
-          <div className="flex justify-center mt-4">
+          <div className="flex justify-center mt-6">
             <button
               onClick={() => {
                 setIsRetrying(true);
                 handleSubmit();
               }}
-              className="px-4 py-2 text-sm bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-md flex items-center gap-2 shadow-sm transition-colors"
+              className="px-4 py-2 text-sm bg-destructive/90 hover:bg-destructive text-destructive-foreground rounded-lg flex items-center gap-2 shadow-md transition-all duration-200"
             >
               <RefreshCw size={14} className="animate-spin" />
-              Retry last failed message
+              <span>Retry last message</span>
             </button>
           </div>
         )}
