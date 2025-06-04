@@ -7,7 +7,7 @@ export default function Loading() {
       <p className="text-sm text-gray-500" role="status">
         Loading...
       </p> */}
-     <Loading_Gif className="w-20 h-20" count={1} />
+      <Loading_Gif className="w-20 h-20" count={1} />
     </div>
   );
 }

@@ -221,11 +221,11 @@
   background: hsl(var(--muted-foreground));
 }
 
-.sp-preview-actions {
+/* .sp-preview-actions {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
-}
+} */
 
 .sp-wrapper {
   height: 100% !important;
@@ -245,12 +245,12 @@
 } */
 
 .sp-file-explorer {
-  min-width: 150px !important;
+  min-width:220px !important;
   max-width: 300px !important;
   width: 25% !important;
   height: 100% !important;
   overflow: auto !important;
-  border-right: 1px solid var(--border) !important;
+  /* border-right: 1px solid var(--border) !important; */
   flex-shrink: 0 !important;
 }
 
@@ -261,7 +261,6 @@
 
 .sp-file-explorer [data-active='true'] {
   background: hsl(var(--secondary)) !important;
-
 }
 
 /* .sp-code-editor {

@@ -445,6 +445,7 @@ const TitleBar = () => {
     };
 
     initializeGitHub();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [githubToken, activeProject]);
 
   // Handle Github auth redirect
@@ -504,6 +505,7 @@ const TitleBar = () => {
     };
 
     handleGithubAuth();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle GitHub disconnect

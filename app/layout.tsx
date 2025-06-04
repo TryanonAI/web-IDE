@@ -3,19 +3,8 @@ import { Toaster } from 'sonner';
 import type { Metadata, Viewport } from 'next';
 import { ThemeProvider } from 'next-themes';
 import { Analytics } from '@vercel/analytics/react';
-import { Geist, Geist_Mono } from 'next/font/google';
 import ClientInitializer from '@/components/dashboard/ClientInitializer';
 import CheckConnection from '@/components/CheckConnection';
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
 
 export const viewport: Viewport = {
   themeColor: '#3e7452',
@@ -34,7 +23,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" style={{ colorScheme: 'dark' }}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        style={{
+          fontFamily: 'Inter, Helvetica, Arial, sans-serif',
+          margin: 0,
+        }}
       >
         <ThemeProvider
           attribute="class"

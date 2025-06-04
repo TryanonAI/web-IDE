@@ -10,7 +10,7 @@ const StatusBar = () => {
   const walletStatus = useWallet((state) => state.walletStatus);
 
   return (
-    <div className="h-8 shrink-0 bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 border-t border-border/50 px-4 flex items-center text-xs font-medium text-muted-foreground">
+    <div className="h-8 shrink-0 bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 border-t border-border/50 px-4 flex items-center text-xs font-medium text-muted-foreground ">
       <div className="flex-1 flex items-center gap-6">
         {/* Project Status */}
         <div className="flex items-center gap-2">

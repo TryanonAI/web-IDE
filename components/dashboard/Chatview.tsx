@@ -10,7 +10,6 @@ import { Framework, ChatMessage } from '@/types';
 import { useWallet } from '@/hooks/use-wallet';
 import { useGlobalState } from '@/hooks/global-state';
 import { Loading_Gif } from '@/app/loading';
-
 const Chatview = () => {
   const [userInput, setUserInput] = useState('');
   const [isRetrying, setIsRetrying] = useState(false);
@@ -19,12 +18,15 @@ const Chatview = () => {
   const [failedMessage, setFailedMessage] = useState<string | null>(null);
 
   const { user } = useWallet();
+  const { updateDependencies } = useGlobalState();
   const setCodebase = useGlobalState((state) => state.setCodebase);
   const chatMessages = useGlobalState((state) => state.chatMessages);
   const activeProject = useGlobalState((state) => state.activeProject);
   const addChatMessage = useGlobalState((state) => state.addChatMessage);
   const isCodeGenerating = useGlobalState((state) => state.isCodeGenerating);
-  const setIsCodeGenerating = useGlobalState((state) => state.setIsCodeGenerating);
+  const setIsCodeGenerating = useGlobalState(
+    (state) => state.setIsCodeGenerating
+  );
   const deploymentUrl = useGlobalState((state) => state.deploymentUrl);
 
   const scrollToBottom = () => {
@@ -123,7 +125,18 @@ const Chatview = () => {
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/`,
           requestBody
         );
-        const responseContent = response.data.content;
+        const responseContent = response.data.codebase;
+        const externalPackagesFromBackend =
+          response.data.externalPackages || [];
+
+        // Update dependencies from chat response
+        if (externalPackagesFromBackend.length > 0) {
+          console.log(
+            '📦 Updating dependencies from chat response:',
+            externalPackagesFromBackend
+          );
+          updateDependencies(externalPackagesFromBackend);
+        }
 
         setMessage((prevMessages) => {
           const messagesWithoutLoading = prevMessages.filter(
@@ -135,42 +148,58 @@ const Chatview = () => {
         });
 
         try {
-          if (
-            typeof responseContent === 'object' &&
-            responseContent?.codebase
-          ) {
-            console.log('New codebase received, updating codebase state');
-            setCodebase(responseContent.codebase);
-
-            // If there was a previous deployment, show redeploy option
+          // for new prompt
+          if (responseContent) {
+            setCodebase(responseContent);
             if (previousDeploymentUrl) {
               toast.info('Code updated.', {
                 duration: 5000,
                 description: 'You can redeploy to see changes on permaweb',
               });
             }
-          } else if (typeof responseContent === 'string') {
-            const parsedContent = JSON.parse(responseContent);
-            if (parsedContent?.codebase) {
-              console.log(
-                'New codebase received (parsed from string), updating codebase state'
-              );
-              setCodebase(parsedContent.codebase);
-
-              // If there was a previous deployment, show redeploy option
-              if (previousDeploymentUrl) {
-                toast.info('Code updated.', {
-                  duration: 5000,
-                  description: 'You can redeploy to see changes on permaweb',
-                });
-              }
-            }
+          } else {
+            setIsCodeGenerating(false);
+            throw new Error('No codebase received');
           }
+
+          // if (
+          //   typeof responseContent === 'object' &&
+          //   responseContent?.codebase
+          // ) {
+          //   console.log('New codebase received, updating codebase state');
+          //   setCodebase(responseContent.codebase);
+
+          //   // If there was a previous deployment, show redeploy option
+          //   if (previousDeploymentUrl) {
+          //     toast.info('Code updated.', {
+          //       duration: 5000,
+          //       description: 'You can redeploy to see changes on permaweb',
+          //     });
+          //   }
+          // } else if (typeof responseContent === 'string') {
+          //   const parsedContent = JSON.parse(responseContent);
+          //   if (parsedContent?.codebase) {
+          //     console.log(
+          //       'New codebase received (parsed from string), updating codebase state'
+          //     );
+          //     setCodebase(parsedContent.codebase);
+
+          //     // If there was a previous deployment, show redeploy option
+          //     if (previousDeploymentUrl) {
+          //       toast.info('Code updated.', {
+          //         duration: 5000,
+          //         description: 'You can redeploy to see changes on permaweb',
+          //       });
+          //     }
+          //   }
+          // }
         } catch (parseError) {
           console.warn(
             'Could not parse response content or find codebase:',
             parseError
           );
+        } finally {
+          setIsCodeGenerating(false);
         }
       } else if (activeProject?.framework === Framework.Html) {
         // const response = await axios.post<ChatApiResponse>(

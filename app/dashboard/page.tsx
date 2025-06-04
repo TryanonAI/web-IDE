@@ -1,10 +1,8 @@
 'use client';
 
 import { PlusCircle, Loader2, AlertCircle } from 'lucide-react';
-import StatusBar from '@/components/dashboard/StatusBar';
 import Chatview from '@/components/dashboard/Chatview';
 import Codeview from '@/components/dashboard/Codeview';
-import TitleBar from '@/components/dashboard/TitleBar';
 import { useGlobalState } from '@/hooks/global-state';
 import { validateProjectName } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -12,7 +10,6 @@ import { useWallet } from '@/hooks/use-wallet';
 import { Loading_Gif } from '@/app/loading';
 import { useEffect, useState } from 'react';
 import { Framework } from '@/types';
-import { ProjectDrawer } from '@/components/drawers/ProjectDrawer';
 import {
   Dialog,
   DialogContent,
@@ -28,11 +25,9 @@ import {
 
 const Dashboard = () => {
   const [nameError, setNameError] = useState<string>('');
-
   const { activeModal, projectName, openModal, closeModal, setProjectName } =
     useGlobalState();
 
-  const connect = useWallet((state) => state.connect);
   const connected = useWallet((state) => state.connected);
   const isLoading = useGlobalState((state) => state.isLoading);
   const isCreating = useGlobalState((state) => state.isCreating);
@@ -75,60 +70,39 @@ const Dashboard = () => {
   }, [connected, fetchProjects]);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
-      {/* Header is always visible */}
-      <div className="shrink-0 border-b border-border">
-        <TitleBar />
-      </div>
-
+    <>
       <div id="main-container" className="flex flex-1 min-h-0 overflow-hidden">
         {isLoading ? (
-          <Loading_Gif count={1} />
-        ) : connected ? (
-          activeProject ? (
-            <ResizablePanelGroup direction="horizontal">
-              <ResizablePanel defaultSize={60} minSize={30}>
-                <Codeview />
-              </ResizablePanel>
-              <ResizableHandle />
-              <ResizablePanel defaultSize={30} minSize={18}>
-                <Chatview />
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          ) : (
-            <div className="flex flex-1 items-center justify-center bg-background">
-              <div className="flex flex-col items-center justify-center text-center">
-                <p className="mb-6 text-xl font-semibold text-foreground">
-                  Create your first project and start vibe coding with{' '}
-                  <span className="font-bold">Anon</span>
-                </p>
-                <Button
-                  size="lg"
-                  onClick={() => openModal('createProject')}
-                  className="flex items-center gap-2 px-4 py-2.5 text-base h-auto cursor-pointer"
-                >
-                  <PlusCircle size={20} />
-                  <span>Create New Project</span>
-                </Button>
-              </div>
-            </div>
-          )
+          <Loading_Gif count={3} />
+        ) : activeProject ? (
+          <ResizablePanelGroup direction="horizontal">
+            <ResizablePanel defaultSize={70} minSize={30}>
+              <Codeview />
+            </ResizablePanel>
+            <ResizableHandle />
+            <ResizablePanel defaultSize={30} minSize={18}>
+              <Chatview />
+            </ResizablePanel>
+          </ResizablePanelGroup>
         ) : (
-          <div className="flex flex-1 items-center justify-center">
-            <Button className="cursor-pointer" onClick={() => connect()}>
-              Connect Wallet
-            </Button>
+          <div className="flex flex-1 items-center justify-center bg-background">
+            <div className="flex flex-col items-center justify-center text-center">
+              <p className="mb-6 text-xl font-semibold text-foreground">
+                Create your first project and start vibe coding with{' '}
+                <span className="font-bold">Anon</span>
+              </p>
+              <Button
+                size="lg"
+                onClick={() => openModal('createProject')}
+                className="flex items-center gap-2 px-4 py-2.5 text-base h-auto cursor-pointer"
+              >
+                <PlusCircle size={20} />
+                <span>Create New Project</span>
+              </Button>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Status Bar - Always visible */}
-      <div className="shrink-0 border-t border-border">
-        <StatusBar />
-      </div>
-
-      {/* Drawers */}
-      <ProjectDrawer />
 
       <Dialog
         open={activeModal === 'createProject' && !isCreating}
@@ -217,7 +191,7 @@ const Dashboard = () => {
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 };
 

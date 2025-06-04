@@ -4,7 +4,8 @@ import { create } from 'zustand';
 import { Octokit } from '@octokit/core';
 import { useWallet } from './use-wallet';
 import { devtools, persist } from 'zustand/middleware';
-import { defaultFiles } from '@/constant/defaultFiles';
+import { defaultFiles, updateDefaultFiles } from '@/lib/filesUtils';
+import { mergeDependencies } from '@/constant/dependencies';
 import { DbAdmin_LUA_CODE, runLua, spawnProcess } from '@/lib/arkit';
 import {
   ActiveProject,
@@ -111,7 +112,11 @@ interface GithubState {
   validateWalletConnection: () => void;
 }
 
-interface ProjectState {
+export interface DependencyMap {
+  [key: string]: string;  // package name -> version
+}
+
+export interface ProjectState {
   framework: Framework;
   setFramework: (framework: Framework) => void;
   status: string;
@@ -132,6 +137,9 @@ interface ProjectState {
   setDeploymentUrl: (url: string | null) => void;
   isCodeGenerating: boolean;
   setIsCodeGenerating: (isCodeGenerating: boolean) => void;
+  dependencies: DependencyMap;
+  setDependencies: (deps: DependencyMap) => void;
+  updateDependencies: (newDeps: string[]) => void;
 }
 
 interface SandpackState {
@@ -189,6 +197,7 @@ const Initial_ProjectState = {
   codeVersions: [],
   deploymentUrl: null,
   isCodeGenerating: false,
+  dependencies: {},
 }
 
 export const useGlobalState = create<
@@ -586,7 +595,6 @@ export const useGlobalState = create<
               `${backendUrl}/projects/${project.projectId}?walletAddress=${address}`
             );
 
-
             // Fetch chat messages
             console.log('Fetching chat messages');
             const messagesPromise = axios.get(
@@ -598,9 +606,13 @@ export const useGlobalState = create<
               codebasePromise,
               messagesPromise,
             ]);
+            console.log('codebaseResponse', codebaseResponse.data);
 
             if (codebaseResponse.data) {
               set({ codebase: codebaseResponse.data.codebase || {} });
+              if (codebaseResponse.data.externalPackages && codebaseResponse.data.externalPackages.length > 0) {
+                get().updateDependencies(codebaseResponse.data.externalPackages);
+              }
             }
 
             if (messagesResponse.data && messagesResponse.data.messages) {
@@ -832,9 +844,18 @@ export const useGlobalState = create<
         openModal: (modal: ModalType) => set({ activeModal: modal }),
         closeModal: () => set({ activeModal: null }),
         setProjectName: (name: string) => set({ projectName: name }),
+
+        // Project State
+        setDependencies: (deps: DependencyMap) => set({ dependencies: deps }),
+        updateDependencies: (newDeps: string[]) => {
+          const { dependencies } = get();
+          const updatedDeps = mergeDependencies(dependencies, newDeps);
+          set({ dependencies: updatedDeps });
+          updateDefaultFiles(newDeps);
+        },
       }),
       {
-        name: 'global-state', // Name for devtools
+        name: 'global-state',
       }
     ),
     {
