@@ -42,7 +42,6 @@ const Chatview = () => {
     const messageToSend = failedMessage || userInput;
     if (!messageToSend.trim()) return;
 
-    // Determine if we are retrying a previously failed message
     const currentlyRetrying = !!failedMessage && !userInput.trim();
     if (currentlyRetrying) {
       setIsRetrying(true);
@@ -51,45 +50,49 @@ const Chatview = () => {
     setIsCodeGenerating(true);
     const previousDeploymentUrl = deploymentUrl;
 
-    // Add user message to local state if not retrying an existing one
+    // Add user message to local state if not retrying
     if (!currentlyRetrying) {
-      const userMessageId = Date.now(); // Using timestamp as numeric ID
+      const userMessageId = Date.now();
       const userMessage: ChatMessage = {
         id: userMessageId,
         content: messageToSend,
         role: Role.user,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        messageId: userMessageId.toString(), // Convert to string for messageId
+        messageId: userMessageId.toString(),
         projectId: activeProject?.projectId as string,
-        project: activeProject as Project, // Type assertion since we check for null earlier
+        project: activeProject as Project,
       };
-      setMessages((prev) => [...prev, userMessage]);
+      setMessages((prev) =>
+        prev?.length > 0 ? [...prev, userMessage] : [userMessage]
+      );
     }
 
     setUserInput('');
     setFailedMessage(null);
 
-    const tempSystemMessageId = Date.now(); // Using timestamp as numeric ID
+    // Create placeholder for AI response
+    const tempSystemMessageId = Math.random();
     const systemMessagePlaceholder: ChatMessage = {
       id: tempSystemMessageId,
-      content: 'Generating...',
+      content: '',
       role: Role.model,
       isLoading: true,
+      isStreaming: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      messageId: tempSystemMessageId.toString(), // Convert to string for messageId
+      messageId: tempSystemMessageId.toString(),
       projectId: activeProject?.projectId as string,
-      project: activeProject as Project, // Type assertion since we check for null earlier
+      project: activeProject as Project,
     };
     setMessages((prev) => [...prev, systemMessagePlaceholder]);
 
-    setTimeout(scrollToBottom, 100);
+    setTimeout(scrollToBottom, 2000);
 
     try {
       const requestBody = {
         framework: activeProject?.framework,
-        prompt: { role: 'user', content: messageToSend }, // Prompt object for backend
+        prompt: { role: 'user', content: messageToSend },
         projectId: activeProject?.projectId as string,
       };
 
@@ -98,11 +101,16 @@ const Chatview = () => {
         isHtmlStream: boolean = false
       ) => {
         let accumulatedText = '';
+        let lastProcessedLength = 0;
 
         eventSource.onmessage = (ev) => {
           try {
             const { text } = JSON.parse(ev.data);
+
+            // Only process new content
+            const newContent = text.slice(lastProcessedLength);
             accumulatedText += text;
+            lastProcessedLength = text.length;
 
             setMessages((prev) =>
               prev.map((msg) =>
@@ -112,18 +120,19 @@ const Chatview = () => {
                       content: accumulatedText,
                       isLoading: false,
                       isStreaming: true,
+                      streamedContent: newContent, // Add new content for animation
                     }
                   : msg
               )
             );
+
             if (isHtmlStream) {
-              // For HTML, we might want to update codebase progressively OR just at the end.
-              // Current fix: update codebase only at the end.
+              // For HTML streams, we'll update the codebase at the end
+              // to avoid partial updates
             }
             scrollToBottom();
           } catch (error) {
             console.error('Error processing stream chunk:', error);
-            // Potentially update message to show chunk error
           }
         };
 
@@ -132,20 +141,32 @@ const Chatview = () => {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === tempSystemMessageId
-                ? { ...msg, content: accumulatedText, isStreaming: false }
+                ? {
+                    ...msg,
+                    content: accumulatedText,
+                    isStreaming: false,
+                    streamedContent: undefined, // Clear streamed content marker
+                  }
                 : msg
             )
           );
-          setCodebase(accumulatedText); // Update codebase once at the end for both types
-          setIsCodeGenerating(false);
-          eventSource.close();
-
+          // setCodebase('');
+          
           if (previousDeploymentUrl) {
             toast.info('Code updated.', {
               duration: 5000,
               description: 'You can redeploy to see changes on permaweb',
             });
           }
+        });
+        toast.info('Updating codebase...');
+        eventSource.addEventListener('complete', (ev) => {
+          console.log('✅ Stream complete', ev);
+          const { codebase } = JSON.parse(ev.data);
+          setCodebase(codebase);
+          toast.success('Codebase updated.');
+          setIsCodeGenerating(false);
+          eventSource.close();
         });
 
         eventSource.addEventListener('error', (err) => {
@@ -164,7 +185,7 @@ const Chatview = () => {
           );
           eventSource.close();
           setIsCodeGenerating(false);
-          setFailedMessage(messageToSend); // Allow user to retry this prompt
+          setFailedMessage(messageToSend);
           toast.error('AI response failed. Try again.');
         });
       };
@@ -182,16 +203,16 @@ const Chatview = () => {
         );
         handleStreamEvents(eventSource, true);
       }
-      setTimeout(scrollToBottom, 100);
+      setTimeout(scrollToBottom, 2000);
     } catch (error) {
       console.error('Failed to send message:', error);
-      setMessages((prev) => prev.filter((m) => m.id !== tempSystemMessageId)); // Remove the placeholder
+      setMessages((prev) => prev.filter((m) => m.id !== tempSystemMessageId));
       setFailedMessage(messageToSend);
       toast.error('Failed to send message. Please try again.');
-      setIsCodeGenerating(false); // Ensure this is reset
+      setIsCodeGenerating(false);
     } finally {
       if (currentlyRetrying) {
-        setIsRetrying(false); // Reset isRetrying after the attempt
+        setIsRetrying(false);
       }
     }
   };
@@ -234,24 +255,26 @@ const Chatview = () => {
   return (
     <div className="h-full flex flex-col bg-background relative">
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${
-              message.role === 'user' ? 'justify-end' : 'justify-start'
-            } animate-in fade-in-0 slide-in-from-bottom-4`}
-          >
+        {messages &&
+          messages.length > 0 &&
+          messages.map((message) => (
             <div
-              className={`max-w-[85%] md:max-w-3xl rounded-lg p-5 shadow-sm ${
-                message.role === 'user'
-                  ? 'bg-primary text-primary-foreground ml-12'
-                  : 'bg-muted/50 dark:bg-gray-800/90 text-foreground mr-12 border border-border/50'
-              }`}
+              key={message.id}
+              className={`flex ${
+                message.role === 'user' ? 'justify-end' : 'justify-start'
+              } animate-in fade-in-0 slide-in-from-bottom-4`}
             >
-              {renderMessage(message)}
+              <div
+                className={`max-w-[85%] md:max-w-3xl rounded-lg p-5 shadow-sm ${
+                  message.role === 'user'
+                    ? 'bg-primary text-primary-foreground dark:text-primary-foreground/80 ml-12'
+                    : 'bg-muted/50 dark:bg-gray-800/90 text-foreground mr-12 border border-border/50'
+                }`}
+              >
+                {renderMessage(message)}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
         {failedMessage && !isCodeGenerating && (
           <div className="flex justify-center mt-4">
             <button

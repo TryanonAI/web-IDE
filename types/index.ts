@@ -64,7 +64,7 @@ export type Project = {
   title: string;
   processId: string;
   projectId: string;
-  messages: Message[];
+  messages: ChatMessage[];
   favorite: boolean;
   privacy: Privacy;
   creatorId: string;
@@ -77,17 +77,6 @@ export type Project = {
   versions: number;
   externalPackages: string[];
   codebase: CodebaseType;
-}
-
-export type Message = {
-  id: number | string;
-  messageId: string;
-  role: Role;
-  content: string;
-  projectId: string;
-  project?: Project; // optional if not populated
-  createdAt: string;
-  updatedAt: string;
 }
 
 export type ChatMessage = {

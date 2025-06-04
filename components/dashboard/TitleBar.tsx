@@ -112,7 +112,9 @@ const TitleBar = () => {
     !connected ||
     !activeProject;
   const deployDisabledState =
-    commonDisabledState || !codebase || chatMessages.length === 0;
+    commonDisabledState ||
+    !codebase ||
+    (chatMessages && chatMessages.length === 0);
   const githubButtonDisabledState =
     !connected ||
     githubStatus ===
@@ -445,7 +447,7 @@ const TitleBar = () => {
     };
 
     initializeGitHub();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [githubToken, activeProject]);
 
   // Handle Github auth redirect
@@ -505,7 +507,7 @@ const TitleBar = () => {
     };
 
     handleGithubAuth();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle GitHub disconnect

@@ -561,6 +561,7 @@ export const useGlobalState = create<
             isLoading: true,
             codeVersions: await fetchCodeVersions(project.projectId, address),
             deploymentUrl: project.deploymentUrl,
+            chatMessages: project.messages,
           });
 
           // Get existing stored projects
@@ -769,6 +770,8 @@ export const useGlobalState = create<
 
             // Update state with new project
             set({ projects: [...get().projects, newProject] });
+            set({ activeProject: newProject });
+            set({ chatMessages: [] });
 
             // Load the new project data
             await get().loadProjectData(

@@ -72,7 +72,11 @@ export function ProjectDrawer() {
   // };
 
   return (
-    <Drawer direction='right' open={activeDrawer === 'project'} onOpenChange={() => closeDrawer()}>
+    <Drawer
+      direction="right"
+      open={activeDrawer === 'project'}
+      onOpenChange={() => closeDrawer()}
+    >
       <DrawerContent>
         <DrawerHeader>
           <DrawerTitle className="flex items-center gap-2">
@@ -132,13 +136,8 @@ export function ProjectDrawer() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center p-4">
-              <FolderOpen
-                size={48}
-                className="text-muted-foreground/30 mb-4"
-              />
-              <p className="text-muted-foreground mb-2">
-                No projects found
-              </p>
+              <FolderOpen size={48} className="text-muted-foreground/30 mb-4" />
+              <p className="text-muted-foreground mb-2">No projects found</p>
               <Button
                 onClick={handleOpenCreateProjectDialog}
                 variant="outline"
@@ -152,10 +151,7 @@ export function ProjectDrawer() {
         </div>
 
         <DrawerFooter>
-          <Button
-            onClick={handleOpenCreateProjectDialog}
-            className="w-full"
-          >
+          <Button onClick={handleOpenCreateProjectDialog} className="w-full">
             <PlusIcon size={16} className="mr-1" />
             New Project
           </Button>
@@ -163,4 +159,4 @@ export function ProjectDrawer() {
       </DrawerContent>
     </Drawer>
   );
-} 
+}

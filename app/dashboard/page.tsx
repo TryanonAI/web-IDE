@@ -36,6 +36,7 @@ const Dashboard = () => {
   const createProject = useGlobalState((state) => state.createProject);
   const framework = useGlobalState((state) => state.framework);
   const setFramework = useGlobalState((state) => state.setFramework);
+  const setIsLoading = useGlobalState((state) => state.setIsLoading);
 
   const handleCreateProject = async () => {
     if (!projectName.trim()) return;
@@ -47,6 +48,8 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Error creating project:', error);
       openModal('createProject');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -122,9 +125,9 @@ const Dashboard = () => {
             <DialogTitle className="text-xl">Create New Project</DialogTitle>
           </DialogHeader>
           <form
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              handleCreateProject();
+              await handleCreateProject();
             }}
             className="space-y-4"
           >

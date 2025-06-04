@@ -16,7 +16,7 @@ export const MODE = 'legacy';
 // export const CU_URL = `${'http'}://${'localhost'}:6363`;
 
 export const GATEWAY_URL = `${PROTOCOL_TYPE}://${HOST_NAME}:${PORT_NUM}`;
-export const GRAPHQL_URL = `${'https'}://${'arnode.asia'}:${443}/graphql`;
+export const GRAPHQL_URL = `${'https'}://${'arweave.net'}:${443}/graphql`;
 
 // export const AOModule = 'Do_Uc2Sju_ffp6Ev0AnLVdPtot15rvMjP-a9VVaA5fM'; 
 // // regular-module on arweave
