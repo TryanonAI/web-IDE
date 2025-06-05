@@ -10,9 +10,9 @@ import {
 } from '@codesandbox/sandpack-react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { useWallet } from '@/hooks/use-wallet';
+import { useWallet } from '@/hooks';
 import { useEffect, useState, useRef } from 'react';
-import { useGlobalState } from '@/hooks/global-state';
+import { useGlobalState } from '@/hooks';
 import { CurrentProject, Framework } from '@/types';
 import { Tabs, TabsList } from '@/components/ui/tabs';
 import { defaultFiles } from '@/lib/filesUtils';
@@ -393,7 +393,7 @@ export default function Codeview({ isSaving }: CodeviewProps) {
                 </button>
 
                 {isVersionDropdownOpen && codeVersions.length > 0 && (
-                  <div className="absolute right-0 top-7 z-20 w-56 rounded-md border border-border bg-background shadow-lg">
+                  <div className="absolute right-0 top-7 z-60 w-56 rounded-md border border-border bg-background shadow-lg">
                     <div className="px-2 py-1.5 border-b border-border">
                       <p className="text-xs text-muted-foreground">
                         {codeVersions.length === 1

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useWallet } from '@/hooks/use-wallet';
+import { useWallet } from '@/hooks';
 import { toast } from 'sonner';
 import { notifyNoWallet } from '@/hooks/use-mobile';
 

@@ -1,4 +1,4 @@
-import { useGlobalState } from '@/hooks/global-state';
+import { useGlobalState } from '@/hooks';
 import { BASE_DEPENDENCIES, mergeDependencies } from '@/constant/dependencies';
 import { REACT_TEMPLATE_FILES, SHADCN_TEMPLATE_FILES } from '@/constant/templateFiles';
 

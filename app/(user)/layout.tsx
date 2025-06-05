@@ -1,15 +1,13 @@
 'use client';
 
-import { PlusCircle, Loader2, AlertCircle } from 'lucide-react';
-import Chatview from '@/components/dashboard/Chatview';
-import Codeview from '@/components/dashboard/Codeview';
-import { useGlobalState } from '@/hooks/global-state';
-import { validateProjectName } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { useWallet } from '@/hooks/use-wallet';
-import { Loading_Gif } from '@/app/loading';
-import { useEffect, useState } from 'react';
 import { Framework } from '@/types';
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { validateProjectName } from '@/lib/utils';
+import TitleBar from '@/components/dashboard/TitleBar';
+import StatusBar from '@/components/dashboard/StatusBar';
+import { ProjectDrawer } from '@/components/drawers/ProjectDrawer';
+
 import {
   Dialog,
   DialogContent,
@@ -17,30 +15,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@/components/ui/resizable';
+import { useGlobalState, useWallet } from '@/hooks';
+import { AlertCircle, Loader2, PlusCircle } from 'lucide-react';
 
-const Dashboard = () => {
-  const [nameError, setNameError] = useState<string>('');
-  const { activeModal, projectName, openModal, closeModal, setProjectName } =
-    useGlobalState();
+interface LayoutProps {
+  children: React.ReactNode;
+  showProjectDrawer?: boolean;
+}
 
+const Layout = ({ children }: LayoutProps) => {
+  const connect = useWallet((state) => state.connect);
   const connected = useWallet((state) => state.connected);
-  const isLoading = useGlobalState((state) => state.isLoading);
   const isCreating = useGlobalState((state) => state.isCreating);
-  const fetchProjects = useGlobalState((state) => state.fetchProjects);
-  const activeProject = useGlobalState((state) => state.activeProject);
   const createProject = useGlobalState((state) => state.createProject);
   const framework = useGlobalState((state) => state.framework);
   const setFramework = useGlobalState((state) => state.setFramework);
   const setIsLoading = useGlobalState((state) => state.setIsLoading);
 
+  const [nameError, setNameError] = useState<string>('');
+  const { activeModal, projectName, openModal, closeModal, setProjectName } =
+    useGlobalState();
+
   const handleCreateProject = async () => {
     if (!projectName.trim()) return;
     closeModal();
+    setIsLoading(true);
     try {
       console.log('Creating project from modal:', projectName);
       await createProject(projectName.trim(), framework);
@@ -66,47 +65,31 @@ const Dashboard = () => {
     }
   };
 
-  useEffect(() => {
-    if (connected) {
-      fetchProjects();
-    }
-  }, [connected, fetchProjects]);
-
   return (
-    <>
-      <div id="main-container" className="flex flex-1 min-h-0 overflow-hidden">
-        {isLoading ? (
-          <Loading_Gif count={3} />
-        ) : activeProject ? (
-          <ResizablePanelGroup direction="horizontal">
-            <ResizablePanel defaultSize={50} minSize={30}>
-              <Codeview />
-            </ResizablePanel>
-            <ResizableHandle />
-            <ResizablePanel defaultSize={50} minSize={20}>
-              <Chatview />
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        ) : (
-          <div className="flex flex-1 items-center justify-center bg-background">
-            <div className="flex flex-col items-center justify-center text-center">
-              <p className="mb-6 text-xl font-semibold text-foreground">
-                Create your first project and start vibe coding with{' '}
-                <span className="font-bold">Anon</span>
-              </p>
-              <Button
-                size="lg"
-                onClick={() => openModal('createProject')}
-                className="flex items-center gap-2 px-4 py-2.5 text-base h-auto cursor-pointer"
-              >
-                <PlusCircle size={20} />
-                <span>Create New Project</span>
-              </Button>
-            </div>
-          </div>
-        )}
+    <div className="flex flex-col h-screen overflow-hidden bg-background">
+      <div className="shrink-0 border-b border-border">
+        <TitleBar />
       </div>
+      {!connected ? (
+        <div className="flex flex-1 items-center justify-center">
+          <Button
+            className="cursor-pointer flex items-center gap-2 px-4 py-2.5 text-base h-auto"
+            onClick={() => connect()}
+            size="lg"
+          >
+            Connect Wallet
+          </Button>
+        </div>
+      ) : (
+        <div
+          id="main-container"
+          className="flex flex-1 min-h-0 overflow-hidden"
+        >
+          {children}
+        </div>
+      )}
 
+      <ProjectDrawer />
       <Dialog
         open={activeModal === 'createProject' && !isCreating}
         onOpenChange={(open) => {
@@ -194,8 +177,35 @@ const Dashboard = () => {
           </form>
         </DialogContent>
       </Dialog>
-    </>
+      <div className="shrink-0 border-t border-border">
+        <StatusBar />
+      </div>
+    </div>
   );
 };
 
-export default Dashboard;
+export default Layout;
+
+// const [lastStrategy] = useLocalStorage<ConnectionStrategies | null>(
+//   'anon-conn-strategy',
+//   null
+// );
+// const {
+//   connect,
+//   wanderInstance,
+//   connected,
+//   connectionStrategy,
+// } = useWallet();
+// useEffect(() => {
+//   console.log('connected', connected);
+//   console.log('lastStrategy', lastStrategy);
+//   if (!connected && lastStrategy) {
+//     console.log('Connecting with last strategy', lastStrategy);
+//     connect(lastStrategy).then(() => {
+//       if (connectionStrategy == ConnectionStrategies.WanderConnect) {
+//         wanderInstance?.close();
+//       }
+//     });
+//   }
+//   // eslint-disable-next-line react-hooks/exhaustive-deps
+// }, [lastStrategy, connected]);

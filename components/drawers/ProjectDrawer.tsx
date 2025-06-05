@@ -1,6 +1,6 @@
 import { FolderOpen, Folder, PlusIcon } from 'lucide-react';
-import { useGlobalState } from '@/hooks/global-state';
-import { useWallet } from '@/hooks/use-wallet';
+import { useGlobalState } from '@/hooks';
+import { useWallet } from '@/hooks';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

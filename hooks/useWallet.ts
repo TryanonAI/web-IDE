@@ -4,7 +4,7 @@ import { ConnectionStrategies, TrialStatus, User, WalletStatus } from "@/types";
 import { connectWallet, disconnectWallet, getWalletDetails, WalletConnectionResponse, WalletConnectionResult } from "@/lib/arkit";
 import { toast } from "sonner";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
-import { useGlobalState } from "./global-state";
+import { useGlobalState } from "./useGlobalState";
 import { notifyNoWallet } from "./use-mobile";
 const fetchOrCreateUser = async (walletAddress: string) => {
     try {

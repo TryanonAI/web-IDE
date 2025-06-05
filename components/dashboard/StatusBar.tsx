@@ -1,7 +1,7 @@
 import React from 'react';
 import { WalletStatus } from '@/types';
-import { useWallet } from '@/hooks/use-wallet';
-import { useGlobalState } from '@/hooks/global-state';
+import { useWallet } from '@/hooks';
+import { useGlobalState } from '@/hooks';
 import { Loader2Icon, GitBranchIcon } from 'lucide-react';
 
 const StatusBar = () => {

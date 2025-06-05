@@ -24,6 +24,8 @@ import {
   Eye,
   Copy,
   Check,
+  LogOutIcon,
+  UserIcon,
 } from 'lucide-react';
 import {
   Dialog,
@@ -32,22 +34,19 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { useWallet } from '@/hooks/use-wallet';
+import { useWallet } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Commit, Framework } from '@/types';
 import React, { useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  GITHUB_STATUS,
-  GithubError,
-  useGlobalState,
-} from '@/hooks/global-state';
+import { useGlobalState } from '@/hooks';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Octokit } from '@octokit/core';
 import Link from 'next/link';
 import { uploadToTurbo } from '@/lib/turbo-utils';
 import axios from 'axios';
 import { useCopyToClipboard } from '@uidotdev/usehooks';
+import { useRouter } from 'next/navigation';
 
 type StatusStep = {
   id: string;
@@ -56,6 +55,16 @@ type StatusStep = {
   status: 'pending' | 'loading' | 'success' | 'error';
   error?: string;
 };
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { GITHUB_STATUS, GithubError } from '@/hooks/useGlobalState';
 
 const TitleBar = () => {
   const [commits, setCommits] = useState<Commit[]>([]);
@@ -104,6 +113,8 @@ const TitleBar = () => {
     chatMessages,
   } = useGlobalState();
 
+  const { user } = useWallet();
+  const router = useRouter();
   // Add unified disabled states
   const commonDisabledState =
     isCodeGenerating ||
@@ -114,7 +125,7 @@ const TitleBar = () => {
   const deployDisabledState =
     commonDisabledState ||
     !codebase ||
-    (chatMessages && chatMessages.length === 0);
+    (chatMessages && chatMessages?.length === 0);
   const githubButtonDisabledState =
     !connected ||
     githubStatus ===
@@ -806,16 +817,31 @@ const TitleBar = () => {
               <span>Sync</span>
             </button>
 
-            <Link href="/profile">
-              <Button
-                className="cursor-pointer bg-primary/70 hover:bg-primary/80 flex items-center gap-2"
-                disabled={!connected}
-                aria-label="User Profile"
-              >
-                <User size={16} />
-                {shortAddress}
-              </Button>
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 outline-none">
+                <Avatar>
+                  <AvatarImage src={user?.avatarUrl} alt={user?.username} />
+                  <AvatarFallback>
+                    {user?.username?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span>{shortAddress}</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  className="flex items-center gap-2 cursor-pointer focus:bg-secondary/80"
+                  onClick={() => router.push('/profile')}
+                >
+                  <UserIcon size={16} className="text-primary/80" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-destructive focus:text-destructive-foreground">
+                  <LogOutIcon size={16} />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </div>
@@ -1127,135 +1153,6 @@ const TitleBar = () => {
           </>
         )}
       </AnimatePresence>
-
-      {/* Project Drawer */}
-      {/* <AnimatePresence>
-        {isProjectDrawerOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
-              onClick={() => setIsProjectDrawerOpen(false)}
-            />
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{
-                duration: 0.22,
-                ease: 'easeInOut',
-              }}
-              className="fixed inset-y-0 right-0 w-80 bg-background border-l border-border shadow-xl z-50 overflow-hidden"
-            >
-              <div className="h-full flex flex-col">
-                <div className="p-4 border-b border-border/70 flex items-center justify-between bg-secondary/30">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <FolderOpen size={18} className="text-primary" />
-                    Projects
-                  </h3>
-                  <button
-                    onClick={() => setIsProjectDrawerOpen(false)}
-                    className="p-1.5 hover:bg-secondary rounded-md transition-colors"
-                  >
-                    <XCircle size={18} />
-                  </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-2">
-                  {Array.isArray(projects) && projects.length > 0 ? (
-                    <div className="space-y-2">
-                      {projects.map((project) => (
-                        <div
-                          key={project.projectId}
-                          onClick={() => handleProjectSelect(project.projectId)}
-                          className={`p-3 border rounded-md cursor-pointer transition-all hover:shadow-sm ${
-                            activeProject?.projectId === project.projectId
-                              ? 'bg-primary/10 border-primary/30'
-                              : 'bg-card hover:bg-card/80 border-border'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="mt-0.5">
-                              <Folder
-                                size={16}
-                                className={
-                                  activeProject?.projectId === project.projectId
-                                    ? 'text-primary'
-                                    : 'text-muted-foreground'
-                                }
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-sm truncate">
-                                {project.title}
-                              </div>
-                              <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-                                <div>
-                                  {'Created: '}
-                                  {new Date(
-                                    project.createdAt
-                                  ).toLocaleDateString()}
-                                </div>
-                                <Badge className="text-[10px] bg-primary/80 tracking-wider">
-                                  {project.framework === 'React'
-                                    ? 'Code Mode'
-                                    : 'Vibe Mode'}
-                                </Badge>
-                              </div>
-                            </div>
-                            {activeProject?.projectId === project.projectId && (
-                              <div className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded">
-                                Active
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                      <FolderOpen
-                        size={48}
-                        className="text-muted-foreground/30 mb-4"
-                      />
-                      <p className="text-muted-foreground mb-2">
-                        No projects found
-                      </p>
-                      <Button
-                        onClick={() => {
-                          setIsProjectDrawerOpen(false);
-                          handleOpenCreateProjectDialog();
-                        }}
-                        variant="outline"
-                        className="mt-2"
-                      >
-                        <PlusIcon size={16} className="mr-1" />
-                        Create New Project
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-4 border-t border-border bg-secondary/20">
-                  <Button
-                    onClick={() => {
-                      setIsProjectDrawerOpen(false);
-                      handleOpenCreateProjectDialog();
-                    }}
-                    className="w-full"
-                  >
-                    <PlusIcon size={16} className="mr-1" />
-                    New Project
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence> */}
 
       {/* Project Info Drawer */}
       <AnimatePresence>

@@ -14,7 +14,7 @@ import {
 import SandpackErrorBoundary from './SandpackErrorBoundary';
 import SandpackModuleLoader from './SandpackModuleLoader';
 import { registerSandpackCacheListener } from '@/lib/sandpack/sandpackCache';
-import { useGlobalState } from '@/hooks/global-state';
+import { useGlobalState } from '@/hooks';
 import { SandpackAction } from '@/types';
 
 // Dynamically import the SandpackPreview component to reduce initial bundle size
@@ -201,7 +201,7 @@ export default SandPackPreviewClient;
 // import SandpackErrorBoundary from './SandpackErrorBoundary';
 // import SandpackModuleLoader from './SandpackModuleLoader';
 // import { registerSandpackCacheListener } from '@/lib/sandpack/sandpackCache';
-// import { useGlobalState } from '@/hooks/global-state';
+// import { useGlobalState } from '@/hooks';
 // import { SandpackAction } from '@/types';
 
 // const SandPackPreviewClient = () => {

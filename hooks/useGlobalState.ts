@@ -2,7 +2,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { create } from 'zustand';
 import { Octokit } from '@octokit/core';
-import { useWallet } from './use-wallet';
+import { useWallet } from './useWallet';
 import { devtools, persist } from 'zustand/middleware';
 import { defaultFiles, updateDefaultFiles } from '@/lib/filesUtils';
 import { mergeDependencies } from '@/constant/dependencies';
@@ -690,13 +690,10 @@ export const useGlobalState = create<
           framework: Framework
         ): Promise<Project | null> => {
           try {
-            console.log('🚀 Starting createProject');
             get().validateWalletConnection();
-
-            console.log('✅ Validation passed, setting loading to true');
-            get().setIsLoading(true);
-
-            console.log('📊 Current isLoading state:', get().isLoading);
+            console.log('✅ [useGlobalState] Validation passed');
+            console.log('📊 [useGlobalState] isLoading state:', get().isLoading);
+            console.log('🚀 [useGlobalState] Starting createProject');
 
             if (
               !projectName ||
@@ -778,7 +775,6 @@ export const useGlobalState = create<
               newProject,
               useWallet.getState().address as string
             );
-            get().setIsLoading(false);
 
             toast.success('Project created successfully');
             return newProject;

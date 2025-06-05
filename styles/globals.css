@@ -5,6 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+
+  --font-saira: "Saira", sans-serif;
+
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
 
@@ -245,7 +248,7 @@
 } */
 
 .sp-file-explorer {
-  min-width:220px !important;
+  min-width: 220px !important;
   max-width: 300px !important;
   width: 25% !important;
   height: 100% !important;

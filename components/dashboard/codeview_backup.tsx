@@ -10,10 +10,10 @@ import {
 import axios from 'axios';
 import { toast } from 'sonner';
 import Image from 'next/image';
-import { useWallet } from '@/hooks/use-wallet';
+import { useWallet } from '@/hooks';
 import { useEffect, useState, useRef } from 'react';
 import { cn, validateNpmPackage } from '@/lib/utils';
-import { useGlobalState } from '@/hooks/global-state';
+import { useGlobalState } from '@/hooks';
 import { CurrentProject, Project, Framework } from '@/types';
 // import { PreviewComponent } from '../codesandbox/PreviewComponent';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
