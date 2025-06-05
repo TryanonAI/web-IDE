@@ -1,9 +1,8 @@
 'use client';
 
-import { Framework } from '@/types';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { validateProjectName } from '@/lib/utils';
+import { cn, validateProjectName } from '@/lib/utils';
 import TitleBar from '@/components/dashboard/TitleBar';
 import StatusBar from '@/components/dashboard/StatusBar';
 import { ProjectDrawer } from '@/components/drawers/ProjectDrawer';
@@ -16,7 +15,27 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useGlobalState, useWallet } from '@/hooks';
-import { AlertCircle, Loader2, PlusCircle } from 'lucide-react';
+import {
+  AlertCircle,
+  Check,
+  ChevronsUpDown,
+  Loader2,
+  PlusCircle,
+} from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { Framework } from '@/types';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -29,20 +48,19 @@ const Layout = ({ children }: LayoutProps) => {
   const isCreating = useGlobalState((state) => state.isCreating);
   const createProject = useGlobalState((state) => state.createProject);
   const framework = useGlobalState((state) => state.framework);
-  const setFramework = useGlobalState((state) => state.setFramework);
   const setIsLoading = useGlobalState((state) => state.setIsLoading);
 
   const [nameError, setNameError] = useState<string>('');
   const { activeModal, projectName, openModal, closeModal, setProjectName } =
     useGlobalState();
 
-  const handleCreateProject = async () => {
+  const handleCreateProject = async (mode: Framework) => {
     if (!projectName.trim()) return;
     closeModal();
     setIsLoading(true);
     try {
       console.log('Creating project from modal:', projectName);
-      await createProject(projectName.trim(), framework);
+      await createProject(projectName.trim(), mode);
       setProjectName('');
     } catch (error) {
       console.error('Error creating project:', error);
@@ -64,6 +82,9 @@ const Layout = ({ children }: LayoutProps) => {
       setNameError('');
     }
   };
+
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<Framework>(framework);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
@@ -110,7 +131,7 @@ const Layout = ({ children }: LayoutProps) => {
           <form
             onSubmit={async (e) => {
               e.preventDefault();
-              await handleCreateProject();
+              await handleCreateProject(mode);
             }}
             className="space-y-4"
           >
@@ -139,17 +160,68 @@ const Layout = ({ children }: LayoutProps) => {
                     Choose a clear, descriptive name for your project.
                   </p>
                 )}
-                <select
-                  id="framework"
-                  value={framework}
-                  onChange={(e) => {
-                    setFramework(e.target.value as Framework);
-                  }}
-                  className="w-full p-3 rounded-md border border-border bg-background text-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                >
-                  <option value={Framework.Html}>Vibe Mode</option>
-                  <option value={Framework.React}>Code Mode</option>
-                </select>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="framework" className="text-sm font-medium">
+                    Select Mode
+                  </label>
+                  <Popover open={open} onOpenChange={setOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={open}
+                        className="w-full p-3 justify-between"
+                      >
+                        {framework
+                          ? [
+                              { value: Framework.React, label: 'Code Mode' },
+                              { value: Framework.Html, label: 'Vibe Mode' },
+                            ].find((fmk) => fmk.value === framework)?.label
+                          : 'Select framework...'}
+                        <ChevronsUpDown className="opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput
+                          placeholder="Search framework..."
+                          className="h-9"
+                        />
+                        <CommandList>
+                          <CommandEmpty>No mode found.</CommandEmpty>
+                          <CommandGroup>
+                            {[
+                              { value: Framework.React, label: 'Code Mode' },
+                              { value: Framework.Html, label: 'Vibe Mode' },
+                            ].map((fmk) => (
+                              <CommandItem
+                                key={fmk.value}
+                                value={fmk.value}
+                                onSelect={(fmk) => {
+                                  setMode(fmk as Framework);
+                                  setOpen(false);
+                                }}
+                              >
+                                {fmk.label}
+                                <Check
+                                  className={cn(
+                                    'ml-auto',
+                                    framework === fmk.value
+                                      ? 'opacity-100'
+                                      : 'opacity-0'
+                                  )}
+                                />
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Choose the mode for your project.
+                  </p>
+                </div>
               </div>
             </div>
             <DialogFooter className="flex justify-end gap-2 pt-2">

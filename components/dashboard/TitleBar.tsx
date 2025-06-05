@@ -68,9 +68,10 @@ import { GITHUB_STATUS, GithubError } from '@/hooks/useGlobalState';
 
 const TitleBar = () => {
   const [commits, setCommits] = useState<Commit[]>([]);
+  const disconnect = useWallet((state) => state.disconnect);
   const [commitMessage, setCommitMessage] = useState<string>('');
-  const [isStatusDrawerOpen, setIsStatusDrawerOpen] = useState<boolean>(false);
   const [commitError, setCommitError] = useState<string | null>(null);
+  const [isStatusDrawerOpen, setIsStatusDrawerOpen] = useState<boolean>(false);
   const [isCommitDialogOpen, setIsCommitDialogOpen] = useState<boolean>(false);
   const [isProjectInfoDrawerOpen, setIsProjectInfoDrawerOpen] =
     useState<boolean>(false);
@@ -740,7 +741,7 @@ const TitleBar = () => {
                     ? 'Connect wallet to deploy'
                     : !activeProject
                       ? 'Select a project to deploy'
-                      : !codebase || chatMessages.length === 0
+                      : !codebase || chatMessages?.length === 0
                         ? 'Generate some code before deploying'
                         : isDeploying
                           ? 'Deployment in progress'
@@ -836,7 +837,10 @@ const TitleBar = () => {
                   <span>Profile</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-destructive focus:text-destructive-foreground">
+                <DropdownMenuItem
+                  onClick={async () => disconnect()}
+                  className="flex items-center gap-2 cursor-pointer focus:bg-destructive focus:text-destructive-foreground"
+                >
                   <LogOutIcon size={16} />
                   <span>Logout</span>
                 </DropdownMenuItem>

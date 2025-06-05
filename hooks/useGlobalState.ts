@@ -635,15 +635,10 @@ export const useGlobalState = create<
             }
 
             if (res.data.projects.length > 0) {
-              await res.data.projects.sort(
-                (a: Project, b: Project) => {
-                  return (
-                    new Date(b.createdAt).getTime() -
-                    new Date(a.createdAt).getTime()
-                  );
-                }
-              );
-              set({ projects: res.data.projects });
+              await res.data.projects.sort((a: Project, b: Project) => {
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+              });
+              set({ projects: res.data.projects.reverse() });
 
               const storedProjectDetails = JSON.parse(localStorage.getItem('storedActiveProjects') || '[]');
               const isOwner = storedProjectDetails.find((p: { ownerAddress: string }) => p.ownerAddress === useWallet.getState().address);

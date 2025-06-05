@@ -265,221 +265,220 @@ const Profile = () => {
     }
   };
 
-  // <div className="main-container mx-auto px-4 py-8 max-w-4xl">
   return (
-    // <div id="main-container" className="flex flex-1 min-h-0 overflow-hidden">
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-8"
-    >
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push('/dashboard')}
-            className="hover:bg-gray-100"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
-            <p className="text-muted-foreground text-sm">
-              Manage your account settings and preferences
-            </p>
+    <div className="main-container mx-auto px-4 py-8 max-w-4xl">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-8"
+      >
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push('/dashboard')}
+              className="hover:bg-gray-100"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
+              <p className="text-muted-foreground text-sm">
+                Manage your account settings and preferences
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="hover:bg-gray-100"
-          >
-            <RefreshCw
-              className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`}
-            />
-          </Button>
-          <Button
-            variant={isEditing ? 'destructive' : 'outline'}
-            onClick={() => {
-              if (isEditing) {
-                setFormData({
-                  username: user.username,
-                  email: user.email || '',
-                });
-                setErrors({ username: '', email: '' });
-              }
-              setIsEditing(!isEditing);
-            }}
-            className="hover:bg-gray-100"
-          >
-            {isEditing ? (
-              <>
-                <X className="mr-2 h-5 w-5" />
-                Cancel
-              </>
-            ) : (
-              <>
-                <Edit className="mr-2 h-5 w-5" />
-                Edit Profile
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Profile Card */}
-      <div className="bg-card rounded-lg border border-border/50 overflow-hidden shadow-md">
-        {/* User Info Section */}
-        <div className="p-6 space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div
-                className="relative h-20 w-20 rounded-full bg-secondary/50 flex items-center justify-center cursor-pointer group"
-                onClick={handleAvatarClick}
-              >
-                {user.avatarUrl ? (
-                  <>
-                    <Image
-                      src={user.avatarUrl}
-                      alt={user.username}
-                      className="h-full w-full rounded-full object-cover group-hover:opacity-50 transition-opacity"
-                      width={64}
-                      height={64}
-                      priority={true}
-                    />
-                    <Upload
-                      size={20}
-                      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-foreground"
-                    />
-                  </>
-                ) : (
-                  <>
-                    <User
-                      size={24}
-                      className="text-muted-foreground group-hover:opacity-50 transition-opacity"
-                    />
-                    <Upload
-                      size={20}
-                      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-foreground"
-                    />
-                  </>
-                )}
-                {isUploading && (
-                  <div className="absolute inset-0 bg-background/50 rounded-full flex items-center justify-center">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  </div>
-                )}
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleAvatarUpload}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="hover:bg-gray-100"
+            >
+              <RefreshCw
+                className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`}
               />
-              <div className="flex-1">
-                {isEditing ? (
-                  <div className="space-y-2">
-                    <div>
-                      <Input
-                        name="username"
-                        value={formData.username}
-                        onChange={handleInputChange}
-                        placeholder="Username"
-                        className={
-                          errors.username
-                            ? 'border-destructive'
-                            : 'border-gray-300'
-                        }
-                      />
-                      {errors.username && (
-                        <p className="text-xs text-destructive mt-1">
-                          {errors.username}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Input
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        placeholder="Email"
-                        type="email"
-                        className={
-                          errors.email
-                            ? 'border-destructive'
-                            : 'border-gray-300'
-                        }
-                      />
-                      {errors.email && (
-                        <p className="text-xs text-destructive mt-1">
-                          {errors.email}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <h2 className="text-xl font-medium">{user.username}</h2>
-                    <p className="text-sm text-muted-foreground">
-                      {user.email || 'No email set'}
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Details Grid */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-            {profileDetails.map((item, index) => (
-              <div
-                key={index}
-                className="p-4 rounded-md bg-secondary/30 border border-border/50"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <item.icon size={16} className="text-primary/80" />
-                  <span className="text-sm font-medium">{item.title}</span>
-                </div>
-                {item.content}
-              </div>
-            ))}
+            </Button>
+            <Button
+              variant={isEditing ? 'destructive' : 'outline'}
+              onClick={() => {
+                if (isEditing) {
+                  setFormData({
+                    username: user.username,
+                    email: user.email || '',
+                  });
+                  setErrors({ username: '', email: '' });
+                }
+                setIsEditing(!isEditing);
+              }}
+              className="hover:bg-gray-100"
+            >
+              {isEditing ? (
+                <>
+                  <X className="mr-2 h-5 w-5" />
+                  Cancel
+                </>
+              ) : (
+                <>
+                  <Edit className="mr-2 h-5 w-5" />
+                  Edit Profile
+                </>
+              )}
+            </Button>
           </div>
         </div>
 
-        {/* Actions */}
-        {isEditing && (
-          <div className="border-t border-border/50 bg-card/50 p-6">
-            <div className="flex justify-end gap-3">
-              <Button
-                variant="default"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="hover:bg-primary/80"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Check className="mr-2 h-5 w-5" />
-                    Save Changes
-                  </>
-                )}
-              </Button>
+        {/* Profile Card */}
+        <div className="bg-card rounded-lg border border-border/50 overflow-hidden shadow-md">
+          {/* User Info Section */}
+          <div className="p-6 space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div
+                  className="relative h-20 w-20 rounded-full bg-secondary/50 flex items-center justify-center cursor-pointer group"
+                  onClick={handleAvatarClick}
+                >
+                  {user.avatarUrl ? (
+                    <>
+                      <Image
+                        src={user.avatarUrl}
+                        alt={user.username}
+                        className="h-full w-full rounded-full object-cover group-hover:opacity-50 transition-opacity"
+                        width={64}
+                        height={64}
+                        priority={true}
+                      />
+                      <Upload
+                        size={20}
+                        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-foreground"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <User
+                        size={24}
+                        className="text-muted-foreground group-hover:opacity-50 transition-opacity"
+                      />
+                      <Upload
+                        size={20}
+                        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-foreground"
+                      />
+                    </>
+                  )}
+                  {isUploading && (
+                    <div className="absolute inset-0 bg-background/50 rounded-full flex items-center justify-center">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarUpload}
+                />
+                <div className="flex-1">
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <div>
+                        <Input
+                          name="username"
+                          value={formData.username}
+                          onChange={handleInputChange}
+                          placeholder="Username"
+                          className={
+                            errors.username
+                              ? 'border-destructive'
+                              : 'border-gray-300'
+                          }
+                        />
+                        {errors.username && (
+                          <p className="text-xs text-destructive mt-1">
+                            {errors.username}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Input
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          placeholder="Email"
+                          type="email"
+                          className={
+                            errors.email
+                              ? 'border-destructive'
+                              : 'border-gray-300'
+                          }
+                        />
+                        {errors.email && (
+                          <p className="text-xs text-destructive mt-1">
+                            {errors.email}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <h2 className="text-xl font-medium">{user.username}</h2>
+                      <p className="text-sm text-muted-foreground">
+                        {user.email || 'No email set'}
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Details Grid */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+              {profileDetails.map((item, index) => (
+                <div
+                  key={index}
+                  className="p-4 rounded-md bg-secondary/30 border border-border/50"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <item.icon size={16} className="text-primary/80" />
+                    <span className="text-sm font-medium">{item.title}</span>
+                  </div>
+                  {item.content}
+                </div>
+              ))}
             </div>
           </div>
-        )}
-      </div>
-    </motion.div>
-    // </div>
+
+          {/* Actions */}
+          {isEditing && (
+            <div className="border-t border-border/50 bg-card/50 p-6">
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="default"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="hover:bg-primary/80"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="mr-2 h-5 w-5" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </div>
   );
 };
 
