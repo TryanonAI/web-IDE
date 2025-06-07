@@ -16,6 +16,7 @@
     "@ardrive/turbo-sdk": "^1.25.0",
     "@codesandbox/sandpack-react": "^2.20.0",
     "@codesandbox/sdk": "^1.1.2",
+    "@heroui/react": "^2.7.9",
     "@monaco-editor/react": "^4.7.0",
     "@octokit/core": "^6.1.4",
     "@othent/kms": "^2.1.1",

@@ -4,8 +4,8 @@ import { create } from 'zustand';
 import { Octokit } from '@octokit/core';
 import { useWallet } from './useWallet';
 import { devtools, persist } from 'zustand/middleware';
-import { defaultFiles, updateDefaultFiles } from '@/lib/filesUtils';
-import { mergeDependencies } from '@/constant/dependencies';
+import { defaultFiles } from '@/lib/filesUtils';
+// import { mergeDependencies } from '@/lib/utils';
 import { DbAdmin_LUA_CODE, runLua, spawnProcess } from '@/lib/arkit';
 import {
   Project,
@@ -139,7 +139,7 @@ export interface ProjectState {
   setIsCodeGenerating: (isCodeGenerating: boolean) => void;
   dependencies: DependencyMap;
   setDependencies: (deps: DependencyMap) => void;
-  updateDependencies: (newDeps: string[]) => void;
+  // updateDependencies: (newDeps: string[]) => void;
 }
 
 interface SandpackState {
@@ -562,6 +562,7 @@ export const useGlobalState = create<
             codeVersions: await fetchCodeVersions(project.projectId, address),
             deploymentUrl: project.deploymentUrl,
             chatMessages: project.messages,
+            dependencies: project.externalPackages as Record<string, string>,
           });
 
           // Get existing stored projects
@@ -599,8 +600,8 @@ export const useGlobalState = create<
             console.log('codebaseResponse', codebaseResponse.data);
             if (codebaseResponse.data) {
               set({ codebase: codebaseResponse.data.codebase || {} });
-              if (codebaseResponse.data.externalPackages && codebaseResponse.data.externalPackages.length > 0) {
-                get().updateDependencies(codebaseResponse.data.externalPackages);
+              if (codebaseResponse.data.externalPackages && Object.keys(codebaseResponse.data.externalPackages).length > 0) {
+                set({ dependencies: codebaseResponse.data.externalPackages as Record<string, string> });
               }
               if (codebaseResponse.data.messages && codebaseResponse.data.messages.length > 0) {
                 set({ chatMessages: codebaseResponse.data.messages as ChatMessage[] });
@@ -807,13 +808,8 @@ export const useGlobalState = create<
         closeModal: () => set({ activeModal: null }),
         setProjectName: (name: string) => set({ projectName: name }),
 
-        // Project State
-        setDependencies: (deps: DependencyMap) => set({ dependencies: deps }),
-        updateDependencies: (newDeps: string[]) => {
-          const { dependencies } = get();
-          const updatedDeps = mergeDependencies(dependencies, newDeps);
-          set({ dependencies: updatedDeps });
-          updateDefaultFiles(newDeps);
+        setDependencies: (newDeps: Record<string, string>) => {
+          set({ dependencies: newDeps });
         },
       }),
       {

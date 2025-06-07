@@ -3,22 +3,24 @@ export type ParsedChunk =
   | { type: 'file'; content: string }
   | { type: 'delete'; content: string }
   | { type: 'rename'; from: string; to: string }
-  | { type: 'dependency'; name: string; version: string };
+  | { type: 'dependency'; name: string };
 
 export function parseLLMResponse(response: string): ParsedChunk[] {
   const result: ParsedChunk[] = [];
 
-  // Strip wrappers
   const cleaned = response
     .replace(/<\/?anon-code>/g, '')
     .replace(/<\/?anon-thinking>/g, '')
     .replace(/<\/?anon-error>/g, '')
-    .replace(/<\/?anon-success>/g, '');
+    .replace(/<\/?anon-success>/g, '')
+    .replace(/<\/?ai_message>/g, '');
 
   const anonWriteRegex = /<anon-write file_path="([^"]+)">[\s\S]*?<\/anon-write>/g;
   const anonDeleteRegex = /<anon-delete file_path="([^"]+)"\s*\/?>/g;
   const anonRenameRegex = /<anon-rename original_file_path="([^"]+)" new_file_path="([^"]+)"\s*\/?>/g;
-  const anonDependencyRegex = /<anon-add-dependency name="([^"]+)" version="([^"]+)"\s*\/?>/g;
+  const anonDependencyRegex = /<anon-add-dependency>(@?[^@<\s]+(?:\/[^@<\s]+)?)(?:@([^<\s]+))?<\/anon-add-dependency>/g;
+
+
 
   let lastIndex = 0;
 
@@ -33,7 +35,7 @@ export function parseLLMResponse(response: string): ParsedChunk[] {
     ...[...cleaned.matchAll(anonWriteRegex)].map((m) => ({ type: 'file', index: m.index!, filePath: m[1], length: m[0].length })),
     ...[...cleaned.matchAll(anonDeleteRegex)].map((m) => ({ type: 'delete', index: m.index!, filePath: m[1], length: m[0].length })),
     ...[...cleaned.matchAll(anonRenameRegex)].map((m) => ({ type: 'rename', index: m.index!, from: m[1], to: m[2], length: m[0].length })),
-    ...[...cleaned.matchAll(anonDependencyRegex)].map((m) => ({ type: 'dependency', index: m.index!, name: m[1], version: m[2], length: m[0].length }))
+    ...[...cleaned.matchAll(anonDependencyRegex)].map((m) => ({ type: 'dependency', index: m.index!, name: m[1], length: m[0].length }))
   ].sort((a, b) => a.index - b.index);
 
   for (const m of matches) {

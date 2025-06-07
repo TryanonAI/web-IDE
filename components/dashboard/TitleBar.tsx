@@ -106,7 +106,7 @@ const TitleBar = () => {
 
   const {
     activeProject,
-    fetchProjects: onRefresh,
+    // fetchProjects: onRefresh,
     setError,
     codebase,
     deploymentUrl,
@@ -807,7 +807,7 @@ const TitleBar = () => {
         {connected && (
           <div className="flex items-center gap-2">
             {/* Refresh Project Button */}
-            <button
+            {/* <button
               onClick={onRefresh}
               disabled={commonDisabledState}
               className="h-9 px-3 flex items-center gap-2 bg-secondary/30 hover:bg-secondary/70 rounded-md text-sm font-medium transition-all shadow-sm hover:shadow disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
@@ -816,10 +816,11 @@ const TitleBar = () => {
             >
               <RefreshCwIcon size={16} className="text-primary/80" />
               <span>Sync</span>
-            </button>
+            </button> */}
 
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 outline-none">
+              {/* <DropdownMenuTrigger className="h-9 px-3 flex items-center gap-2 bg-secondary/30 hover:bg-secondary/70 rounded-md text-sm font-medium transition-all shadow-sm hover:shadow disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"> */}
+              <DropdownMenuTrigger className="rounded-md border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 group h-9 px-3 py-5 flex items-center gap-2 tracking-wider text-sm">
                 <Avatar>
                   <AvatarImage src={user?.avatarUrl} alt={user?.username} />
                   <AvatarFallback>

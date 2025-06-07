@@ -1,6 +1,6 @@
-import axios from 'axios';
 import { ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { ADDITIONAL_DEPENDENCIES } from '@/constant/dependencies';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -12,39 +12,41 @@ function validateProjectName(name: string) {
   return validPattern.test(name);
 };
 
-interface ValidationResult {
-  status: boolean;
-  name?: string;
-  latestVersion?: string;
-}
+function mergeDependencies(baseDeps: { [key: string]: string }, newDeps: string[]): { [key: string]: string } {
+  const result = { ...baseDeps };
+  const missingDeps: string[] = [];
 
-// NPM Package Validation
-const validateNpmPackage = async (
-  packageName: string
-): Promise<ValidationResult> => {
-  try {
-    const response = await axios.get(
-      `https://registry.npmjs.org/${packageName}`
-    );
+  newDeps.forEach(dep => {
+    const scopedMatch = dep.match(/@([^/]+)\/([^/]+)/);
+    if (scopedMatch) {
+      const scope = scopedMatch[1];
+      const packageName = scopedMatch[2];
 
-    if (response?.status === 200) {
-      return {
-        status: true,
-        name: response.data.name,
-        latestVersion: response.data['dist-tags'].latest,
-      };
-    } else {
-      console.warn(
-        `Package validation failed for ${packageName}:`,
-        response.status
+      // Find matching dependencies
+      const matchingDeps = Object.keys(ADDITIONAL_DEPENDENCIES).filter(key =>
+        key.startsWith(`@${scope}/`) && key.includes(packageName)
       );
-      return { status: false };
+
+      if (matchingDeps.length > 0) {
+        matchingDeps.forEach(matchingDep => {
+          result[matchingDep] = ADDITIONAL_DEPENDENCIES[matchingDep];
+        });
+      } else {
+        missingDeps.push(dep);
+      }
+    } else if (ADDITIONAL_DEPENDENCIES[dep]) {
+      result[dep] = ADDITIONAL_DEPENDENCIES[dep];
+    } else {
+      missingDeps.push(dep);
     }
-  } catch (error) {
-    console.error(`Error validating package ${packageName}:`, error);
-    return { status: false };
+  });
+
+  if (missingDeps.length > 0) {
+    console.warn('Missing dependencies:', missingDeps);
   }
-};
+
+  return result;
+}
 
 const convertToFilePathCodeMap = (
   // @ts-expect-error ino
@@ -59,5 +61,5 @@ const convertToFilePathCodeMap = (
 
   return output;
 };
-export { cn, validateProjectName, validateNpmPackage, convertToFilePathCodeMap };
 
+export { cn, validateProjectName, convertToFilePathCodeMap, mergeDependencies };

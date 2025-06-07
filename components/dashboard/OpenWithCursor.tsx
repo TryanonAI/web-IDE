@@ -1,9 +1,9 @@
-import { Project } from "@/types";
+import { Project } from '@/types';
 
 import { cn } from '@/lib/utils';
 
 import Image from 'next/image';
-import { AnimatedGradientText } from "../magicui/animated-gradient-text";
+import { AnimatedGradientText } from '../magicui/animated-gradient-text';
 
 // Open Active-Project with CursorIDE
 const OpenWithCursor = ({
@@ -21,13 +21,16 @@ const OpenWithCursor = ({
 
   return (
     <button
+      style={{
+        cursor: disabled ? 'default' : 'pointer',
+      }}
       disabled={disabled}
-      title="Open with Cursor"
+      title="Coming Soon"
       aria-label="Open with Cursor"
       onClick={handleOpenWithCursor}
       className={cn(
-        'h-5 px-2 rounded flex items-center gap-1.5 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground cursor-pointer',
-        disabled && 'opacity-50 cursor-not-allowed'
+        'h-5 px-2 rounded flex items-center gap-1.5 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
+        disabled && 'opacity-70'
       )}
     >
       <Image

@@ -17,6 +17,7 @@ const Chatview = () => {
   const [failedMessage, setFailedMessage] = useState<string | null>(null);
 
   const { user } = useWallet();
+  const setDependencies = useGlobalState((state) => state.setDependencies);
   const setCodebase = useGlobalState((state) => state.setCodebase);
   const chatMessages = useGlobalState((state) => state.chatMessages); // From global state
   const [messages, setMessages] = useState<ChatMessage[]>(chatMessages);
@@ -162,8 +163,9 @@ const Chatview = () => {
         });
 
         eventSource.addEventListener('complete', (ev) => {
-          const { codebase } = JSON.parse(ev.data);
+          const { codebase, externalPackages } = JSON.parse(ev.data);
           setCodebase(codebase);
+          setDependencies(externalPackages);
           toast.info('Code updated.', {
             duration: 5000,
             description: 'You can redeploy to see changes on permaweb',
@@ -263,7 +265,7 @@ const Chatview = () => {
     // Consider if user.tokens check is still relevant or if backend handles this
     return !user /*|| user.tokens === 0 */ || isCodeGenerating || isRetrying;
   };
-  console.log(user);
+
   return (
     <div className="h-full flex flex-col bg-background relative">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -273,21 +275,31 @@ const Chatview = () => {
             <div
               key={message.id}
               className={`flex items-start gap-3 ${
-                message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
+                message.role === 'user' ? 'flex-row' : 'flex-row'
               } animate-in fade-in-0 slide-in-from-bottom-2`}
             >
-              {message.role === 'user' && (
+              {message.role === 'user' ? (
                 <Avatar>
                   <AvatarImage src={user?.avatarUrl} />
                   <AvatarFallback>
-                    {user?.username.charAt(1).toUpperCase()}
+                    {user?.username.charAt(0).toUpperCase()}
                   </AvatarFallback>
+                </Avatar>
+              ) : (
+                <Avatar>
+                  <AvatarImage
+                    src={
+                      'https://arweave.net/pYIMnXpJRFUwTzogx_z5HCOPRRjCbSPYIlUqOjJ9Srs'
+                    }
+                    className="bg-none"
+                  />
+                  <AvatarFallback></AvatarFallback>
                 </Avatar>
               )}
               <div
-                className={`max-w-[85%] md:max-w-2xl rounded-xl ${
+                className={`max-w-[85%] rounded-xl w-2xl ${
                   message.role === 'user'
-                    ? 'bg-primary/60 text-black dark:text-black shadow-lg transition-colors'
+                    ? 'bg-sidebar-accent text-black dark:text-black shadow-lg transition-colors'
                     : 'bg-card dark:bg-card/90 text-card-foreground shadow-sm border border-border/10 hover:border-border/20 transition-all'
                 } p-4 backdrop-blur-sm`}
               >

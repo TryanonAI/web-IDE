@@ -1,6 +1,5 @@
 export interface CurrentProject {
   codebase: Record<string, string>;
-  description: string;
   externalPackages: { packageName: string; packageVersion: string }[];
   projectId: string;
 }
@@ -75,7 +74,7 @@ export type Project = {
   updatedAt: string;
   framework: Framework;
   versions: number;
-  externalPackages: string[];
+  externalPackages: Record<string, string>;
   codebase: CodebaseType;
 }
 

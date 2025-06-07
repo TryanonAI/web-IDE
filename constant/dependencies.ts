@@ -5,17 +5,19 @@ export const BASE_DEPENDENCIES: { [key: string]: string } = {
     "react-router-dom": "7.2.0",
     'next-themes': '^0.3.0',
     "sonner": "^1.2.3",
-    "@radix-ui/react-tooltip": "^1.0.6",
+    "@permaweb/aoconnect": "0.0.82",
     "clsx": "^2.1.1",
     "tailwind-merge": "^3.2.0",
-    "@permaweb/aoconnect": "0.0.82",
     "@tanstack/react-query": "5.80.2",
     "class-variance-authority": "^0.7.1",
     "lucide-react": "^0.485.0",
 };
 
 export const ADDITIONAL_DEPENDENCIES: { [key: string]: string } = {
-    "sonner": "^1.2.3",
+    "@radix-ui/react-dialog": "^1.1.1",
+    "@radix-ui/react-separator": "^1.0.3",
+    "embla-carousel-react": "^8.6.0",
+    "@radix-ui/react-tooltip": "^1.0.6",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-toast": "^1.2.14",
     'next-themes': '^0.3.0',
@@ -35,7 +37,6 @@ export const ADDITIONAL_DEPENDENCIES: { [key: string]: string } = {
     "@radix-ui/react-checkbox": "^1.0.4",
     "@radix-ui/react-collapsible": "^1.0.3",
     "@radix-ui/react-context-menu": "^2.1.4",
-    "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-dropdown-menu": "^2.0.5",
     "@radix-ui/react-hover-card": "^1.0.6",
     "@radix-ui/react-icons": "^1.3.0",
@@ -48,13 +49,11 @@ export const ADDITIONAL_DEPENDENCIES: { [key: string]: string } = {
     "@radix-ui/react-radio-group": "^1.1.3",
     "@radix-ui/react-scroll-area": "^1.2.3",
     "@radix-ui/react-select": "^2.0.0",
-    "@radix-ui/react-separator": "^1.0.3",
     "@radix-ui/react-slider": "^1.1.2",
     "@radix-ui/react-switch": "^1.0.3",
     "@radix-ui/react-tabs": "^1.0.4",
     "@radix-ui/react-toggle": "^1.0.3",
     "@radix-ui/react-toggle-group": "^1.0.4",
-    "@radix-ui/react-tooltip": "^1.0.6",
 };
 
 export const DEV_DEPENDENCIES = {
@@ -70,39 +69,3 @@ export const DEV_DEPENDENCIES = {
     "typescript-eslint": "^8.30.1",
     "vite": "^6.3.5"
 };
-
-export function mergeDependencies(baseDeps: { [key: string]: string }, newDeps: string[]): { [key: string]: string } {
-    const result = { ...baseDeps };
-    const missingDeps: string[] = [];
-
-    newDeps.forEach(dep => {
-        const scopedMatch = dep.match(/@([^/]+)\/([^/]+)/);
-        if (scopedMatch) {
-            const scope = scopedMatch[1];
-            const packageName = scopedMatch[2];
-
-            // Find matching dependencies
-            const matchingDeps = Object.keys(ADDITIONAL_DEPENDENCIES).filter(key =>
-                key.startsWith(`@${scope}/`) && key.includes(packageName)
-            );
-
-            if (matchingDeps.length > 0) {
-                matchingDeps.forEach(matchingDep => {
-                    result[matchingDep] = ADDITIONAL_DEPENDENCIES[matchingDep];
-                });
-            } else {
-                missingDeps.push(dep);
-            }
-        } else if (ADDITIONAL_DEPENDENCIES[dep]) {
-            result[dep] = ADDITIONAL_DEPENDENCIES[dep];
-        } else {
-            missingDeps.push(dep);
-        }
-    });
-
-    if (missingDeps.length > 0) {
-        console.warn('Missing dependencies:', missingDeps);
-    }
-
-    return result;
-} 
