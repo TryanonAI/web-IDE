@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { HTML_TEMPLATE_FILES } from '@/constant/templateFiles';
 import { BASE_DEPENDENCIES, DEV_DEPENDENCIES } from '@/constant/dependencies';
 import OpenWithCursor from './OpenWithCursor';
+import { Loading_Gif } from '@/app/loading';
 interface CodebaseType {
   [key: string]: string;
 }
@@ -87,7 +88,9 @@ export default function Codeview({ isSaving }: CodeviewProps) {
           '📦 Updating dependencies from version:',
           response.data.externalPackages
         );
-        setDependencies(response.data.externalPackages as Record<string, string>);
+        setDependencies(
+          response.data.externalPackages as Record<string, string>
+        );
       }
       console.log(response.data);
       setCodebase(response.data.codebase);
@@ -172,7 +175,7 @@ export default function Codeview({ isSaving }: CodeviewProps) {
     );
   }
 
-  console.log(dependencies)
+  console.log(dependencies);
 
   return (
     <SandpackProvider
@@ -231,188 +234,198 @@ export default function Codeview({ isSaving }: CodeviewProps) {
       }}
     >
       <div className="h-full w-full">
-        <div className="bg-background h-10 w-full px-2 flex items-center justify-between border-border border-b p-2">
-          <div className="flex items-center justify-center gap-0.5 h-full bg-muted/50 px-1 py-2 rounded-md">
-            <button
-              onClick={() => setActiveTab('code')}
-              className={cn(
-                'py-[1px] px-3 rounded-sm flex justify-center items-center gap-1 text-xs leading-5 font-medium transition-colors',
-                activeTab === 'code'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
-                isEditorDisabled() && 'opacity-50 cursor-not-allowed'
-              )}
-            >
-              <CodeIcon size={12} />
-              Code
-            </button>
-            <button
-              onClick={() => setActiveTab('preview')}
-              className={cn(
-                'py-[1px] px-3 rounded-sm flex justify-center items-center gap-1 text-xs leading-5 font-medium transition-colors',
-                activeTab === 'preview'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
-                isEditorDisabled() && 'opacity-50 cursor-not-allowed'
-              )}
-            >
-              <EyeIcon size={12} />
-              {'Preview'}
-            </button>
+        {isCodeGenerating ? (
+          <div className='flex items-center justify-center h-full bg-[#070707]' >
+            <Loading_Gif count={2} />
           </div>
-
-          <div className="flex items-center gap-2 h-full">
-            {selectedVersion && (
-              <div className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 px-2 py-1 rounded-md text-xs font-medium border border-yellow-500/30 shadow-sm">
-                <div className="flex items-center gap-1.5">
-                  <History size={12} />
-                  <span>
-                    Viewing historical version from{' '}
-                    {formatTimestamp(
-                      codeVersions.find((v) => v.id === selectedVersion)
-                        ?.timestamp || ''
-                    )}
-                  </span>
-                  <button
-                    onClick={returnToLatest}
-                    className="ml-1 underline hover:no-underline"
-                  >
-                    Return to latest
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <OpenWithCursor
-              disabled={true}
-              activeProject={activeProject as Project}
-            />
-
-            {/* Version control dropdown */}
-            <div className="relative" ref={versionDropdownRef}>
-              <button
-                onClick={() => setIsVersionDropdownOpen(!isVersionDropdownOpen)}
-                disabled={isEditorDisabled() || codeVersions.length === 0}
-                className={cn(
-                  'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
-                  (isEditorDisabled() || codeVersions.length === 0) &&
-                    'opacity-50 cursor-not-allowed'
-                )}
-                title="Code version history"
-              >
-                <History size={12} />
-                {selectedVersion
-                  ? `Version ${formatTimestamp(
-                      codeVersions.find((v) => v.id === selectedVersion)
-                        ?.timestamp || ''
-                    )}`
-                  : 'Current (Latest)'}
-                <ChevronDown
-                  size={10}
+        ) : (
+          <>
+            <div className="bg-background h-10 w-full px-2 flex items-center justify-between border-border border-b p-2">
+              <div className="flex items-center justify-center gap-0.5 h-full bg-muted/50 px-1 py-2 rounded-md">
+                <button
+                  onClick={() => setActiveTab('code')}
                   className={cn(
-                    'transition-transform',
-                    isVersionDropdownOpen && 'rotate-180'
+                    'py-[1px] px-3 rounded-sm flex justify-center items-center gap-1 text-xs leading-5 font-medium transition-colors',
+                    activeTab === 'code'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground',
+                    isEditorDisabled() && 'opacity-50 cursor-not-allowed'
                   )}
-                />
-              </button>
+                >
+                  <CodeIcon size={12} />
+                  Code
+                </button>
+                <button
+                  onClick={() => setActiveTab('preview')}
+                  className={cn(
+                    'py-[1px] px-3 rounded-sm flex justify-center items-center gap-1 text-xs leading-5 font-medium transition-colors',
+                    activeTab === 'preview'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground',
+                    isEditorDisabled() && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  <EyeIcon size={12} />
+                  {'Preview'}
+                </button>
+              </div>
 
-              {isVersionDropdownOpen && codeVersions.length > 0 && (
-                <div className="absolute right-0 top-7 z-60 w-56 rounded-md border border-border bg-background shadow-lg">
-                  <div className="px-2 py-1.5 border-b border-border">
-                    <p className="text-xs text-muted-foreground">
-                      {codeVersions.length === 1
-                        ? 'Only one version available'
-                        : `${codeVersions.length} versions, newest first`}
-                    </p>
-                  </div>
-                  <div className="max-h-48 overflow-y-auto py-1 px-1">
-                    <button
-                      onClick={() => {
-                        returnToLatest();
-                        setIsVersionDropdownOpen(false);
-                      }}
-                      className={cn(
-                        'w-full text-left px-2 py-1.5 text-xs rounded-sm hover:bg-muted flex items-center gap-1',
-                        !selectedVersion &&
-                          'bg-primary/10 text-primary font-medium'
-                      )}
-                    >
-                      <span className="font-medium">
-                        Current (Latest Version)
+              <div className="flex items-center gap-2 h-full">
+                {selectedVersion && (
+                  <div className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 px-2 py-1 rounded-md text-xs font-medium border border-yellow-500/30 shadow-sm">
+                    <div className="flex items-center gap-1.5">
+                      <History size={12} />
+                      <span>
+                        Viewing historical version from{' '}
+                        {formatTimestamp(
+                          codeVersions.find((v) => v.id === selectedVersion)
+                            ?.timestamp || ''
+                        )}
                       </span>
-                    </button>
+                      <button
+                        onClick={returnToLatest}
+                        className="ml-1 underline hover:no-underline"
+                      >
+                        Return to latest
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-                    {codeVersions.length > 1 &&
-                      codeVersions.slice(1).map((version) => (
+                <OpenWithCursor
+                  disabled={true}
+                  activeProject={activeProject as Project}
+                />
+
+                {/* Version control dropdown */}
+                <div className="relative" ref={versionDropdownRef}>
+                  <button
+                    onClick={() =>
+                      setIsVersionDropdownOpen(!isVersionDropdownOpen)
+                    }
+                    disabled={isEditorDisabled() || codeVersions.length === 0}
+                    className={cn(
+                      'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
+                      (isEditorDisabled() || codeVersions.length === 0) &&
+                        'opacity-50 cursor-not-allowed'
+                    )}
+                    title="Code version history"
+                  >
+                    <History size={12} />
+                    {selectedVersion
+                      ? `Version ${formatTimestamp(
+                          codeVersions.find((v) => v.id === selectedVersion)
+                            ?.timestamp || ''
+                        )}`
+                      : 'Current (Latest)'}
+                    <ChevronDown
+                      size={10}
+                      className={cn(
+                        'transition-transform',
+                        isVersionDropdownOpen && 'rotate-180'
+                      )}
+                    />
+                  </button>
+
+                  {isVersionDropdownOpen && codeVersions.length > 0 && (
+                    <div className="absolute right-0 top-7 z-60 w-56 rounded-md border border-border bg-background shadow-lg">
+                      <div className="px-2 py-1.5 border-b border-border">
+                        <p className="text-xs text-muted-foreground">
+                          {codeVersions.length === 1
+                            ? 'Only one version available'
+                            : `${codeVersions.length} versions, newest first`}
+                        </p>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto py-1 px-1">
                         <button
-                          key={version.id}
                           onClick={() => {
-                            loadCodeVersion(version.id);
+                            returnToLatest();
                             setIsVersionDropdownOpen(false);
                           }}
                           className={cn(
-                            'w-full text-left px-2 py-1.5 text-xs rounded-sm hover:bg-muted flex items-center justify-between',
-                            selectedVersion === version.id &&
+                            'w-full text-left px-2 py-1.5 text-xs rounded-sm hover:bg-muted flex items-center gap-1',
+                            !selectedVersion &&
                               'bg-primary/10 text-primary font-medium'
                           )}
-                          title={`Version from ${new Date(
-                            version.timestamp
-                          ).toLocaleString()} - ID: ${version.id}`}
                         >
-                          <span className="truncate">
-                            {version.description}
-                          </span>
-                          <span className="text-muted-foreground shrink-0 ml-1">
-                            {formatTimestamp(version.timestamp)}
+                          <span className="font-medium">
+                            Current (Latest Version)
                           </span>
                         </button>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
 
-        <SandpackLayout className="h-full min-h- w-full flex relative">
-          <div
-            className={cn(
-              'absolute inset-0 flex',
-              activeTab === 'code' ? 'z-50' : 'z-10'
-            )}
-          >
-            <SandpackFileExplorer
-              className="min-w-[200px] max-w-[250px]"
-              initialCollapsedFolder={['ui']}
-            />
-            <div className="flex-1 min-w-[35%] h-full flex flex-col">
-              <SandpackCodeEditor
-                showTabs={false}
-                showLineNumbers={true}
-                showInlineErrors={true}
-                wrapContent={false}
-                closableTabs={true}
-                readOnly={false}
-                showRunButton={true}
-                style={{ height: '100%', minHeight: '0' }}
-              />
+                        {codeVersions.length > 1 &&
+                          codeVersions.slice(1).map((version) => (
+                            <button
+                              key={version.id}
+                              onClick={() => {
+                                loadCodeVersion(version.id);
+                                setIsVersionDropdownOpen(false);
+                              }}
+                              className={cn(
+                                'w-full text-left px-2 py-1.5 text-xs rounded-sm hover:bg-muted flex items-center justify-between',
+                                selectedVersion === version.id &&
+                                  'bg-primary/10 text-primary font-medium'
+                              )}
+                              title={`Version from ${new Date(
+                                version.timestamp
+                              ).toLocaleString()} - ID: ${version.id}`}
+                            >
+                              <span className="truncate">
+                                {version.description}
+                              </span>
+                              <span className="text-muted-foreground shrink-0 ml-1">
+                                {formatTimestamp(version.timestamp)}
+                              </span>
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-          <div
-            className={cn(
-              'absolute inset-0',
-              activeTab === 'preview' ? 'z-50' : 'z-10'
-            )}
-          >
-            <SandpackPreview
-              showNavigator={true}
-              style={{ height: '100%' }}
-              showRefreshButton={true}
-              showOpenInCodeSandbox={true}
-              showSandpackErrorOverlay={false}
-            />
-          </div>
-        </SandpackLayout>
+
+            <SandpackLayout className="h-full min-h- w-full flex relative">
+              <div
+                className={cn(
+                  'absolute inset-0 flex',
+                  activeTab === 'code' ? 'z-50' : 'z-10'
+                )}
+              >
+                <SandpackFileExplorer
+                  className="min-w-[200px] max-w-[250px]"
+                  initialCollapsedFolder={['ui']}
+                />
+                <div className="flex-1 min-w-[35%] h-full flex flex-col">
+                  <SandpackCodeEditor
+                    showTabs={false}
+                    showLineNumbers={true}
+                    showInlineErrors={true}
+                    wrapContent={false}
+                    closableTabs={true}
+                    readOnly={false}
+                    showRunButton={true}
+                    style={{ height: '100%', minHeight: '0' }}
+                  />
+                </div>
+              </div>
+              <div
+                className={cn(
+                  'absolute inset-0',
+                  activeTab === 'preview' ? 'z-50' : 'z-10'
+                )}
+              >
+                <SandpackPreview
+                  showNavigator={true}
+                  style={{ height: '100%' }}
+                  showRefreshButton={true}
+                  showOpenInCodeSandbox={true}
+                  showSandpackErrorOverlay={false}
+                />
+              </div>
+            </SandpackLayout>
+          </>
+        )}
       </div>
     </SandpackProvider>
   );
