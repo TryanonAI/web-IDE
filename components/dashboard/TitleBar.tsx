@@ -725,6 +725,18 @@ const TitleBar = () => {
                   {!githubToken && <span>Github</span>}
                 </button>
               </div>
+
+              <Button
+                variant="outline"
+                disabled={true}
+                title="Coming Soon"
+                aria-label="Deploy Project"
+                className="h-9 px-3 flex items-center gap-2 bg-secondary/40 hover:bg-secondary/70 border border-border/40 hover:border-border/70 disabled:opacity-40 disabled:cursor-not-allowed rounded-md shadow-sm transition-all duration-200"
+              >
+                <Rocket size={16} />
+                <span>Deploy</span>
+                <span className="text-muted-foreground">(Coming Soon)</span>
+              </Button>
             </>
           )}
 

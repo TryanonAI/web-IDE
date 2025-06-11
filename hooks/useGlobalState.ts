@@ -6,7 +6,7 @@ import { useWallet } from './useWallet';
 import { devtools, persist } from 'zustand/middleware';
 import { defaultFiles } from '@/lib/filesUtils';
 // import { mergeDependencies } from '@/lib/utils';
-import { DbAdmin_LUA_CODE, runLua, spawnProcess } from '@/lib/arkit';
+import { runLua, spawnProcess } from '@/lib/arkit';
 import {
   Project,
   ChatMessage,
@@ -16,6 +16,7 @@ import {
   CodebaseType,
   CodeVersion,
 } from '@/types';
+import { ANON_LUA_TEMPLATE } from '@/constant';
 
 export interface GithubError extends Error {
   status?: number;
@@ -139,6 +140,7 @@ export interface ProjectState {
   setIsCodeGenerating: (isCodeGenerating: boolean) => void;
   dependencies: DependencyMap;
   setDependencies: (deps: DependencyMap) => void;
+  setProjects: (projects: Project[]) => void;
   // updateDependencies: (newDeps: string[]) => void;
 }
 
@@ -597,7 +599,7 @@ export const useGlobalState = create<
               `${backendUrl}/projects/${project.projectId}?walletAddress=${address}`
             );
 
-            console.log('codebaseResponse', codebaseResponse.data);
+            console.log('[useGlobalState] codebaseResponse', codebaseResponse.data);
             if (codebaseResponse.data) {
               set({ codebase: codebaseResponse.data.codebase || {} });
               if (codebaseResponse.data.externalPackages && Object.keys(codebaseResponse.data.externalPackages).length > 0) {
@@ -730,17 +732,17 @@ export const useGlobalState = create<
 
             const luaResult = await runLua({
               process: processId,
-              code: DbAdmin_LUA_CODE,
+              code: ANON_LUA_TEMPLATE,
               tags: [
                 {
                   name: 'Description',
-                  value: `${projectName} now supports sqlite database operations.`,
+                  value: `${projectName} added lsqlite3 and @rakis/DbAdmin support.`,
                 },
               ],
             });
 
             console.log(
-              'Successfully added DbAdmin support to project:',
+              'Successfully added @rakis/DbAdmin support to Lua:',
               luaResult.id
             );
 
@@ -811,6 +813,8 @@ export const useGlobalState = create<
         setDependencies: (newDeps: Record<string, string>) => {
           set({ dependencies: newDeps });
         },
+
+        setProjects: (projects: Project[]) => set({ projects }),
       }),
       {
         name: 'global-state',

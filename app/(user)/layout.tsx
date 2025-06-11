@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { cn, validateProjectName } from '@/lib/utils';
+import { validateProjectName } from '@/lib/utils';
 import TitleBar from '@/components/dashboard/TitleBar';
 import StatusBar from '@/components/dashboard/StatusBar';
 import { ProjectDrawer } from '@/components/drawers/ProjectDrawer';
+import { usePathname, useRouter } from 'next/navigation';
 
 import {
   Dialog,
@@ -17,25 +18,35 @@ import {
 import { useGlobalState, useWallet } from '@/hooks';
 import {
   AlertCircle,
-  Check,
   ChevronsUpDown,
   Loader2,
   PlusCircle,
+  LogOutIcon,
+  UserIcon,
 } from 'lucide-react';
 import {
   Popover,
-  PopoverContent,
+  // PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
+// import {
+//   Command,
+//   CommandEmpty,
+//   CommandGroup,
+//   CommandInput,
+//   CommandItem,
+//   CommandList,
+// } from '@/components/ui/command';
 import { Framework } from '@/types';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import Link from 'next/link';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -43,21 +54,33 @@ interface LayoutProps {
 }
 
 const Layout = ({ children }: LayoutProps) => {
-  const connect = useWallet((state) => state.connect);
-  const connected = useWallet((state) => state.connected);
-  const isCreating = useGlobalState((state) => state.isCreating);
-  const createProject = useGlobalState((state) => state.createProject);
-  const framework = useGlobalState((state) => state.framework);
-  const setIsLoading = useGlobalState((state) => state.setIsLoading);
-
+  const router = useRouter();
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
   const [nameError, setNameError] = useState<string>('');
-  const { activeModal, projectName, openModal, closeModal, setProjectName } =
-    useGlobalState();
+  const [mode, setMode] = useState<Framework>(Framework.React);
+
+  const { user, shortAddress, connect, disconnect, connected } = useWallet();
+  const {
+    activeModal,
+    projectName,
+    openModal,
+    closeModal,
+    setProjectName,
+    isCreating,
+    setIsLoading,
+    setFramework,
+    createProject,
+  } = useGlobalState();
+
+  const isDashboard = pathname === '/dashboard';
 
   const handleCreateProject = async (mode: Framework) => {
     if (!projectName.trim()) return;
     closeModal();
     setIsLoading(true);
+    setFramework(Framework.React);
+    setMode(Framework.React);
     try {
       console.log('Creating project from modal:', projectName);
       await createProject(projectName.trim(), mode);
@@ -82,15 +105,50 @@ const Layout = ({ children }: LayoutProps) => {
       setNameError('');
     }
   };
-
-  const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<Framework>(framework);
-
+  
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
+      {/* Conditional Navigation Bar */}
       <div className="shrink-0 border-b border-border">
-        <TitleBar />
+        {isDashboard ? (
+          <TitleBar />
+        ) : (
+          <div className="h-14 px-4 flex items-center justify-between bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <span className="font-semibold">ANON</span>
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="rounded-md border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 group h-9 px-3 py-5 flex items-center gap-2 tracking-wider text-sm">
+                <Avatar>
+                  <AvatarImage src={user?.avatarUrl} alt={user?.username} />
+                  <AvatarFallback>
+                    {user?.username?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span>{shortAddress}</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  className="flex items-center gap-2 cursor-pointer focus:bg-secondary/80"
+                  onClick={() => router.push('/dashboard')}
+                >
+                  <UserIcon size={16} className="text-primary/80" />
+                  <span>Dashboard</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={async () => disconnect()}
+                  className="flex items-center gap-2 cursor-pointer focus:bg-destructive focus:text-destructive-foreground"
+                >
+                  <LogOutIcon size={16} />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
+
       {!connected ? (
         <div className="flex flex-1 items-center justify-center">
           <Button
@@ -104,7 +162,7 @@ const Layout = ({ children }: LayoutProps) => {
       ) : (
         <div
           id="main-container"
-          className="flex flex-1 min-h-0 overflow-hidden bg-background"
+          className="flex flex-1 min-h-0 overflow-hidden bg-background pb-2"
         >
           {children}
         </div>
@@ -114,7 +172,6 @@ const Layout = ({ children }: LayoutProps) => {
       <Dialog
         open={activeModal === 'createProject' && !isCreating}
         onOpenChange={(open) => {
-          // Only allow closing if not in creating state
           if (!isCreating) {
             if (open) openModal('createProject');
             else closeModal();
@@ -157,69 +214,80 @@ const Layout = ({ children }: LayoutProps) => {
                   </div>
                 ) : (
                   <p className="text-xs text-muted-foreground mt-1.5">
-                    Choose a clear, descriptive name for your project.
+                    {/* Choose a clear, descriptive name for your project. */}
                   </p>
                 )}
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="framework" className="text-sm font-medium">
+                  <label
+                    htmlFor="framework"
+                    className="text-sm font-medium opacity-50 "
+                  >
                     Select Mode
                   </label>
                   <Popover open={open} onOpenChange={setOpen}>
-                    <PopoverTrigger asChild>
+                    <PopoverTrigger disabled={true} asChild>
                       <Button
                         variant="outline"
                         role="combobox"
                         aria-expanded={open}
-                        className="w-full p-3 justify-between"
+                        className="w-full p-3 justify-between opacity-60 cursor-not-allowed"
                       >
-                        {framework
-                          ? [
-                              { value: Framework.React, label: 'Code Mode' },
-                              { value: Framework.Html, label: 'Vibe Mode' },
-                            ].find((fmk) => fmk.value === framework)?.label
-                          : 'Select framework...'}
+                        {/* {framework
+                            ? [
+                                { value: Framework.React, label: 'Code Mode' },
+                                { value: Framework.Html, label: 'Vibe Mode' },
+                              ].find((fmk) => fmk.value === framework)?.label
+                            : 'Select framework...'} */}
+                        {/* Code Mode */}
+                        {/* <div className='flex gap-1'> */}
+                        <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">
+                          Coming Soon
+                        </span>
                         <ChevronsUpDown className="opacity-50" />
+                        {/* </div> */}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
-                      <Command>
-                        <CommandInput
-                          placeholder="Search framework..."
-                          className="h-9"
-                        />
-                        <CommandList>
-                          <CommandEmpty>No mode found.</CommandEmpty>
-                          <CommandGroup>
-                            {[
-                              { value: Framework.React, label: 'Code Mode' },
-                              { value: Framework.Html, label: 'Vibe Mode' },
-                            ].map((fmk) => (
-                              <CommandItem
-                                key={fmk.value}
-                                value={fmk.value}
-                                onSelect={(fmk) => {
-                                  setMode(fmk as Framework);
-                                  setOpen(false);
-                                }}
-                              >
-                                {fmk.label}
-                                <Check
-                                  className={cn(
-                                    'ml-auto',
-                                    framework === fmk.value
-                                      ? 'opacity-100'
-                                      : 'opacity-0'
-                                  )}
-                                />
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
+                    {/* Commenting out the PopoverContent section for now */}
+                    {/* <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput
+                            placeholder="Search framework..."
+                            className="h-9"
+                          />
+                          <CommandList>
+                            <CommandEmpty>No mode found.</CommandEmpty>
+                            <CommandGroup>
+                              {[
+                                { value: Framework.React, label: 'Code Mode' },
+                                { value: Framework.Html, label: 'Vibe Mode' },
+                              ].map((fmk) => (
+                                <CommandItem
+                                  key={fmk.value}
+                                  value={fmk.value}
+                                  onSelect={(fmk) => {
+                                    setMode(fmk as Framework);
+                                    setFramework(fmk as Framework);
+                                    setOpen(false);
+                                  }}
+                                >
+                                  {fmk.label}
+                                  <Check
+                                    className={cn(
+                                      'ml-auto',
+                                      framework === fmk.value
+                                        ? 'opacity-100'
+                                        : 'opacity-0'
+                                    )}
+                                  />
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent> */}
                   </Popover>
                   <p className="text-xs text-muted-foreground mt-1.5">
-                    Choose the mode for your project.
+                    Additional project modes will be available soon.
                   </p>
                 </div>
               </div>
@@ -249,9 +317,11 @@ const Layout = ({ children }: LayoutProps) => {
           </form>
         </DialogContent>
       </Dialog>
-      <div className="shrink-0 border-t border-border">
-        <StatusBar />
-      </div>
+      {isDashboard && (
+        <div className="shrink-0 border-t border-border">
+          <StatusBar />
+        </div>
+      )}
     </div>
   );
 };

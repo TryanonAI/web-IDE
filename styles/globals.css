@@ -257,7 +257,6 @@
   flex-shrink: 0 !important;
 }
 
-
 .sp-file-explorer [data-active='false']:hover {
   background: transparent !important;
 }
@@ -324,4 +323,8 @@
 
 button {
   @apply cursor-pointer;
+}
+
+button:disabled{
+  @apply cursor-default;
 }

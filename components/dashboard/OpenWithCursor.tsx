@@ -15,16 +15,13 @@ const OpenWithCursor = ({
 }) => {
   const handleOpenWithCursor = async () => {
     window.open(
-      `cursor://aykansal.tryanon/openProject?projectId=${activeProject?.projectId}`
+      `vscode://aykansal.tryanon/openProject?projectId=${activeProject?.projectId}`
     );
   };
 
   return (
     <button
-      style={{
-        cursor: disabled ? 'default' : 'pointer',
-      }}
-      disabled={disabled}
+      disabled={true}
       title="Coming Soon"
       aria-label="Open with Cursor"
       onClick={handleOpenWithCursor}

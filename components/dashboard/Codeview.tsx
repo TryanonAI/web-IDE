@@ -6,7 +6,6 @@ import {
   SandpackProvider,
   SandpackCodeEditor,
   SandpackFileExplorer,
-  SandpackPreview,
 } from '@codesandbox/sandpack-react';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -16,10 +15,10 @@ import { useGlobalState } from '@/hooks';
 import { Framework, Project } from '@/types';
 import { defaultFiles } from '@/lib/filesUtils';
 import { cn } from '@/lib/utils';
-import { HTML_TEMPLATE_FILES } from '@/constant/templateFiles';
 import { BASE_DEPENDENCIES, DEV_DEPENDENCIES } from '@/constant/dependencies';
 import OpenWithCursor from './OpenWithCursor';
 import { Loading_Gif } from '@/app/loading';
+import Sprv from './Sprv';
 interface CodebaseType {
   [key: string]: string;
 }
@@ -27,11 +26,6 @@ interface CodebaseType {
 interface CodeviewProps {
   isSaving?: boolean;
 }
-
-const extractHtmlFromMarkdown = (content: string): string => {
-  const htmlMatch = content.match(/```html\s*([\s\S]*?)```/);
-  return htmlMatch ? htmlMatch[1].trim() : '';
-};
 
 export default function Codeview({ isSaving }: CodeviewProps) {
   const address = useWallet((state) => state.address);
@@ -48,10 +42,6 @@ export default function Codeview({ isSaving }: CodeviewProps) {
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
   const versionDropdownRef = useRef<HTMLDivElement>(null);
-
-  // const [currentProject, setCurrentProject] = useState<CurrentProject | null>(
-  //   null
-  // );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -146,36 +136,22 @@ export default function Codeview({ isSaving }: CodeviewProps) {
     }
   };
 
-  const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
+  const [activeTab, setActiveTab] = useState<'code' | 'preview'>('preview');
 
   if (activeProject?.framework === Framework.Html) {
-    let htmlContent = '';
-    if (isCodeGenerating) {
-      htmlContent =
-        typeof codebase === 'object' ? HTML_TEMPLATE_FILES : codebase || '';
-    } else {
-      htmlContent =
-        typeof codebase === 'object' ? HTML_TEMPLATE_FILES : codebase || '';
-    }
-    console.log(htmlContent);
-    // Extract HTML from markdown code block
-    if (htmlContent.startsWith('<!DOCTYPE html>')) {
-      htmlContent = htmlContent;
-    } else {
-      htmlContent = extractHtmlFromMarkdown(htmlContent);
-    }
-
+    console.log(codebase);
     return (
       <iframe
-        srcDoc={htmlContent}
+        srcDoc={
+          // @ts-expect-error ignore
+          codebase['index.html']
+        }
         className="w-full h-full"
         aria-label="Code Preview"
         title="Code Preview"
       />
     );
   }
-
-  console.log(dependencies);
 
   return (
     <SandpackProvider
@@ -218,14 +194,20 @@ export default function Codeview({ isSaving }: CodeviewProps) {
           'https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css',
         ],
         classes: {
-          // 'sp-wrapper': 'h-full min-h-0',
           // 'sp-layout': 'h-full min-h-0 border-none',
+          // 'sp-wrapper': 'h-full min-h-full',
           // 'sp-file-explorer':
-          //   'min-w-[200px] max-w-[300px] w-1/4 h-full overflow-auto border-r border-border',
-          // 'sp-code-editor': 'h-full flex-1',
-          // 'sp-tabs': 'bg-background border-b border-border',
-          // 'sp-preview-container': 'h-full bg-background',
-          // 'sp-preview-iframe': 'h-full bg-black',
+          //   'min-w-[220px] max-w-[300px] w-1/4 h-full overflow-auto flex-shrink-0',
+          // 'sp-file-explorer [data-active="false"]:hover': 'bg-transparent',
+          // 'sp-file-explorer [data-active="true"]': 'bg-secondary',
+          'sp-tabs': 'background-color:bg-[#fff];',
+          // 'sp-tabs [role="tab"]:hover': 'bg-transparent',
+          // 'sp-tabs [role="tab"][data-active="true"]': 'bg-secondary',
+          // 'sp-code-editor>div:last-child': 'flex-1 min-h-0 overflow-auto',
+          // 'sp-preview-container': 'h-full flex-1 min-w-0',
+          // 'sp-preview-iframe': 'h-full',
+          // 'cm-editor': 'h-full flex-1',
+          // 'cm-scroller': 'h-full',
         },
         recompileMode: 'immediate',
         recompileDelay: 0,
@@ -235,7 +217,7 @@ export default function Codeview({ isSaving }: CodeviewProps) {
     >
       <div className="h-full w-full">
         {isCodeGenerating ? (
-          <div className='flex items-center justify-center h-full bg-[#070707]' >
+          <div className="flex items-center justify-center h-full bg-[#070707]">
             <Loading_Gif count={2} />
           </div>
         ) : (
@@ -415,13 +397,7 @@ export default function Codeview({ isSaving }: CodeviewProps) {
                   activeTab === 'preview' ? 'z-50' : 'z-10'
                 )}
               >
-                <SandpackPreview
-                  showNavigator={true}
-                  style={{ height: '100%' }}
-                  showRefreshButton={true}
-                  showOpenInCodeSandbox={true}
-                  showSandpackErrorOverlay={false}
-                />
+                <Sprv/>
               </div>
             </SandpackLayout>
           </>
@@ -429,92 +405,4 @@ export default function Codeview({ isSaving }: CodeviewProps) {
       </div>
     </SandpackProvider>
   );
-}
-
-{
-  //  TODO: RunLua is automated on every LLM call, so we don't need to run it manually
-  /* 
-  <button
-  onClick={handleRunLua}
-  disabled={isEditorDisabled()}
-  className={cn(
-    'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
-    isEditorDisabled() && 'opacity-50 cursor-not-allowed'
-  )}
->
-  <RunIcon /> Run Lua
-</button>;
-
-const handleRunLua = async () => {
-  let luaCodeToBeEval = '';
-  if (currentProject?.codebase) {
-    const codebase = currentProject.codebase;
-    const luaPath = '/src/lib/index.lua';
-    
-    if (codebase && codebase[luaPath]) {
-      const luaFile = codebase[luaPath];
-      if (typeof luaFile === 'string') {
-        luaCodeToBeEval = luaFile;
-      } else if (typeof luaFile === 'object' && 'code' in luaFile) {
-        luaCodeToBeEval = (luaFile as { code: string }).code;
-      }
-    }
-  }
-  
-  if (!luaCodeToBeEval) {
-    toast.error('No Lua code found in the project.');
-    return;
-  }
-  
-  if (typeof window === 'undefined' || !window.arweaveWallet) {
-    toast.error(
-      "Arweave wallet not available. Please ensure it's installed and connected."
-    );
-    return;
-  }
-  
-  if (!activeProject?.projectId) {
-    toast.error('No valid process ID found for this project.');
-    return;
-  }
-  
-  try {
-    const { connect } = await import('@permaweb/aoconnect');
-    const ao = connect({
-      MODE: MODE,
-      CU_URL: CU_URL,
-      GATEWAY_URL: GATEWAY_URL,
-      GRAPHQL_URL: GRAPHQL_URL,
-    });
-    
-    const luaResult = await runLua({
-      process: activeProject.projectId,
-      code: luaCodeToBeEval,
-      tags: [
-        {
-          name: 'Description',
-          value: `${currentProject?.description || 'project description'}`,
-        },
-      ],
-    });
-    
-    console.log('Message ID:', luaResult.id);
-    
-    const result = await ao.result({
-      process: activeProject?.projectId || '',
-      message: luaResult.id,
-    });
-    
-    toast.success('Lua code executed successfully');
-    setCurrentProject((prev) =>
-    prev ? { ...prev, latestMessage: result } : null
-  );
-} catch (error) {
-  const errorMessage =
-  error instanceof Error ? error.message : 'Unknown error';
-  toast.error('Error executing Lua code: ' + errorMessage);
-  console.error('Lua execution error:', error);
-}
-};
-*/
 }

@@ -4,11 +4,12 @@ import { toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
 import { Loader2Icon, RefreshCw } from 'lucide-react';
 import { Input } from '../ui/input';
-import { Framework, ChatMessage, Role, Project } from '@/types';
+import { Framework, ChatMessage, Role, Project, CodebaseType } from '@/types';
 import { useWallet } from '@/hooks';
 import { useGlobalState } from '@/hooks';
 import LLMRenderer from './chatview/LLMRenderer';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { handleRunLua } from '@/lib/arkit';
 
 const Chatview = () => {
   const [userInput, setUserInput] = useState('');
@@ -18,6 +19,7 @@ const Chatview = () => {
 
   const { user } = useWallet();
   const setDependencies = useGlobalState((state) => state.setDependencies);
+  const codebase = useGlobalState((state) => state.codebase);
   const setCodebase = useGlobalState((state) => state.setCodebase);
   const chatMessages = useGlobalState((state) => state.chatMessages); // From global state
   const [messages, setMessages] = useState<ChatMessage[]>(chatMessages);
@@ -26,7 +28,6 @@ const Chatview = () => {
   const setIsCodeGenerating = useGlobalState(
     (state) => state.setIsCodeGenerating
   );
-  const deploymentUrl = useGlobalState((state) => state.deploymentUrl);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -50,7 +51,6 @@ const Chatview = () => {
     }
 
     setIsCodeGenerating(true);
-    const previousDeploymentUrl = deploymentUrl;
 
     // Add user message to local state if not retrying
     if (!currentlyRetrying) {
@@ -152,20 +152,26 @@ const Chatview = () => {
                 : msg
             )
           );
-          // setCodebase('');
-
-          if (previousDeploymentUrl) {
-            toast.info('Code updated.', {
-              duration: 5000,
-              description: 'You can redeploy to see changes on permaweb',
-            });
-          }
         });
 
-        eventSource.addEventListener('complete', (ev) => {
-          const { codebase, externalPackages } = JSON.parse(ev.data);
-          setCodebase(codebase);
+        eventSource.addEventListener('complete', async (ev) => {
+          console.log('✅ Stream Complete');
+          const { codebase: codebaserec, externalPackages } = JSON.parse(
+            ev.data
+          );
+          setCodebase(codebaserec);
           setDependencies(externalPackages);
+
+          if (isHtmlStream) {
+          } else {
+            console.log('running lua');
+            await handleRunLua({
+              project: activeProject as Project,
+              codebase: codebase as CodebaseType,
+            });
+            console.log('running lua done');
+          }
+
           toast.info('Code updated.', {
             duration: 5000,
             description: 'You can redeploy to see changes on permaweb',
@@ -174,25 +180,25 @@ const Chatview = () => {
           eventSource.close();
         });
 
-        eventSource.addEventListener('error', (err) => {
-          console.error('❌ Stream error', err);
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === tempSystemMessageId
-                ? {
-                    ...msg,
-                    content: 'Error: AI response failed.',
-                    isLoading: false,
-                    isStreaming: false,
-                  }
-                : msg
-            )
-          );
-          eventSource.close();
-          setIsCodeGenerating(false);
-          setFailedMessage(messageToSend);
-          toast.error('AI response failed. Try again.');
-        });
+        // eventSource.addEventListener('error', (err) => {
+        //   console.log('❌ Stream error', err);
+        //   setMessages((prev) =>
+        //     prev.map((msg) =>
+        //       msg.id === tempSystemMessageId
+        //         ? {
+        //             ...msg,
+        //             content: 'Error: AI response failed.',
+        //             isLoading: false,
+        //             isStreaming: false,
+        //           }
+        //         : msg
+        //     )
+        //   );
+        //   eventSource.close();
+        //   setIsCodeGenerating(false);
+        //   setFailedMessage(messageToSend);
+        //   toast.error('AI response failed. Try again.');
+        // });
       };
 
       if (activeProject?.framework === Framework.React) {
@@ -297,7 +303,7 @@ const Chatview = () => {
                 </Avatar>
               )}
               <div
-                className={`max-w-[85%] rounded-xl w-2xl ${
+                className={`max-w-[85%] rounded-xl max-w-2xl ${
                   message.role === 'user'
                     ? 'bg-sidebar-accent text-black dark:text-black shadow-lg transition-colors'
                     : 'bg-card dark:bg-card/90 text-card-foreground shadow-sm border border-border/10 hover:border-border/20 transition-all'

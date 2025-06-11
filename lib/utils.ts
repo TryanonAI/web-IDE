@@ -1,7 +1,7 @@
-import { ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 import { ADDITIONAL_DEPENDENCIES } from '@/constant/dependencies';
 
+import { ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
