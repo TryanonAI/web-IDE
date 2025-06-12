@@ -29,8 +29,8 @@ export function ProjectDrawer() {
     }
     const selectedProject = projects.find((p) => p.projectId === projectId);
     if (selectedProject && address) {
-      await loadProjectData(selectedProject, address);
       closeDrawer();
+      await loadProjectData(selectedProject, address);
     } else {
       console.error('Project not found with ID:', projectId);
     }
