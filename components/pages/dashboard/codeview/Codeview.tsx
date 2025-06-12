@@ -23,7 +23,6 @@ import { useGlobalState } from '@/hooks';
 import { Framework, Project } from '@/types';
 import { cn, defaultFiles } from '@/lib/utils';
 import { BASE_DEPENDENCIES, DEV_DEPENDENCIES } from '@/constant/dependencies';
-import OpenWithCursor from './OpenWithCursor';
 import { Loading_Gif } from '@/app/loading';
 import Sprv from './Sprv';
 import {
@@ -31,6 +30,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import OpenWithCursor from '../OpenWithCursor';
 
 interface CodebaseType {
   [key: string]: string;

@@ -26,7 +26,7 @@
       "@/*": ["./*"],
       "@/components/*": ["./components/*"],
       "@/common/*": ["./components/common/*"],
-      "@/features/*": ["./components/features/*"],
+      "@/pages/*": ["./components/pages/*"],
       "@/layouts/*": ["./components/layouts/*"],
       "@/ui/*": ["./components/ui/*"],
       "@/lib/*": ["./lib/*"],

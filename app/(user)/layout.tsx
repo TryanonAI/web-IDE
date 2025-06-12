@@ -46,8 +46,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { validateProjectName } from '@/lib/utils';
-import TitleBar from '@/components/features/dashboard/TitleBar';
-import StatusBar from '@/components/features/dashboard/StatusBar';
+import TitleBar from '@/components/pages/dashboard/TitleBar';
+import StatusBar from '@/components/pages/dashboard/StatusBar';
 
 interface LayoutProps {
   children: React.ReactNode;

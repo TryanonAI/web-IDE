@@ -6,7 +6,7 @@ import { Loader2Icon, RefreshCw } from 'lucide-react';
 import { Framework, ChatMessage, Role, Project } from '@/types';
 import { useWallet } from '@/hooks';
 import { useGlobalState } from '@/hooks';
-import LLMRenderer from './chatview/LLMRenderer';
+import LLMRenderer from './LLMRenderer';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { handleRunLua } from '@/lib/arkit';
 import { Input } from '@/components/ui/input';

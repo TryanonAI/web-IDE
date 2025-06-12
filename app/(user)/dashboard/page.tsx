@@ -12,8 +12,8 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
-import Codeview from '@/components/features/dashboard/Codeview';
-import Chatview from '@/components/features/dashboard/Chatview';
+import Codeview from '@/components/pages/dashboard/codeview/Codeview';
+import Chatview from '@/components/pages/dashboard/chatview/Chatview';
 
 const Dashboard = () => {
   const connected = useWallet((state) => state.connected);
