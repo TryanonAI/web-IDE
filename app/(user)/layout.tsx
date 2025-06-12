@@ -58,7 +58,7 @@ const Layout = ({ children }: LayoutProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [showBanner, setShowBanner] = useState(true);
+  const [showBanner, setShowBanner] = useState(false);
   const [nameError, setNameError] = useState<string>('');
   const [mode, setMode] = useState<Framework>(Framework.React);
 

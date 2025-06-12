@@ -338,7 +338,7 @@ export default function Codeview({ isSaving }: CodeviewProps) {
 
                 <div className="relative opacity-80">
                   <OpenWithCursor
-                    disabled={true}
+                    disabled={false}
                     activeProject={activeProject as Project}
                   />
                 </div>
