@@ -3,7 +3,7 @@
 import { toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
 import { Loader2Icon, RefreshCw } from 'lucide-react';
-import { Framework, ChatMessage, Role, Project, CodebaseType } from '@/types';
+import { Framework, ChatMessage, Role, Project } from '@/types';
 import { useWallet } from '@/hooks';
 import { useGlobalState } from '@/hooks';
 import LLMRenderer from './chatview/LLMRenderer';
@@ -159,46 +159,30 @@ const Chatview = () => {
           const { codebase: codebaserec, externalPackages } = JSON.parse(
             ev.data
           );
-          setCodebase(codebaserec);
-          setDependencies(externalPackages);
 
-          if (isHtmlStream) {
-          } else {
-            console.log('running lua');
-            await handleRunLua({
-              project: activeProject as Project,
-              codebase: codebase as CodebaseType,
+          // Update codebase and dependencies in a single batch
+          Promise.all([
+            setCodebase(codebaserec),
+            setDependencies(externalPackages),
+          ]).then(async () => {
+            if (!isHtmlStream) {
+              console.log(codebase);
+              console.log('running lua');
+              await handleRunLua({
+                project: activeProject as Project,
+                codebase: codebaserec, // Use the received codebase directly
+              });
+              console.log('running lua done');
+            }
+
+            toast.info('Code updated.', {
+              duration: 5000,
+              description: 'You can redeploy to see changes on permaweb',
             });
-            console.log('running lua done');
-          }
-
-          toast.info('Code updated.', {
-            duration: 5000,
-            description: 'You can redeploy to see changes on permaweb',
+            setIsCodeGenerating(false);
+            eventSource.close();
           });
-          setIsCodeGenerating(false);
-          eventSource.close();
         });
-
-        // eventSource.addEventListener('error', (err) => {
-        //   console.log('❌ Stream error', err);
-        //   setMessages((prev) =>
-        //     prev.map((msg) =>
-        //       msg.id === tempSystemMessageId
-        //         ? {
-        //             ...msg,
-        //             content: 'Error: AI response failed.',
-        //             isLoading: false,
-        //             isStreaming: false,
-        //           }
-        //         : msg
-        //     )
-        //   );
-        //   eventSource.close();
-        //   setIsCodeGenerating(false);
-        //   setFailedMessage(messageToSend);
-        //   toast.error('AI response failed. Try again.');
-        // });
       };
 
       if (activeProject?.framework === Framework.React) {

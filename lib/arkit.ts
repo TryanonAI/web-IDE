@@ -619,10 +619,10 @@ export async function getWalletDetails(): Promise<WalletDetails> {
 
 export const handleRunLua = async ({
   project,
-  codebase
+  codebase,
 }: {
   project: Project;
-  codebase: CodebaseType
+  codebase: CodebaseType;
 }) => {
   let luaCodeToBeEval = '';
   if (!codebase) {
