@@ -953,9 +953,7 @@ import { createRoot } from 'react-dom/client'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-  <div className="bg-black text-neutral-300">
   <App/>
-  </div>
   </StrictMode>,
 )
   `.trim(),

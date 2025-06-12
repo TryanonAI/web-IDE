@@ -1,11 +1,19 @@
 'use client';
 
-import { CodeIcon, EyeIcon, History, ChevronDown } from 'lucide-react';
+import {
+  CodeIcon,
+  EyeIcon,
+  History,
+  ChevronDown,
+  Maximize,
+  Minimize,
+  RefreshCw,
+} from 'lucide-react';
 import {
   SandpackLayout,
   SandpackProvider,
-  SandpackCodeEditor,
   SandpackFileExplorer,
+  SandpackCodeEditor,
 } from '@codesandbox/sandpack-react';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -19,6 +27,12 @@ import { BASE_DEPENDENCIES, DEV_DEPENDENCIES } from '@/constant/dependencies';
 import OpenWithCursor from './OpenWithCursor';
 import { Loading_Gif } from '@/app/loading';
 import Sprv from './Sprv';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+
 interface CodebaseType {
   [key: string]: string;
 }
@@ -42,6 +56,8 @@ export default function Codeview({ isSaving }: CodeviewProps) {
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
   const versionDropdownRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -138,6 +154,13 @@ export default function Codeview({ isSaving }: CodeviewProps) {
 
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('preview');
 
+  const handleRefreshClick = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 15000);
+  };
+
   if (activeProject?.framework === Framework.Html) {
     console.log(codebase);
     return (
@@ -215,7 +238,9 @@ export default function Codeview({ isSaving }: CodeviewProps) {
         autoReload: true,
       }}
     >
-      <div className="h-full w-full">
+      <div
+        className={`h-full w-full ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}
+      >
         {isCodeGenerating ? (
           <div className="flex items-center justify-center h-full bg-[#070707]">
             <Loading_Gif count={2} />
@@ -274,10 +299,50 @@ export default function Codeview({ isSaving }: CodeviewProps) {
                   </div>
                 )}
 
-                <OpenWithCursor
-                  disabled={true}
-                  activeProject={activeProject as Project}
-                />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setIsFullscreen(!isFullscreen)}
+                      className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground"
+                    >
+                      {isFullscreen ? (
+                        <Minimize size={14} />
+                      ) : (
+                        <Maximize size={14} />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      {isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleRefreshClick}
+                      disabled={isRefreshing}
+                      className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
+                    >
+                      <RefreshCw
+                        size={14}
+                        className={isRefreshing ? 'animate-spin' : ''}
+                      />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Refresh preview</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <div className="relative opacity-80">
+                  <OpenWithCursor
+                    disabled={true}
+                    activeProject={activeProject as Project}
+                  />
+                </div>
 
                 {/* Version control dropdown */}
                 <div className="relative" ref={versionDropdownRef}>
@@ -397,7 +462,10 @@ export default function Codeview({ isSaving }: CodeviewProps) {
                   activeTab === 'preview' ? 'z-50' : 'z-10'
                 )}
               >
-                <Sprv/>
+                <Sprv
+                  onRefreshClick={handleRefreshClick}
+                  isRefreshing={isRefreshing}
+                />
               </div>
             </SandpackLayout>
           </>

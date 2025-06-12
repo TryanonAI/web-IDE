@@ -23,6 +23,7 @@ import {
   PlusCircle,
   LogOutIcon,
   UserIcon,
+  X,
 } from 'lucide-react';
 import {
   Popover,
@@ -57,6 +58,7 @@ const Layout = ({ children }: LayoutProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [showBanner, setShowBanner] = useState(true);
   const [nameError, setNameError] = useState<string>('');
   const [mode, setMode] = useState<Framework>(Framework.React);
 
@@ -108,6 +110,23 @@ const Layout = ({ children }: LayoutProps) => {
   
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
+      {/* Announcement Banner */}
+      {showBanner && (
+        <div className="relative bg-primary/5 border-b border-primary/10">
+          <div className="max-w-screen-xl mx-auto py-2 px-3 sm:px-6 lg:px-8">
+            <div className="pr-3 text-center text-sm font-medium text-primary/80">
+              <span>✨ Open with Cursor feature coming soon!</span>
+            </div>
+            <button
+              onClick={() => setShowBanner(false)}
+              className="absolute top-1/2 right-2 -translate-y-1/2 p-1 hover:bg-primary/10 rounded-md transition-colors"
+            >
+              <X size={16} className="text-primary/80" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Conditional Navigation Bar */}
       <div className="shrink-0 border-b border-border">
         {isDashboard ? (
