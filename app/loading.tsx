@@ -31,6 +31,9 @@ export function Loading_Gif({
     case 3:
       src = '/postSubmit.gif';
       break;
+    case 4:
+      src = 'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExZG93em9iNGQzd2IxaGl0ZDR6ZjhwdncwdWh5cWlocTl0YXJxYzdqdyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/IpeYSEZshTefe/giphy.gif';
+      break;
     default:
       src = 'https://media.tenor.com/Sy3vKl_rbMYAAAAi/laby-eating.gif';
   }

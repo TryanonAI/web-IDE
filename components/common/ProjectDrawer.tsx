@@ -19,10 +19,12 @@ export function ProjectDrawer() {
     closeDrawer,
     loadProjectData,
     openModal,
+    setIsLoading,
   } = useGlobalState();
   const { address } = useWallet();
 
   const handleProjectSelect = async (projectId: string) => {
+    setIsLoading(true);
     if (!Array.isArray(projects)) {
       console.error('Projects is not an array');
       return;
@@ -34,6 +36,7 @@ export function ProjectDrawer() {
     } else {
       console.error('Project not found with ID:', projectId);
     }
+    setIsLoading(false);
   };
 
   const handleOpenCreateProjectDialog = () => {
