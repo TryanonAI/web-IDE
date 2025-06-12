@@ -151,7 +151,7 @@ export default function Codeview({ isSaving }: CodeviewProps) {
     }
   };
 
-  const [activeTab, setActiveTab] = useState<'code' | 'preview'>('preview');
+  const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
 
   const handleRefreshClick = () => {
     setIsRefreshing(true);
