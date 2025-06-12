@@ -3,7 +3,7 @@ import { Project } from '@/types';
 import { cn } from '@/lib/utils';
 
 import Image from 'next/image';
-import { AnimatedGradientText } from '../magicui/animated-gradient-text';
+import { AnimatedGradientText } from '@/components/magicui/animated-gradient-text';
 
 // Open Active-Project with CursorIDE
 const OpenWithCursor = ({

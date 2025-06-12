@@ -25,7 +25,7 @@ import Image from 'next/image';
 import { z } from 'zod';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import { uploadToTurbo } from '@/lib/turbo-utils';
+import { uploadToTurbo } from '@/lib/api';
 
 const updateUserSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),

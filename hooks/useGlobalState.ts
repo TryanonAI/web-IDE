@@ -4,7 +4,6 @@ import { create } from 'zustand';
 import { Octokit } from '@octokit/core';
 import { useWallet } from './useWallet';
 import { devtools, persist } from 'zustand/middleware';
-import { defaultFiles } from '@/lib/filesUtils';
 // import { mergeDependencies } from '@/lib/utils';
 import { runLua, spawnProcess } from '@/lib/arkit';
 import {
@@ -16,7 +15,8 @@ import {
   CodebaseType,
   CodeVersion,
 } from '@/types';
-import { ANON_LUA_TEMPLATE } from '@/constant';
+import { defaultFiles } from '@/lib/utils';
+import { ANON_LUA_TEMPLATE } from '@/constant/templateFiles';
 
 export interface GithubError extends Error {
   status?: number;

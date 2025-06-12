@@ -3,8 +3,8 @@ import { Toaster } from 'sonner';
 import type { Metadata, Viewport } from 'next';
 import { ThemeProvider } from 'next-themes';
 import { Analytics } from '@vercel/analytics/react';
-import ClientInitializer from '@/components/dashboard/ClientInitializer';
-import CheckConnection from '@/components/CheckConnection';
+import CheckConnection from '@/components/common/CheckConnection';
+import ClientInitializer from '@/components/features/dashboard/ClientInitializer';
 
 export const viewport: Viewport = {
   themeColor: '#3e7452',

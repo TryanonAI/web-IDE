@@ -1,8 +1,8 @@
 // components/LLMRenderer.tsx
-import { parseLLMResponse } from '@/lib/parseLLMResponse';
 import React from 'react';
 import { AnimatedSpan } from '@/components/magicui/terminal';
 import { Loader2 } from 'lucide-react';
+import { parseLLMResponse } from '@/lib/utils';
 
 interface Props {
   llmResponse: string;

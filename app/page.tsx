@@ -1,9 +1,9 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import LandingNavbar from '@/components/landing/LandingNavbar';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import LandingNavbar from '@/components/features/landing/LandingNavbar';
 
 // Preload images with proper dimensions
 const images = {

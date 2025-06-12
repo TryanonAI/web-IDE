@@ -1,8 +1,6 @@
 'use client';
 
 import { PlusCircle } from 'lucide-react';
-import Chatview from '@/components/dashboard/Chatview';
-import Codeview from '@/components/dashboard/Codeview';
 import { useGlobalState } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { useWallet } from '@/hooks';
@@ -14,6 +12,8 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
+import Codeview from '@/components/features/dashboard/Codeview';
+import Chatview from '@/components/features/dashboard/Chatview';
 
 const Dashboard = () => {
   const connected = useWallet((state) => state.connected);

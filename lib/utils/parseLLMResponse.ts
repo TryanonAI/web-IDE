@@ -20,8 +20,6 @@ export function parseLLMResponse(response: string): ParsedChunk[] {
   const anonRenameRegex = /<anon-rename original_file_path="([^"]+)" new_file_path="([^"]+)"\s*\/?>/g;
   const anonDependencyRegex = /<anon-add-dependency>(@?[^@<\s]+(?:\/[^@<\s]+)?)(?:@([^<\s]+))?<\/anon-add-dependency>/g;
 
-
-
   let lastIndex = 0;
 
   // Helper to push plain text between matches

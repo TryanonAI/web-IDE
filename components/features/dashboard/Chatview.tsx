@@ -3,13 +3,13 @@
 import { toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
 import { Loader2Icon, RefreshCw } from 'lucide-react';
-import { Input } from '../ui/input';
 import { Framework, ChatMessage, Role, Project, CodebaseType } from '@/types';
 import { useWallet } from '@/hooks';
 import { useGlobalState } from '@/hooks';
 import LLMRenderer from './chatview/LLMRenderer';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { handleRunLua } from '@/lib/arkit';
+import { Input } from '@/components/ui/input';
 
 const Chatview = () => {
   const [userInput, setUserInput] = useState('');

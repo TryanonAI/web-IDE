@@ -2,10 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { validateProjectName } from '@/lib/utils';
-import TitleBar from '@/components/dashboard/TitleBar';
-import StatusBar from '@/components/dashboard/StatusBar';
-import { ProjectDrawer } from '@/components/drawers/ProjectDrawer';
+import { ProjectDrawer } from '@/components/common/ProjectDrawer';
 import { usePathname, useRouter } from 'next/navigation';
 
 import {
@@ -48,6 +45,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
+import { validateProjectName } from '@/lib/utils';
+import TitleBar from '@/components/features/dashboard/TitleBar';
+import StatusBar from '@/components/features/dashboard/StatusBar';
 
 interface LayoutProps {
   children: React.ReactNode;

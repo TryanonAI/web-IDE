@@ -23,9 +23,20 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"],
+      "@/components/*": ["./components/*"],
+      "@/common/*": ["./components/common/*"],
+      "@/features/*": ["./components/features/*"],
+      "@/layouts/*": ["./components/layouts/*"],
+      "@/ui/*": ["./components/ui/*"],
+      "@/lib/*": ["./lib/*"],
+      "@/api/*": ["./lib/api/*"],
+      "@/utils/*": ["./lib/utils/*"],
+      "@/services/*": ["./lib/services/*"],
+      "@/hooks/*": ["./hooks/*"],
+      "@/types/*": ["./types/*"],
+      "@/styles/*": ["./styles/*"],
+      "@/config/*": ["./config/*"]
     }
   },
   "include": [

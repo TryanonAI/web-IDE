@@ -43,7 +43,6 @@ import { useGlobalState } from '@/hooks';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Octokit } from '@octokit/core';
 import Link from 'next/link';
-import { uploadToTurbo } from '@/lib/turbo-utils';
 import axios from 'axios';
 import { useCopyToClipboard } from '@uidotdev/usehooks';
 import { useRouter } from 'next/navigation';
@@ -63,8 +62,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { GITHUB_STATUS, GithubError } from '@/hooks/useGlobalState';
+import { uploadToTurbo } from '@/lib/api';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const TitleBar = () => {
   const [commits, setCommits] = useState<Commit[]>([]);

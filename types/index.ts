@@ -155,3 +155,26 @@ export enum TrialStatus {
   PENDING = 'pending',
   APPROVED = 'approved'
 }
+
+// Common Types
+export interface BaseResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+// API Types
+export interface ApiConfig {
+  baseURL: string;
+  headers?: Record<string, string>;
+}
+
+// Component Props Types
+export interface LayoutProps {
+  children: React.ReactNode;
+}
+
+// Utility Types
+export type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
