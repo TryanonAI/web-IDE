@@ -241,21 +241,21 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
   };
 
   // Handle keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-        event.preventDefault();
-        if (hasUnsavedChanges && !isSavingFile && !isEditorDisabled()) {
-          saveCurrentFile();
-        }
-      }
-    };
+  // useEffect(() => {
+  //   const handleKeyDown = (event: KeyboardEvent) => {
+  //     if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+  //       event.preventDefault();
+  //       if (hasUnsavedChanges && !isSavingFile && !isEditorDisabled()) {
+  //         saveCurrentFile();
+  //       }
+  //     }
+  //   };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [hasUnsavedChanges, isSavingFile, isEditorDisabled]);
+  //   document.addEventListener('keydown', handleKeyDown);
+  //   return () => {
+  //     document.removeEventListener('keydown', handleKeyDown);
+  //   };
+  // }, [hasUnsavedChanges, isSavingFile, isEditorDisabled]);
 
   if (activeProject?.framework === Framework.Html) {
     console.log(codebase);
@@ -515,7 +515,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
             >
               <SandpackFileExplorer
                 className="min-w-[200px] max-w-[250px]"
-                initialCollapsedFolder={['ui']}
+                // autoHiddenFiles={true}
               />
               <div className="flex-1 min-w-[35%] h-full flex flex-col">
                 <SandpackCodeEditor
@@ -525,7 +525,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
                   wrapContent={false}
                   closableTabs={true}
                   readOnly={false}
-                  showRunButton={true}
+                  showRunButton={false}
                   style={{ height: '100%', minHeight: '0' }}
                 />
               </div>

@@ -1,9 +1,16 @@
 export type ParsedChunk =
   | { type: 'text'; content: string }
-  | { type: 'file'; content: string }
+  | { type: 'file'; content: string; isComplete?: boolean }
   | { type: 'delete'; content: string }
   | { type: 'rename'; from: string; to: string }
   | { type: 'dependency'; name: string };
+
+type Match = 
+  | { type: 'file-start'; index: number; filePath: string; length: number }
+  | { type: 'file-end'; index: number; length: number }
+  | { type: 'delete'; index: number; filePath: string; length: number }
+  | { type: 'rename'; index: number; from: string; to: string; length: number }
+  | { type: 'dependency'; index: number; name: string; length: number };
 
 export function parseLLMResponse(response: string): ParsedChunk[] {
   const result: ParsedChunk[] = [];
@@ -15,7 +22,9 @@ export function parseLLMResponse(response: string): ParsedChunk[] {
     .replace(/<\/?anon-success>/g, '')
     .replace(/<\/?ai_message>/g, '');
 
-  const anonWriteRegex = /<anon-write file_path="([^"]+)">[\s\S]*?<\/anon-write>/g;
+  // Modified regex to capture incomplete anon-write tags
+  const anonWriteStartRegex = /<anon-write file_path="([^"]+)">/g;
+  const anonWriteEndRegex = /<\/anon-write>/g;
   const anonDeleteRegex = /<anon-delete file_path="([^"]+)"\s*\/?>/g;
   const anonRenameRegex = /<anon-rename original_file_path="([^"]+)" new_file_path="([^"]+)"\s*\/?>/g;
   const anonDependencyRegex = /<anon-add-dependency>(@?[^@<\s]+(?:\/[^@<\s]+)?)(?:@([^<\s]+))?<\/anon-add-dependency>/g;
@@ -28,41 +37,83 @@ export function parseLLMResponse(response: string): ParsedChunk[] {
     if (rawText) result.push({ type: 'text', content: rawText });
   }
 
-  // Combine all matches into one array so we can process in order
-  const matches = [
-    ...[...cleaned.matchAll(anonWriteRegex)].map((m) => ({ type: 'file', index: m.index!, filePath: m[1], length: m[0].length })),
-    ...[...cleaned.matchAll(anonDeleteRegex)].map((m) => ({ type: 'delete', index: m.index!, filePath: m[1], length: m[0].length })),
-    ...[...cleaned.matchAll(anonRenameRegex)].map((m) => ({ type: 'rename', index: m.index!, from: m[1], to: m[2], length: m[0].length })),
-    ...[...cleaned.matchAll(anonDependencyRegex)].map((m) => ({ type: 'dependency', index: m.index!, name: m[1], length: m[0].length }))
+  // Find all start and end positions
+  const matches: Match[] = [
+    ...[...cleaned.matchAll(anonWriteStartRegex)].map((m) => ({ 
+      type: 'file-start' as const, 
+      index: m.index!, 
+      filePath: m[1], 
+      length: m[0].length 
+    })),
+    ...[...cleaned.matchAll(anonWriteEndRegex)].map((m) => ({ 
+      type: 'file-end' as const, 
+      index: m.index!, 
+      length: m[0].length 
+    })),
+    ...[...cleaned.matchAll(anonDeleteRegex)].map((m) => ({ 
+      type: 'delete' as const, 
+      index: m.index!, 
+      filePath: m[1], 
+      length: m[0].length 
+    })),
+    ...[...cleaned.matchAll(anonRenameRegex)].map((m) => ({ 
+      type: 'rename' as const, 
+      index: m.index!, 
+      from: m[1], 
+      to: m[2], 
+      length: m[0].length 
+    })),
+    ...[...cleaned.matchAll(anonDependencyRegex)].map((m) => ({ 
+      type: 'dependency' as const, 
+      index: m.index!, 
+      name: m[1], 
+      length: m[0].length 
+    }))
   ].sort((a, b) => a.index - b.index);
+
+  let openFileTag: { filePath: string; startIndex: number } | null = null;
 
   for (const m of matches) {
     if (m.index > lastIndex) {
-      pushText(lastIndex, m.index);
+      // Only push text if we're not inside a file tag
+      if (!openFileTag) {
+        pushText(lastIndex, m.index);
+      }
     }
 
     switch (m.type) {
-      case 'file':
-        // @ts-expect-error ignore
-        result.push({ type: 'file', content: m.filePath });
+      case 'file-start':
+        openFileTag = { filePath: m.filePath, startIndex: m.index + m.length };
+        result.push({ type: 'file', content: m.filePath, isComplete: false });
+        break;
+      case 'file-end':
+        if (openFileTag) {
+          // Update the last file chunk to mark it as complete
+          const lastFileChunk = result.findLast(chunk => chunk.type === 'file');
+          if (lastFileChunk) {
+            lastFileChunk.isComplete = true;
+          }
+          openFileTag = null;
+        }
         break;
       case 'delete':
-        // @ts-expect-error ignore
         result.push({ type: 'delete', content: m.filePath });
         break;
       case 'rename':
-        // @ts-expect-error ignore
         result.push({ type: 'rename', from: m.from, to: m.to });
         break;
       case 'dependency':
-        // @ts-expect-error ignore
-        result.push({ type: 'dependency', name: m.name, version: m.version });
+        result.push({ type: 'dependency', name: m.name });
         break;
     }
 
     lastIndex = m.index + m.length;
   }
 
-  pushText(lastIndex, cleaned.length);
+  // Push any remaining text if we're not inside a file tag
+  if (!openFileTag && lastIndex < cleaned.length) {
+    pushText(lastIndex, cleaned.length);
+  }
+
   return result;
 }
