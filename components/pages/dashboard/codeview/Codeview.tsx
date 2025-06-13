@@ -25,7 +25,6 @@ import { useGlobalState } from '@/hooks';
 import { Framework, Project } from '@/types';
 import { cn, defaultFiles } from '@/lib/utils';
 import { BASE_DEPENDENCIES, DEV_DEPENDENCIES } from '@/constant/dependencies';
-import { Loading_Gif } from '@/app/loading';
 import Sprv from './Sprv';
 import {
   Tooltip,
@@ -33,6 +32,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import OpenWithCursor from '../OpenWithCursor';
+import Image from 'next/image';
 
 interface CodebaseType {
   [key: string]: string;
@@ -277,8 +277,28 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
       className={`h-full w-full ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}
     >
       {isCodeGenerating ? (
-        <div className="flex items-center justify-center h-full bg-[#070707]">
-          <Loading_Gif count={2} />
+        <div className="flex items-center justify-center h-full">
+          {(() => {
+            // Array of meme GIF URLs
+            const memeGifs = [
+              "https://media.tenor.com/7qFULBHgzlYAAAAi/bubu-cooking-dudu-bubu.gif",
+              "https://media.tenor.com/3WClDgCrUpUAAAAi/abster-abstract.gif",
+              "https://media.tenor.com/LCex2eU6isEAAAAi/benjammins-let-me-cook.gif"
+            ];
+            // Pick a random meme each render
+            const randomIndex = Math.floor(Math.random() * memeGifs.length);
+            const memeSrc = memeGifs[randomIndex];
+            console.log("[Codeview] Showing meme:", memeSrc);
+            return (
+              <Image
+                src={memeSrc}
+                height={280}
+                width={280}
+                alt="loading_gif"
+                priority
+              />
+            );
+          })()}
         </div>
       ) : (
         <>

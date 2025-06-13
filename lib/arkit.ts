@@ -630,7 +630,7 @@ export const handleRunLua = async ({
     return;
   }
   // @ts-expect-error ignore
-  luaCodeToBeEval = codebase['src/lua/index.lua'] as string;
+  luaCodeToBeEval = codebase['/src/lua/index.lua'] as string;
   if (!luaCodeToBeEval) {
     toast.error('No Lua code found in the project.');
     return;
