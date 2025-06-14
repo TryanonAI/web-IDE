@@ -19,7 +19,6 @@ const Chatview = () => {
 
   const { user } = useWallet();
   const setDependencies = useGlobalState((state) => state.setDependencies);
-  const codebase = useGlobalState((state) => state.codebase);
   const setCodebase = useGlobalState((state) => state.setCodebase);
   const chatMessages = useGlobalState((state) => state.chatMessages); // From global state
   const [messages, setMessages] = useState<ChatMessage[]>(chatMessages);
@@ -166,7 +165,6 @@ const Chatview = () => {
             setDependencies(externalPackages),
           ]).then(async () => {
             if (!isHtmlStream) {
-              console.log(codebase);
               console.log('running lua');
               await handleRunLua({
                 project: activeProject as Project,

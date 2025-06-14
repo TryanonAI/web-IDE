@@ -21,11 +21,12 @@ import {
   ExternalLink,
   MessageSquare,
   Rocket,
-  Eye,
   Copy,
   Check,
   LogOutIcon,
   UserIcon,
+  SquareArrowOutUpRight,
+  // SquarePen,
 } from 'lucide-react';
 import {
   Dialog,
@@ -582,7 +583,10 @@ const TitleBar = () => {
         return;
       }
 
-      const blob = new Blob([codebase as string], { type: 'text/html' });
+      // @ts-expect-error index.html is always present in the codebase
+      const blob = new Blob([codebase['/index.html'] as string], {
+        type: 'text/html',
+      });
       const file = new File([blob], activeProject.title, {
         type: 'text/html',
       });
@@ -747,7 +751,7 @@ const TitleBar = () => {
                 onClick={handleDeploy}
                 disabled={deployDisabledState}
                 variant="outline"
-                className="relative"
+                className={`relative ${isDeploying ? 'animate-pulse' : ''}`}
                 title={
                   !connected
                     ? 'Connect wallet to deploy'
@@ -765,32 +769,36 @@ const TitleBar = () => {
                 {isDeploying ? (
                   <>
                     <Loader2 size={16} className="mr-2 animate-spin" />
-                    <span>Deploying...</span>
+                    <span className="animate-pulse">Publishing to Permaweb...</span>
                   </>
                 ) : (
                   <>
-                    <Rocket size={16} className="mr-2" />
+                    {deploymentUrl ? (
+                      <Rocket size={16} className="mr-2" />
+                    ) : (
+                      <Rocket size={16} className="mr-2" />
+                    )}
                     <span>{deploymentUrl ? 'Redeploy' : 'Deploy'}</span>
                   </>
                 )}
               </Button>
 
               {deploymentUrl && (
-                <div className="flex items-center bg-secondary/20 rounded-md border border-border/50 p-1">
+                <div className="flex items-center bg-card/50 rounded-lg border border-border shadow-sm overflow-hidden">
                   <Link
                     href={deploymentUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center px-3 py-1.5 hover:bg-secondary/40 rounded-sm transition-colors"
+                    className="flex items-center px-4 py-2 transition-colors duration-200 border-r border-border/50"
                   >
-                    <Eye size={16} className="text-primary/80 mr-2" />
-                    <span className="mr-1">View Live</span>
+                    <SquareArrowOutUpRight
+                      size={16}
+                      className="text-primary mr-2"
+                    />
+                    <span className="text-sm font-medium">View Live</span>
                   </Link>
-                  <div className="h-4 w-px bg-border/50 mx-1" />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="relative h-8 px-3 hover:bg-secondary/40"
+                  <button
+                    className="flex items-center px-4 py-2 transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     onClick={() => {
                       setCopy(true);
                       copyToClipboard(deploymentUrl);
@@ -800,17 +808,17 @@ const TitleBar = () => {
                     title="Copy deployment URL"
                   >
                     {copy ? (
-                      <div className="flex items-center text-green-500">
-                        <Check size={16} className="mr-1.5" />
-                        <span className="text-sm">Copied!</span>
+                      <div className="flex items-center text-green-600 dark:text-green-400">
+                        <Check size={16} className="mr-2" />
+                        <span className="text-sm font-medium">Copied!</span>
                       </div>
                     ) : (
                       <div className="flex items-center">
-                        <Copy size={16} className="mr-1.5" />
-                        <span className="text-sm">Copy URL</span>
+                        <Copy size={16} className="mr-2" />
+                        <span className="text-sm font-medium">Copy URL</span>
                       </div>
                     )}
-                  </Button>
+                  </button>
                 </div>
               )}
             </div>

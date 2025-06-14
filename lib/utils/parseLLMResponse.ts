@@ -20,7 +20,8 @@ export function parseLLMResponse(response: string): ParsedChunk[] {
     .replace(/<\/?anon-thinking>/g, '')
     .replace(/<\/?anon-error>/g, '')
     .replace(/<\/?anon-success>/g, '')
-    .replace(/<\/?ai_message>/g, '');
+    .replace(/<\/?ai_message>/g, '')
+    .replace(/<instructions-reminder>[\s\S]*?<\/instructions-reminder>/g, '');
 
   // Modified regex to capture incomplete anon-write tags
   const anonWriteStartRegex = /<anon-write file_path="([^"]+)">/g;

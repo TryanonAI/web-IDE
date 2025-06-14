@@ -240,35 +240,72 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
     }, 15000);
   };
 
-  // Handle keyboard shortcuts
-  // useEffect(() => {
-  //   const handleKeyDown = (event: KeyboardEvent) => {
-  //     if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-  //       event.preventDefault();
-  //       if (hasUnsavedChanges && !isSavingFile && !isEditorDisabled()) {
-  //         saveCurrentFile();
-  //       }
-  //     }
-  //   };
-
-  //   document.addEventListener('keydown', handleKeyDown);
-  //   return () => {
-  //     document.removeEventListener('keydown', handleKeyDown);
-  //   };
-  // }, [hasUnsavedChanges, isSavingFile, isEditorDisabled]);
-
   if (activeProject?.framework === Framework.Html) {
     console.log(codebase);
     return (
-      <iframe
-        srcDoc={
-          // @ts-expect-error ignore
-          codebase['index.html']
-        }
-        className="w-full h-full"
-        aria-label="Code Preview"
-        title="Code Preview"
-      />
+      <div
+        className={`h-full w-full ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}
+      >
+        <div className="bg-background h-10 w-full px-2 flex items-center justify-between border-border border-b p-2">
+          <div className="flex items-center justify-center gap-0.5 h-full  px-1 py-2 rounded-md">
+            {/* <div className="py-[1px] px-3 rounded-sm flex justify-center items-center gap-1 text-xs leading-5 font-medium bg-background text-foreground shadow-sm">
+              <EyeIcon size={12} />
+              Preview
+            </div> */}
+          </div>
+
+          <div className="flex items-center gap-2 h-full">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  {isFullscreen ? (
+                    <Minimize size={14} />
+                  ) : (
+                    <Maximize size={14} />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleRefreshClick}
+                  disabled={isRefreshing}
+                  className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
+                >
+                  <RefreshCw
+                    size={14}
+                    className={isRefreshing ? 'animate-spin' : ''}
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Refresh preview</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+
+        <div className="h-[calc(100%-2.5rem)] w-full">
+          <iframe
+            key={isRefreshing ? 'refreshing' : 'normal'}
+            srcDoc={
+              // @ts-expect-error ignore
+              codebase['/index.html']
+            }
+            className="w-full h-full"
+            aria-label="Code Preview"
+            title="Code Preview"
+          />
+        </div>
+      </div>
     );
   }
 
@@ -281,14 +318,14 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
           {(() => {
             // Array of meme GIF URLs
             const memeGifs = [
-              "https://media.tenor.com/7qFULBHgzlYAAAAi/bubu-cooking-dudu-bubu.gif",
-              "https://media.tenor.com/3WClDgCrUpUAAAAi/abster-abstract.gif",
-              "https://media.tenor.com/LCex2eU6isEAAAAi/benjammins-let-me-cook.gif"
+              'https://media.tenor.com/7qFULBHgzlYAAAAi/bubu-cooking-dudu-bubu.gif',
+              'https://media.tenor.com/3WClDgCrUpUAAAAi/abster-abstract.gif',
+              'https://media.tenor.com/LCex2eU6isEAAAAi/benjammins-let-me-cook.gif',
             ];
             // Pick a random meme each render
             const randomIndex = Math.floor(Math.random() * memeGifs.length);
             const memeSrc = memeGifs[randomIndex];
-            console.log("[Codeview] Showing meme:", memeSrc);
+            console.log('[Codeview] Showing meme:', memeSrc);
             return (
               <Image
                 src={memeSrc}
@@ -535,7 +572,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
             >
               <SandpackFileExplorer
                 className="min-w-[200px] max-w-[250px]"
-                // autoHiddenFiles={true}
+                autoHiddenFiles={true}
               />
               <div className="flex-1 min-w-[35%] h-full flex flex-col">
                 <SandpackCodeEditor
