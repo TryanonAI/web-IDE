@@ -248,10 +248,10 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
       >
         <div className="bg-background h-10 w-full px-2 flex items-center justify-between border-border border-b p-2">
           <div className="flex items-center justify-center gap-0.5 h-full  px-1 py-2 rounded-md">
-            {/* <div className="py-[1px] px-3 rounded-sm flex justify-center items-center gap-1 text-xs leading-5 font-medium bg-background text-foreground shadow-sm">
+            <div className="py-[1px] px-3 rounded-sm flex justify-center items-center gap-1 text-xs leading-5 font-medium bg-background text-foreground shadow-sm">
               <EyeIcon size={12} />
-              Preview
-            </div> */}
+              <span className='hidden md:block font-mono'>Preview</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 h-full">
@@ -259,7 +259,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
               <TooltipTrigger asChild>
                 <button
                   onClick={() => setIsFullscreen(!isFullscreen)}
-                  className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground"
+                  className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-primary/80"
                 >
                   {isFullscreen ? (
                     <Minimize size={14} />
@@ -268,7 +268,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
                   )}
                 </button>
               </TooltipTrigger>
-              <TooltipContent>
+              <TooltipContent className="font-mono">
                 <p>{isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}</p>
               </TooltipContent>
             </Tooltip>
@@ -278,15 +278,17 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
                 <button
                   onClick={handleRefreshClick}
                   disabled={isRefreshing}
-                  className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
+                  className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-primary/80 disabled:opacity-50"
                 >
                   <RefreshCw
                     size={14}
-                    className={isRefreshing ? 'animate-spin' : ''}
+                    className={
+                      isRefreshing ? 'animate-spin text-primary/80' : ''
+                    }
                   />
                 </button>
               </TooltipTrigger>
-              <TooltipContent>
+              <TooltipContent className="font-mono">
                 <p>Refresh preview</p>
               </TooltipContent>
             </Tooltip>
@@ -310,9 +312,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
   }
 
   return (
-    <div
-      className={`h-full w-full ${isFullscreen ? 'bg-background' : ''}`}
-    >
+    <div className={`h-full w-full ${isFullscreen ? 'bg-background' : ''}`}>
       {isCodeGenerating ? (
         <div className="flex items-center justify-center h-full">
           {(() => {
@@ -393,7 +393,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
 
               {/* Save button */}
               <Tooltip>
-                <TooltipTrigger asChild>
+                <TooltipTrigger dir="bottom" asChild>
                   <button
                     onClick={saveCurrentFile}
                     disabled={
@@ -405,7 +405,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
                     className={cn(
                       'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors',
                       hasUnsavedChanges && !selectedVersion
-                        ? 'text-primary hover:text-primary/80 bg-primary/10'
+                        ? 'text-muted-foreground hover:text-primary/80 '
                         : 'text-muted-foreground hover:text-foreground',
                       'disabled:opacity-50 disabled:cursor-not-allowed'
                     )}
@@ -414,19 +414,14 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
                       size={14}
                       className={isSavingFile ? 'animate-pulse' : ''}
                     />
-                    {isSavingFile
-                      ? 'Saving...'
-                      : hasUnsavedChanges
-                        ? 'Save'
-                        : 'Saved'}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent dir="bottom" className="font-mono text-">
                   <p>
                     {selectedVersion
                       ? 'Cannot save historical version'
                       : hasUnsavedChanges
-                        ? 'Save current file (Ctrl+S)'
+                        ? 'Save current file'
                         : 'No changes to save'}
                   </p>
                 </TooltipContent>
@@ -436,7 +431,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => setIsFullscreen(!isFullscreen)}
-                    className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground"
+                    className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-primary/80"
                   >
                     {isFullscreen ? (
                       <Minimize size={14} />
@@ -445,7 +440,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
                     )}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent className="font-mono">
                   <p>{isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}</p>
                 </TooltipContent>
               </Tooltip>
@@ -455,24 +450,33 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
                   <button
                     onClick={handleRefreshClick}
                     disabled={isRefreshing}
-                    className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
+                    className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-primary/80 disabled:opacity-50"
                   >
                     <RefreshCw
                       size={14}
-                      className={isRefreshing ? 'animate-spin' : ''}
+                      className={
+                        isRefreshing ? 'animate-spin text-primary/80' : ''
+                      }
                     />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent className="font-mono">
                   <p>Refresh preview</p>
                 </TooltipContent>
               </Tooltip>
 
               <div className="relative opacity-80">
-                <OpenWithCursor
-                  disabled={false}
-                  activeProject={activeProject as Project}
-                />
+                <Tooltip>
+                  <TooltipTrigger>
+                    <OpenWithCursor
+                      disabled={false}
+                      activeProject={activeProject as Project}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent className="font-mono">
+                    Open with Cursor IDE
+                  </TooltipContent>
+                </Tooltip>
               </div>
 
               {/* Version control dropdown */}

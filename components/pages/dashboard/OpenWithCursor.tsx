@@ -22,8 +22,8 @@ const OpenWithCursor = ({
   return (
     <button
       disabled={disabled}
-      title="Coming Soon"
-      aria-label="Open with Cursor"
+      title="Open with Cursor IDE"
+      aria-label="Open with Cursor IDE"
       onClick={handleOpenWithCursor}
       className={cn(
         'h-5 px-2 rounded flex items-center gap-1.5 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',

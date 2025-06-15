@@ -37,7 +37,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import { Framework } from '@/types';
+import { Framework, WalletStatus } from '@/types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,7 +74,6 @@ const Layout = ({ children }: LayoutProps) => {
   const [showBanner, setShowBanner] = useState(false);
   const [nameError, setNameError] = useState<string>('');
   const [mode, setMode] = useState<Framework>(Framework.React);
-  const [isConnecting, SetIsConnecting] = useState<boolean>();
 
   // Status and commit related state
   const [commitInProgress, setCommitInProgress] = useState<boolean>(false);
@@ -95,7 +94,9 @@ const Layout = ({ children }: LayoutProps) => {
     framework,
     activeProject,
     commitToRepository,
+    isLoading,
   } = useGlobalState();
+  const { walletStatus } = useWallet();
 
   const isDashboard = pathname === '/dashboard';
 
@@ -248,14 +249,12 @@ const Layout = ({ children }: LayoutProps) => {
           <Button
             className="cursor-pointer flex items-center gap-2 px-4 py-2.5 text-base h-auto"
             onClick={() => {
-              SetIsConnecting(true);
               connect();
-              SetIsConnecting(false);
             }}
-            disabled={isConnecting}
+            disabled={walletStatus === WalletStatus.CONNECTING || isLoading}
             size="lg"
           >
-            {isConnecting ? (
+            {walletStatus === WalletStatus.CONNECTING || isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Connecting...
