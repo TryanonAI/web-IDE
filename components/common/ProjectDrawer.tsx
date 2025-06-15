@@ -11,6 +11,7 @@ import {
   DrawerFooter,
 } from '@/components/ui/drawer';
 import { DrawerType } from '@/hooks/useGlobalState';
+import { useEffect, useRef } from 'react';
 
 export function ProjectDrawer() {
   const {
@@ -23,6 +24,37 @@ export function ProjectDrawer() {
     setIsLoading,
   } = useGlobalState();
   const { address } = useWallet();
+  
+  const activeProjectRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to active project when drawer opens
+  useEffect(() => {
+    if (activeDrawer === DrawerType.CREATE_PROJECT && activeProject) {
+      // Longer delay to ensure the drawer is fully opened and rendered
+      const timer = setTimeout(() => {
+        if (activeProjectRef.current && scrollContainerRef.current) {
+          // Get the scroll container and active project positions
+          const container = scrollContainerRef.current;
+          const activeElement = activeProjectRef.current;
+          
+          // Calculate the scroll position to center the active project
+          const containerRect = container.getBoundingClientRect();
+          const elementRect = activeElement.getBoundingClientRect();
+          
+          const scrollTop = container.scrollTop + (elementRect.top - containerRect.top) - (containerRect.height / 2) + (elementRect.height / 2);
+          
+          // Smooth scroll to the calculated position
+          container.scrollTo({
+            top: scrollTop,
+            behavior: 'smooth'
+          });
+        }
+      }, 400); // Increased delay for better reliability
+      
+      return () => clearTimeout(timer);
+    }
+  }, [activeDrawer, activeProject]);
 
   const handleProjectSelect = async (projectId: string) => {
     setIsLoading(true);
@@ -45,36 +77,6 @@ export function ProjectDrawer() {
     openModal('createProject');
   };
 
-  // const handleProjectSelect = async (projectId: string) => {
-  //   if (!Array.isArray(projects)) {
-  //     console.error('Projects is not an array');
-  //     return;
-  //   }
-  //   const selectedProject = projects.find((p) => p.projectId === projectId);
-  //   if (selectedProject) {
-  //     setLastCheckedProject(null);
-  //     setCommits([]);
-  //     setCommitError(null);
-
-  //     if (
-  //       githubStatus === GITHUB_STATUS.REPO_EXISTS ||
-  //       githubStatus === GITHUB_STATUS.ERROR
-  //     ) {
-  //       console.log('Resetting Github state for new project check');
-  //       resetGithubState();
-  //     }
-  //     console.log(selectedProject);
-  //     await loadProjectData(
-  //       selectedProject,
-  //       useWallet.getState().address as string
-  //     );
-
-  //     setIsProjectDrawerOpen(false);
-  //   } else {
-  //     console.error('Project not found with ID:', projectId);
-  //   }
-  // };
-
   return (
     <Drawer
       direction="left"
@@ -89,12 +91,13 @@ export function ProjectDrawer() {
           </DrawerTitle>
         </DrawerHeader>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4">
           {Array.isArray(projects) && projects.length > 0 ? (
             <div className="space-y-2">
               {projects.map((project) => (
                 <div
                   key={project.projectId}
+                  ref={activeProject?.projectId === project.projectId ? activeProjectRef : null}
                   onClick={() => handleProjectSelect(project.projectId)}
                   className={`p-3 border rounded-md cursor-pointer transition-all hover:shadow-sm ${
                     activeProject?.projectId === project.projectId
