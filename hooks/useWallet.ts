@@ -279,10 +279,10 @@ export const useWallet = create<State>()(
 // Auto-sync wallet status periodically and on events
 if (typeof window !== 'undefined') {
     // Check wallet status every 5 seconds
-    setInterval(() => {
-        const state = useWallet.getState();
-        state.checkWalletStatus();
-    }, 5000);
+    // setInterval(() => {
+    //     const state = useWallet.getState();
+    //     state.checkWalletStatus();
+    // }, 5000);
 
     // Listen to wallet events
     const handleWalletLoaded = () => {
