@@ -4,7 +4,7 @@ import { ConnectionStrategies, TrialStatus, User, WalletStatus } from "@/types";
 import { connectWallet, disconnectWallet, getWalletDetails, WalletConnectionResponse, WalletConnectionResult } from "@/lib/arkit";
 import { toast } from "sonner";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
-import { useGlobalState } from "./useGlobalState";
+import { fetchCodeVersions, useGlobalState } from "./useGlobalState";
 import { notifyNoWallet } from "./use-mobile";
 
 const fetchOrCreateUser = async (walletAddress: string) => {
@@ -13,12 +13,11 @@ const fetchOrCreateUser = async (walletAddress: string) => {
             `${process.env.NEXT_PUBLIC_BACKEND_URL}/user/create`,
             { walletAddress }
         );
-        console.log("[use-wallet]fetched response:", data);
 
         if (!data.success) {
             throw new Error(data.message);
         }
-
+        console.log("[useWallet:fetchOrCreateUser] fetched user data")
         return data.user;
     } catch (error) {
         throw error;
@@ -210,9 +209,37 @@ export const useWallet = create<State>()(
                                 if (!userData) {
                                     throw new Error('Failed to fetch or create user');
                                 }
-                                console.log("[useWallet] userData Fetched:", userData)
-
+                                console.log("[useWallet:connect] fetched user data")
                                 set({ address: details.walletAddress, walletStatus: WalletStatus.CONNECTED, user: userData, trialStatus: userData.trialStatus, connected: true })
+
+                                const activeProject = useGlobalState.getState().activeProject
+                                if (activeProject) {
+                                    console.log("[useWallet:connect] active project found")
+                                    useGlobalState.setState({
+                                        error: null,
+                                        isLoading: false,
+                                        projects: userData.projects,
+                                        activeProject: activeProject,
+                                        codebase: activeProject.codebase,
+                                        chatMessages: activeProject.messages,
+                                        deploymentUrl: activeProject.deploymentUrl,
+                                        dependencies: activeProject.externalPackages as Record<string, string>,
+                                        codeVersions: await fetchCodeVersions(userData.projects[0].projectId, details.walletAddress),
+                                    })
+                                } else {
+                                    const newProject = userData.projects.reverse()[0]
+                                    useGlobalState.setState({
+                                        error: null,
+                                        isLoading: false,
+                                        projects: userData.projects,
+                                        activeProject: newProject,
+                                        codebase: newProject.codebase,
+                                        chatMessages: newProject.messages,
+                                        deploymentUrl: newProject.deploymentUrl,
+                                        dependencies: newProject.externalPackages as Record<string, string>,
+                                        codeVersions: await fetchCodeVersions(newProject.projectId, details.walletAddress),
+                                    })
+                                }
 
                                 set({ walletStatus: WalletStatus.CONNECTED })
                                 useGlobalState.getState().setIsLoading(false);
@@ -256,11 +283,11 @@ export const useWallet = create<State>()(
                 },
                 disconnect: async () => {
                     const state = get();
-                    console.log("[useWallet] state before disconnecting wallet:\n", state);
+                    // console.log("[useWallet] state before disconnecting wallet:\n", state);
                     await disconnectWallet();
                     await state.clearPersistedState();
                     state.resetWalletState();
-                    console.log("[useWallet] state after disconnecting wallet:\n", get());
+                    // console.log("[useWallet] state after disconnecting wallet:\n", get());
                 },
                 // jwk: undefined,
                 // wanderInstance: null,
@@ -296,6 +323,7 @@ if (typeof window !== 'undefined') {
         console.log('[useWallet] Wallet switch event', event.detail);
         const state = useWallet.getState();
         const { address } = event.detail;
+        console.log(event)
         if (address !== state.address) {
             state.updateAddress(address);
             toast.info(`Wallet switched to ${address.slice(0, 5)}...${address.slice(-5)}`);

@@ -160,7 +160,7 @@ if (!backendUrl) {
   throw new Error('NEXT_PUBLIC_BACKEND_URL environment variable is not set');
 }
 
-const fetchCodeVersions = async (projectId: string, address: string) => {
+export const fetchCodeVersions = async (projectId: string, address: string) => {
   try {
     const response = await axios.get(
       `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}/versions?walletAddress=${address}`
@@ -228,20 +228,13 @@ export const useGlobalState = create<
         },
         refreshGlobalState: async () => {
           try {
-            const walletAddress = useWallet.getState().address;
-            if (!walletAddress) {
-              throw new Error('No wallet address found');
-            }
+            // const { address } = useWallet.getState();
+            // if (!address) {
+            //   // throw new Error('No wallet address found');
+            // }
 
             set({ isLoading: true, error: null });
-
-            // Fetch projects and update state
-            await get().fetchProjects();
-
-            // If there's an active project, reload its data
-            if (get().activeProject) {
-              await get().loadProjectData(get().activeProject, walletAddress);
-            }
+            await useWallet.getState().connect();
 
             set({ isLoading: false });
           } catch (error) {
@@ -847,6 +840,7 @@ export const useGlobalState = create<
       name: 'global-github-state',
       partialize: (state) => ({
         githubToken: state.githubToken,
+        activeProject:state.activeProject
       }),
     }
   )

@@ -91,7 +91,7 @@ const Profile = () => {
       title: 'Current Plan',
       content: (
         <p className={`text-sm font-medium ${planColorMap[user.plan]}`}>
-          {user.plan.charAt(0).toUpperCase() + user.plan.slice(1)}
+          {user?.plan?.charAt(0).toUpperCase() + user?.plan?.slice(1)}
         </p>
       ),
     },

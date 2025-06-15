@@ -2,7 +2,7 @@
 
 import { toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
-import { Loader2Icon, RefreshCw } from 'lucide-react';
+import { Loader2Icon, RefreshCw, User } from 'lucide-react';
 import { Framework, ChatMessage, Role, Project } from '@/types';
 import { useWallet } from '@/hooks';
 import { useGlobalState } from '@/hooks';
@@ -270,7 +270,7 @@ const Chatview = () => {
                 <Avatar>
                   <AvatarImage src={user?.avatarUrl} />
                   <AvatarFallback>
-                    {user?.username.charAt(0).toUpperCase()}
+                    <User size={12} />
                   </AvatarFallback>
                 </Avatar>
               ) : (
@@ -281,7 +281,6 @@ const Chatview = () => {
                     }
                     className="bg-none"
                   />
-                  <AvatarFallback></AvatarFallback>
                 </Avatar>
               )}
               <div

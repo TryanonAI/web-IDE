@@ -3,9 +3,7 @@
 import { PlusCircle } from 'lucide-react';
 import { useGlobalState } from '@/hooks';
 import { Button } from '@/components/ui/button';
-import { useWallet } from '@/hooks';
 import { Loading_Gif } from '@/app/loading';
-import { useEffect } from 'react';
 
 import {
   ResizableHandle,
@@ -16,17 +14,9 @@ import Codeview from '@/components/pages/dashboard/codeview/Codeview';
 import Chatview from '@/components/pages/dashboard/chatview/Chatview';
 
 const Dashboard = () => {
-  const connected = useWallet((state) => state.connected);
   const openModal = useGlobalState((state) => state.openModal);
   const isLoading = useGlobalState((state) => state.isLoading);
-  const fetchProjects = useGlobalState((state) => state.fetchProjects);
   const activeProject = useGlobalState((state) => state.activeProject);
-
-  useEffect(() => {
-    if (connected) {
-      fetchProjects();
-    }
-  }, [connected, fetchProjects]);
 
   if (isLoading) {
     return (

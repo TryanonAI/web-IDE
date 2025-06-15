@@ -1,15 +1,25 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useWallet } from '@/hooks';
+import { useGlobalState, useWallet } from '@/hooks';
 import { notifyNoWallet } from '@/hooks/use-mobile';
 
 const CheckConnection = ({ children }: { children: React.ReactNode }) => {
-  const { setWalletLoaded, checkWalletStatus, syncWithWallet, isWalletAvailable } = useWallet();
+  const {
+    setWalletLoaded,
+    checkWalletStatus,
+    syncWithWallet,
+    isWalletAvailable,
+  } = useWallet();
+  const { refreshGlobalState } = useGlobalState();
+
+  useEffect(() => {
+    refreshGlobalState();
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+
     // Initial wallet check
     if (!isWalletAvailable()) {
       notifyNoWallet();
@@ -37,13 +47,17 @@ const CheckConnection = ({ children }: { children: React.ReactNode }) => {
 
     // Add event listeners (these work alongside the ones in useWallet.ts)
     window.addEventListener('arweaveWalletLoaded', handleWalletLoaded);
+    window.addEventListener('disconnect', (e) => {
+      console.log('disconnect');
+      console.log(e)
+    });
     window.addEventListener('walletSwitch', handleWalletSwitch);
 
     return () => {
       window.removeEventListener('arweaveWalletLoaded', handleWalletLoaded);
       window.removeEventListener('walletSwitch', handleWalletSwitch);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return children;

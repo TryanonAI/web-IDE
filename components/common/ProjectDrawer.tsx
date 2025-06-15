@@ -77,7 +77,7 @@ export function ProjectDrawer() {
 
   return (
     <Drawer
-      direction="right"
+      direction="left"
       open={activeDrawer === DrawerType.CREATE_PROJECT}
       onOpenChange={() => closeDrawer()}
     >
