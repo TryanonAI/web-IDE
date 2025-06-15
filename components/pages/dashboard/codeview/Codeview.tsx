@@ -311,7 +311,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
 
   return (
     <div
-      className={`h-full w-full ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}
+      className={`h-full w-full ${isFullscreen ? 'bg-background' : ''}`}
     >
       {isCodeGenerating ? (
         <div className="flex items-center justify-center h-full">
@@ -563,7 +563,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
             </div>
           </div>
 
-          <SandpackLayout className="h-full min-h- w-full flex relative">
+          <SandpackLayout className="h-full min-h-full w-full flex relative">
             <div
               className={cn(
                 'absolute inset-0 flex',

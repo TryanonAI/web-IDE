@@ -4,7 +4,6 @@ import { create } from 'zustand';
 import { Octokit } from '@octokit/core';
 import { useWallet } from './useWallet';
 import { devtools, persist } from 'zustand/middleware';
-// import { mergeDependencies } from '@/lib/utils';
 import { runLua, spawnProcess } from '@/lib/arkit';
 import {
   Project,
@@ -56,7 +55,13 @@ export type GitHubStatus =
   | 'checking_repo'
   | 'error';
 
-export type DrawerType = 'project' | 'projectInfo' | 'githubStatus';
+// export type DrawerType = 'createProject' | 'projectInfo' | 'githubStatus';
+export enum DrawerType {
+  CREATE_PROJECT = 'createProject',
+  PROJECT_INFO = 'projectInfo',
+  GITHUB_STATUS = 'githubStatus',
+}
+
 
 export type ModalType = 'createProject' | 'github' | 'projectInfo';
 
@@ -289,6 +294,61 @@ export const useGlobalState = create<
           });
         },
 
+        // createRepository: async () => {
+        //   if (!octokit || !githubUsername || !activeProject) {
+        //     setGithubStatus(GITHUB_STATUS.ERROR);
+        //     throw new Error('Missing required parameters');
+        //   }
+
+        //   setGithubStatus(GITHUB_STATUS.CREATING_REPO);
+
+        //   try {
+        //     const createResponse = await octokit.request('POST /user/repos', {
+        //       name: activeProject.title,
+        //       description: 'Created with ANON AI',
+        //       private: true,
+        //       headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+        //     });
+
+        //     if (createResponse.status === 201) {
+        //       updateStepStatus('create-repo', 'success');
+        //       setGithubStatus(GITHUB_STATUS.REPO_EXISTS);
+        //       toast.success('New repository created successfully!');
+        //       return true;
+        //     }
+        //     return false;
+        //   } catch (err) {
+        //     updateStepStatus('create-repo', 'error', (err as Error).message);
+        //     const error = err as GithubError;
+
+        //     if (
+        //       error.response?.data?.errors?.some((e) =>
+        //         e.message?.includes('name already exists')
+        //       )
+        //     ) {
+        //       try {
+        //         const exists = await checkRepository(activeProject.title);
+        //         return exists;
+        //       } catch {
+        //         setGithubStatus(GITHUB_STATUS.ERROR);
+        //         setError(
+        //           'A repository with this name already exists but is not accessible'
+        //         );
+        //         toast.error('Repository name conflict', {
+        //           description:
+        //             'A repository with this name already exists but is not accessible. Please use a different project name.',
+        //         });
+        //         return false;
+        //       }
+        //     }
+
+        //     setGithubStatus(GITHUB_STATUS.ERROR);
+        //     setError(error.message || 'Failed to create repository');
+        //     toast.error('Failed to create repository');
+        //     return false;
+        //   }
+        // },
+
         checkRepository: async (projectName: string): Promise<boolean> => {
           const { octokit, githubUsername } = get();
           if (!octokit || !githubUsername) {
@@ -348,195 +408,158 @@ export const useGlobalState = create<
           commitMessage?: string
         ): Promise<void> => {
           const { octokit, githubUsername } = get();
-          if (!octokit || !githubUsername) {
-            set({ error: 'GitHub not authenticated' });
-            throw new Error('GitHub not authenticated');
-          }
-
-          if (!activeProject) {
-            set({ error: 'No project selected' });
-            throw new Error('No project selected');
-          }
+          if (!octokit || !githubUsername) throw new Error('GitHub not authenticated');
+          if (!activeProject) throw new Error('No project selected');
 
           set({ githubStatus: GITHUB_STATUS.COMMITTING, error: null });
-          console.log(`Starting GitHub commit for project: ${activeProject.title}`);
+          console.log(`📦 Starting GitHub commit for project: ${activeProject.title}`);
+          console.log(`📊 Force push: ${forcePush}, Commit message: ${commitMessage || 'Update via ANON AI'}`);
 
           try {
-            // Verify repository exists
-            let repoExists = await get().checkRepository(activeProject.title);
+            // 1. Ensure repository exists
+            console.log(`🔍 Checking if repository exists: ${githubUsername}/${activeProject.title}`);
+            const repoExists = await get().checkRepository(activeProject.title);
+            console.log(`✅ Repository exists check result: ${repoExists}`);
 
             if (!repoExists) {
-              console.log(`Repository ${githubUsername}/${activeProject.title} not found. Attempting to create.`);
-              toast.info(`Repository not found. Creating ${activeProject.title}...`);
-
+              console.log(`🚀 Repository not found, creating new repository: ${activeProject.title}`);
               const repoCreated = await get().createRepository(activeProject.title);
-              if (!repoCreated) {
-                const creationError = get().error || 'Failed to create repository after checking.';
-                set({ error: creationError, githubStatus: GITHUB_STATUS.ERROR });
-                throw new Error(creationError);
-              }
-              repoExists = true;
-              await new Promise((resolve) => setTimeout(resolve, 1000));
+              console.log(`✅ Repository creation result: ${repoCreated}`);
+              if (!repoCreated) throw new Error(get().error || 'Failed to create repo');
+              await new Promise((res) => setTimeout(res, 1000));
             }
 
-            // Get current branch info
+            // 2. Check if main branch exists (repo might be empty)
             let currentCommitSha: string | undefined;
             let currentTreeSha: string | undefined;
 
             try {
-              const branchResponse = await octokit.request(
-                'GET /repos/{owner}/{repo}/branches/{branch}',
-                {
+              console.log(`🌿 Fetching main branch info for: ${githubUsername}/${activeProject.title}`);
+              const branch = await octokit.request('GET /repos/{owner}/{repo}/branches/{branch}', {
+                owner: githubUsername,
+                repo: activeProject.title,
+                branch: 'main',
+                headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+              });
+
+              currentCommitSha = branch.data.commit.sha;
+              currentTreeSha = branch.data.commit.commit.tree.sha;
+              console.log(`✅ Found existing branch - Commit SHA: ${currentCommitSha}, Tree SHA: ${currentTreeSha}`);
+            } catch (error) {
+              const err = error as GithubError;
+              if (err.status === 404) {
+                console.warn('🆕 Repo is empty, initializing with Create File API...');
+
+                const initRes = await octokit.request('PUT /repos/{owner}/{repo}/contents/{path}', {
                   owner: githubUsername,
                   repo: activeProject.title,
+                  path: 'README.md',
+                  message: 'Initial commit',
+                  content: Buffer.from('# Initial Commit').toString('base64'),
                   branch: 'main',
                   headers: { 'X-GitHub-Api-Version': '2022-11-28' },
-                }
-              );
-              currentCommitSha = branchResponse.data.commit.sha;
-              currentTreeSha = branchResponse.data.commit.commit.tree.sha;
-            } catch (error) {
-              if (!forcePush) {
-                console.error('Could not get current branch info:', error);
-                throw new Error('Failed to get current branch information. Repository might be empty or inaccessible.');
+                });
+                console.log(`[initRes]`, initRes);
+                currentCommitSha = initRes.data.commit.sha;
+                console.log(`[currentCommitSha]`, currentCommitSha);
+                // @ts-expect-error ignore
+                currentTreeSha = initRes.data.commit.tree.sha;
+                console.log(`[currentTreeSha]`, currentTreeSha);
+                console.log(`✅ Repository initialized - Commit SHA: ${currentCommitSha}, Tree SHA: ${currentTreeSha}`);
+              } else {
+                console.error('❌ Failed to get branch info:', err);
+                throw new Error('Failed to get current branch info');
               }
             }
 
-            // Fetch project files
-            const filesToCommitResponse = await axios.get(
+            // 3. Fetch project files
+            console.log(`📁 Fetching project files from backend: ${activeProject.projectId}`);
+            const res = await axios.get(
               `${backendUrl}/projects/${activeProject.projectId}?walletAddress=${walletAddress}`
             );
 
-            let codebaseData = filesToCommitResponse.data.codebase;
-            if (!codebaseData) {
-              set({ error: 'No codebase data returned from server', githubStatus: GITHUB_STATUS.REPO_EXISTS });
-              toast.error('No codebase data returned');
-              throw new Error('No codebase data returned from server');
-            }
+            let codebaseData = res.data.codebase;
+            console.log(`📊 Received codebase data with ${Object.keys(codebaseData || {}).length} files`);
+
+            if (!codebaseData) throw new Error('No codebase data returned from server');
             codebaseData = { ...defaultFiles, ...codebaseData };
 
-            // Process files to commit
-            const filesToCommit: Record<string, string> = {};
-            if (Array.isArray(codebaseData)) {
-              codebaseData.forEach((file: GithubFile) => {
-                if (file && file.filePath && file.code) {
-                  const cleanPath = file.filePath.startsWith('/') ? file.filePath.substring(1) : file.filePath;
-                  filesToCommit[cleanPath] = file.code;
-                }
-              });
-            } else if (typeof codebaseData === 'object' && codebaseData !== null) {
-              Object.entries(codebaseData).forEach(([path, content]) => {
-                if (path && content) {
-                  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-                  if (typeof content === 'object' && content !== null && 'code' in content) {
-                    filesToCommit[cleanPath] = (content as { code: string }).code;
-                  } else if (typeof content === 'string') {
-                    filesToCommit[cleanPath] = content;
-                  }
-                }
-              });
-            }
+            if (Object.keys(codebaseData).length === 0) throw new Error('No files to commit');
+            console.log(`📝 Total files to commit: ${Object.keys(codebaseData).length}`);
 
-            if (Object.keys(filesToCommit).length === 0) {
-              set({ error: 'No files to commit', githubStatus: GITHUB_STATUS.REPO_EXISTS });
-              toast.error('No files to commit');
-              throw new Error('No files to commit');
-            }
-
-            // Create blobs and tree
+            // 4. Create blobs for each file
             const treeItems: TreeItem[] = [];
-            const blobPromises = Object.entries(filesToCommit).map(async ([filePath, content]) => {
-              if (!content || typeof content !== 'string') {
-                console.warn(`Skipping ${filePath}: Invalid or empty content`);
-                return;
-              }
+            console.log('🔄 Creating blobs for each file...');
 
-              try {
-                const blobResponse = await octokit.request('POST /repos/{owner}/{repo}/git/blobs', {
-                  owner: githubUsername,
-                  repo: activeProject.title,
-                  content: btoa(content),
-                  encoding: 'base64',
-                  headers: { 'X-GitHub-Api-Version': '2022-11-28' },
-                });
+            for (const [filePath, content] of Object.entries(codebaseData)) {
+              console.log(`📄 Creating blob for file: ${filePath} (${(content as string).length} characters)`);
+              const blob = await octokit.request('POST /repos/{owner}/{repo}/git/blobs', {
+                owner: githubUsername,
+                repo: activeProject.title,
+                content: Buffer.from(content as string).toString('base64'),
+                encoding: 'base64',
+                headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+              });
 
-                treeItems.push({
-                  path: filePath,
-                  mode: '100644' as const,
-                  type: 'blob' as const,
-                  sha: blobResponse.data.sha,
-                });
-              } catch (error) {
-                console.error(`Failed to create blob for file ${filePath}:`, error);
-              }
-            });
-
-            await Promise.all(blobPromises);
-
-            if (treeItems.length === 0) {
-              set({ error: 'No valid files to commit', githubStatus: GITHUB_STATUS.REPO_EXISTS });
-              toast.error('No valid files to commit');
-              throw new Error('No valid files to commit');
+              treeItems.push({
+                path: filePath.startsWith('/') ? filePath.slice(1) : filePath,
+                mode: '100644',
+                type: 'blob',
+                sha: blob.data.sha,
+              });
+              console.log(`✅ Blob created for ${filePath} - SHA: ${blob.data.sha}`);
             }
 
-            // Create tree
-            const treeResponse = await octokit.request('POST /repos/{owner}/{repo}/git/trees', {
+            // 5. Create a new tree
+            console.log(`🌳 Creating new tree with ${treeItems.length} items`);
+            const newTree = await octokit.request('POST /repos/{owner}/{repo}/git/trees', {
               owner: githubUsername,
               repo: activeProject.title,
               tree: treeItems,
-              base_tree: !forcePush ? currentTreeSha : undefined,
+              base_tree: currentTreeSha,
               headers: { 'X-GitHub-Api-Version': '2022-11-28' },
             });
+            console.log(`✅ New tree created - SHA: ${newTree.data.sha}`);
 
-            // Create commit
-            const defaultMessage = forcePush ? 'Force push from ANON AI (complete codebase)' : 'Update from ANON AI';
-            const finalCommitMessage = commitMessage || defaultMessage;
-
-            const commitResponse = await octokit.request('POST /repos/{owner}/{repo}/git/commits', {
+            // 6. Create a new commit
+            const finalCommitMessage = commitMessage || 'Update via ANON AI';
+            console.log(`💾 Creating new commit with message: "${finalCommitMessage}"`);
+            const commitRes = await octokit.request('POST /repos/{owner}/{repo}/git/commits', {
               owner: githubUsername,
               repo: activeProject.title,
               message: finalCommitMessage,
-              tree: treeResponse.data.sha,
-              parents: !forcePush && currentCommitSha ? [currentCommitSha] : [],
+              tree: newTree.data.sha,
+              parents: [currentCommitSha!],
               headers: { 'X-GitHub-Api-Version': '2022-11-28' },
             });
+            console.log(`✅ New commit created - SHA: ${commitRes.data.sha}`);
 
-            // Update reference
-            await octokit.request('PATCH /repos/{owner}/{repo}/git/refs/{ref}', {
+            // 7. Update the ref to point to the new commit
+            console.log(`🔄 Updating main branch reference to new commit (force: ${forcePush})`);
+            await octokit.request('PATCH /repos/{owner}/{repo}/git/refs/heads/main', {
               owner: githubUsername,
               repo: activeProject.title,
-              ref: 'heads/main',
-              sha: commitResponse.data.sha,
+              sha: commitRes.data.sha,
               force: forcePush,
               headers: { 'X-GitHub-Api-Version': '2022-11-28' },
             });
+            console.log(`✅ Branch reference updated successfully`);
 
             set({ githubStatus: GITHUB_STATUS.REPO_EXISTS });
-            toast.success(
-              `Changes successfully ${forcePush ? 'force pushed' : 'committed'} to GitHub!`
-            );
-          } catch (err) {
-            const error = err as GithubError;
-            let errorMessage = error.response?.data?.message || error.message || 'Failed to commit to GitHub';
-
-            if (errorMessage.includes('Git Repository is empty')) {
-              errorMessage = 'Repository is empty. Try force pushing the first commit.';
-            } else if (errorMessage.includes('Not Found') || error.status === 404) {
-              errorMessage = `Repository "${activeProject.title}" not found. It may have been deleted or renamed on GitHub.`;
-            } else if (errorMessage.includes('reference already exists')) {
-              errorMessage = 'Branch already exists. Try force pushing.';
-            } else if (errorMessage.includes('Branch not found')) {
-              errorMessage = 'Branch not found. Try force pushing the first commit.';
-            } else if (error.status === 403 && errorMessage.includes('rate limit exceeded')) {
-              errorMessage = 'GitHub API rate limit exceeded. Please try again later.';
-            } else if (error.status === 409) {
-              errorMessage = 'Conflict with existing data. The repository has been modified. Try pulling changes first.';
-            }
-
-            console.error('GitHub error details:', error);
-            set({ error: errorMessage, githubStatus: GITHUB_STATUS.ERROR });
-            toast.error('GitHub Error', { description: errorMessage });
-            throw error;
+            console.log(`🎉 GitHub commit completed successfully for project: ${activeProject.title}`);
+            toast.success('✅ Code committed to GitHub!');
+          } catch (error) {
+            const err = error as GithubError
+            const msg = err?.response?.data?.message || err.message || 'GitHub commit failed';
+            console.error('🚨 GitHub commit failed:', {
+              project: activeProject.title,
+              error: msg,
+              status: err?.status,
+              details: err
+            });
+            set({ error: msg, githubStatus: GITHUB_STATUS.ERROR });
+            toast.error('GitHub Error', { description: msg });
+            throw err;
           }
         },
 

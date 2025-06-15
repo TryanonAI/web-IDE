@@ -38,7 +38,7 @@ const OpenWithCursor = ({
         width={12}
         alt="cursor-brand-logo"
       />
-      <AnimatedGradientText>Open with Cursor</AnimatedGradientText>
+      <AnimatedGradientText className='hidden md:block' >Open with Cursor</AnimatedGradientText>
     </button>
   );
 };

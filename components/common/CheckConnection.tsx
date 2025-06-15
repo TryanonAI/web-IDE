@@ -2,46 +2,40 @@
 
 import React, { useEffect } from 'react';
 import { useWallet } from '@/hooks';
-import { toast } from 'sonner';
 import { notifyNoWallet } from '@/hooks/use-mobile';
 
 const CheckConnection = ({ children }: { children: React.ReactNode }) => {
-  const setWalletLoaded = useWallet((state) => state.setWalletLoaded);
-  const updateAddress = useWallet((state) => state.updateAddress);
-  const connect = useWallet((state) => state.connect);
+  const { setWalletLoaded, checkWalletStatus, syncWithWallet, isWalletAvailable } = useWallet();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (!window.arweaveWallet) {
+    
+    // Initial wallet check
+    if (!isWalletAvailable()) {
       notifyNoWallet();
+      return;
     }
 
-    const handleWalletLoaded = async (e: CustomEvent) => {
+    // Set wallet as loaded and perform initial sync
+    setWalletLoaded(true);
+    syncWithWallet();
+
+    // The main wallet event handling is now done in useWallet.ts
+    // We just need to trigger additional checks here if needed
+    const handleWalletLoaded = async () => {
+      console.log('[CheckConnection] Wallet loaded event received');
       setWalletLoaded(true);
-      const { permissions } = await e.detail;
-      if (permissions.length === 0 && window.arweaveWallet) {
-        await connect();
-      }
-      // else if (window.arweaveWallet) {
-      //   // const address = await window.arweaveWallet.getActiveAddress();
-      //   // updateAddress(address);
-      // }
+      await syncWithWallet();
     };
 
-    const handleWalletSwitch = async (e: CustomEvent) => {
-      const { address } = e.detail;
-      if (address) {
-        try {
-          // await connect();
-          updateAddress(address);
-          const saddress = useWallet.getState().shortAddress;
-          toast.info(`Connected ${saddress}`);
-        } catch (error) {
-          console.error('Error connecting to wallet:', error);
-        }
-      }
+    const handleWalletSwitch = async () => {
+      console.log('[CheckConnection] Wallet switch event received');
+      // The actual address update is handled in useWallet.ts
+      // We just trigger a status check here for extra safety
+      await checkWalletStatus();
     };
 
+    // Add event listeners (these work alongside the ones in useWallet.ts)
     window.addEventListener('arweaveWalletLoaded', handleWalletLoaded);
     window.addEventListener('walletSwitch', handleWalletSwitch);
 

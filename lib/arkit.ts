@@ -597,7 +597,6 @@ export async function getWalletDetails(): Promise<WalletDetails> {
     );
   }
   try {
-    console.log('Getting wallet details...');
     // const arweave = Arweave.init({
     //   host: HOST_NAME,
     //   port: PORT_NUM,

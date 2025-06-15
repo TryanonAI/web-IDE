@@ -15,26 +15,28 @@ import {
 import { useGlobalState, useWallet } from '@/hooks';
 import {
   AlertCircle,
-  ChevronsUpDown,
   Loader2,
   PlusCircle,
   LogOutIcon,
   UserIcon,
   X,
+  Check,
+  ChevronsUpDown,
+  GitCommit,
+  MessageSquare,
 } from 'lucide-react';
 import {
   Popover,
-  // PopoverContent,
+  PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-// import {
-//   Command,
-//   CommandEmpty,
-//   CommandGroup,
-//   CommandInput,
-//   CommandItem,
-//   CommandList,
-// } from '@/components/ui/command';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import { Framework } from '@/types';
 import {
   DropdownMenu,
@@ -45,9 +47,20 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
-import { validateProjectName } from '@/lib/utils';
+import { cn, validateProjectName } from '@/lib/utils';
 import TitleBar from '@/components/pages/dashboard/TitleBar';
 import StatusBar from '@/components/pages/dashboard/StatusBar';
+import GithubDrawer from '@/components/common/GithubDrawer';
+import { ProjectInfoDrawer } from '@/components/common/ProjectInfoDrawer';
+import { Textarea } from '@/components/ui/textarea';
+
+interface StatusStep {
+  id: string;
+  title: string;
+  description: string;
+  status: 'loading' | 'success' | 'error' | 'pending';
+  error?: string;
+}
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -61,7 +74,13 @@ const Layout = ({ children }: LayoutProps) => {
   const [showBanner, setShowBanner] = useState(false);
   const [nameError, setNameError] = useState<string>('');
   const [mode, setMode] = useState<Framework>(Framework.React);
+  const [isConnecting, SetIsConnecting] = useState<boolean>();
 
+  // Status and commit related state
+  const [commitInProgress, setCommitInProgress] = useState<boolean>(false);
+  const [statusSteps, setStatusSteps] = useState<StatusStep[]>([]);
+  const [commitMessage, setCommitMessage] = useState<string>('');
+  const [isCommitDialogOpen, setIsCommitDialogOpen] = useState<boolean>(false);
   const { user, shortAddress, connect, disconnect, connected } = useWallet();
   const {
     activeModal,
@@ -73,6 +92,9 @@ const Layout = ({ children }: LayoutProps) => {
     setIsLoading,
     setFramework,
     createProject,
+    framework,
+    activeProject,
+    commitToRepository,
   } = useGlobalState();
 
   const isDashboard = pathname === '/dashboard';
@@ -107,7 +129,60 @@ const Layout = ({ children }: LayoutProps) => {
       setNameError('');
     }
   };
-  
+
+  // Status and commit functions
+  const showCommitDialog = () => {
+    setIsCommitDialogOpen(true);
+  };
+
+  const updateStepStatus = (
+    stepId: string,
+    status: 'loading' | 'success' | 'error' | 'pending',
+    error?: string
+  ) => {
+    setStatusSteps((steps) =>
+      steps.map((step) =>
+        step.id === stepId ? { ...step, status, error } : step
+      )
+    );
+  };
+
+  const handleCommitToRepo = async () => {
+    if (!activeProject || !commitMessage.trim()) return;
+
+    setCommitInProgress(true);
+    setIsCommitDialogOpen(false);
+
+    // Add commit step to status steps
+    setStatusSteps([
+      {
+        id: 'commit',
+        title: 'Committing to Repository',
+        description: `Committing changes: "${commitMessage}"`,
+        status: 'loading',
+      },
+    ]);
+
+    try {
+      await commitToRepository(
+        activeProject,
+        useWallet.getState().address as string,
+        true,
+        commitMessage
+      );
+
+      updateStepStatus('commit', 'success');
+      setCommitMessage('');
+    } catch (error) {
+      console.error('Error committing to repository:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      updateStepStatus('commit', 'error', errorMessage);
+    } finally {
+      setCommitInProgress(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       {/* Announcement Banner */}
@@ -172,10 +247,22 @@ const Layout = ({ children }: LayoutProps) => {
         <div className="flex flex-1 items-center justify-center">
           <Button
             className="cursor-pointer flex items-center gap-2 px-4 py-2.5 text-base h-auto"
-            onClick={() => connect()}
+            onClick={() => {
+              SetIsConnecting(true);
+              connect();
+              SetIsConnecting(false);
+            }}
+            disabled={isConnecting}
             size="lg"
           >
-            Connect Wallet
+            {isConnecting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              'Connect Wallet'
+            )}
           </Button>
         </div>
       ) : (
@@ -187,7 +274,15 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       )}
 
+      <GithubDrawer
+        statusSteps={statusSteps}
+        setStatusSteps={setStatusSteps}
+        commitInProgress={commitInProgress}
+        showCommitDialog={showCommitDialog}
+      />
+      <ProjectInfoDrawer />
       <ProjectDrawer />
+      
       <Dialog
         open={activeModal === 'createProject' && !isCreating}
         onOpenChange={(open) => {
@@ -244,69 +339,79 @@ const Layout = ({ children }: LayoutProps) => {
                     Select Mode
                   </label>
                   <Popover open={open} onOpenChange={setOpen}>
-                    <PopoverTrigger disabled={true} asChild>
+                    <PopoverTrigger disabled={false} asChild>
                       <Button
                         variant="outline"
                         role="combobox"
                         aria-expanded={open}
-                        className="w-full p-3 justify-between opacity-60 cursor-not-allowed"
+                        className="w-full p-3 justify-between "
                       >
-                        {/* {framework
-                            ? [
-                                { value: Framework.React, label: 'Code Mode' },
-                                { value: Framework.Html, label: 'Vibe Mode' },
-                              ].find((fmk) => fmk.value === framework)?.label
-                            : 'Select framework...'} */}
+                        {framework
+                          ? [
+                              { value: Framework.React, label: 'Code Mode' },
+                              { value: Framework.Html, label: 'Vibe Mode' },
+                            ].find((fmk) => fmk.value === framework)?.label
+                          : 'Select framework...'}
                         {/* Code Mode */}
-                        {/* <div className='flex gap-1'> */}
-                        <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">
+                        {/* <div className="flex gap-1">
+                          <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">
                           Coming Soon
                         </span>
+                        </div> */}
                         <ChevronsUpDown className="opacity-50" />
-                        {/* </div> */}
                       </Button>
                     </PopoverTrigger>
                     {/* Commenting out the PopoverContent section for now */}
-                    {/* <PopoverContent className="w-full p-0">
-                        <Command>
-                          <CommandInput
-                            placeholder="Search framework..."
-                            className="h-9"
-                          />
-                          <CommandList>
-                            <CommandEmpty>No mode found.</CommandEmpty>
-                            <CommandGroup>
-                              {[
-                                { value: Framework.React, label: 'Code Mode' },
-                                { value: Framework.Html, label: 'Vibe Mode' },
-                              ].map((fmk) => (
-                                <CommandItem
-                                  key={fmk.value}
-                                  value={fmk.value}
-                                  onSelect={(fmk) => {
-                                    setMode(fmk as Framework);
-                                    setFramework(fmk as Framework);
-                                    setOpen(false);
-                                  }}
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        {/* <CommandInput
+                          placeholder="Search Mode..."
+                          className="h-9"
+                        /> */}
+                        <CommandList>
+                          <CommandEmpty>No mode found.</CommandEmpty>
+                          <CommandGroup>
+                            {[
+                              { value: Framework.React, label: 'Code Mode' },
+                              { value: Framework.Html, label: 'Vibe Mode' },
+                            ].map((fmk) => (
+                              <CommandItem
+                                key={fmk.value}
+                                value={fmk.value}
+                                className=" data-[selected=true]:bg-muted data-[selected=true]:text-primary"
+                                onSelect={(fmk) => {
+                                  setMode(fmk as Framework);
+                                  setFramework(fmk as Framework);
+                                  setOpen(false);
+                                }}
+                              >
+                                <span
+                                  className={cn(
+                                    framework === fmk.value
+                                      ? 'text-green-500'
+                                      : 'text-foreground'
+                                  )}
                                 >
                                   {fmk.label}
-                                  <Check
-                                    className={cn(
-                                      'ml-auto',
-                                      framework === fmk.value
-                                        ? 'opacity-100'
-                                        : 'opacity-0'
-                                    )}
-                                  />
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent> */}
+                                </span>
+                                <Check
+                                  className={cn(
+                                    'ml-auto',
+                                    framework === fmk.value
+                                      ? 'opacity-100 text-green-500'
+                                      : 'opacity-0'
+                                  )}
+                                />
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
                   </Popover>
                   <p className="text-xs text-muted-foreground mt-1.5">
-                    Additional project modes will be available soon.
+                    {/* Additional project modes will be available soon. */}
+                    Select the mode for your project.
                   </p>
                 </div>
               </div>
@@ -336,6 +441,111 @@ const Layout = ({ children }: LayoutProps) => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Commit Dialog */}
+      {/* <Dialog
+        open={isCommitDialogOpen}
+        onOpenChange={(open) => setIsCommitDialogOpen(open)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Commit Changes</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="commitMessage" className="text-sm font-medium">
+                Commit Message
+              </label>
+              <input
+                id="commitMessage"
+                type="text"
+                value={commitMessage}
+                onChange={(e) => setCommitMessage(e.target.value)}
+                className="w-full p-3 mt-2 rounded-md border border-border bg-background text-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                placeholder="Describe your changes..."
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsCommitDialogOpen(false)}
+              disabled={commitInProgress}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCommitToRepo}
+              disabled={!commitMessage.trim() || commitInProgress}
+            >
+              {commitInProgress ? (
+                <Loader2 size={16} className="animate-spin mr-1" />
+              ) : null}
+              {commitInProgress ? 'Committing...' : 'Commit'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog> */}
+
+      {/* Add Commit Message Dialog */}
+      <Dialog open={isCommitDialogOpen} onOpenChange={setIsCommitDialogOpen}>
+        <DialogContent aria-description="Commit Changes" className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+              <GitCommit size={18} />
+              Commit Changes
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-3">
+            <div className="space-y-2">
+              <label
+                htmlFor="commitMessage"
+                className="text-sm font-medium leading-none flex items-center gap-2"
+              >
+                <MessageSquare size={14} />
+                Commit Message
+              </label>
+              <Textarea
+                id="commitMessage"
+                value={commitMessage}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setCommitMessage(e.target.value)
+                }
+                className="w-full min-h-[100px] p-3 rounded-md border border-border bg-background text-foreground resize-none"
+                placeholder="Describe your changes..."
+                required
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">
+                Write a meaningful message describing the changes you&apos;re
+                committing.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="mt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsCommitDialogOpen(false)}
+              disabled={commitInProgress}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCommitToRepo}
+              className="gap-1.5"
+              disabled={!commitMessage.trim() || commitInProgress}
+            >
+              <GitCommit size={16} />
+              Commit & Push
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
       {isDashboard && (
         <div className="shrink-0 border-t border-border">
           <StatusBar />

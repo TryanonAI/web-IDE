@@ -10,6 +10,7 @@ import {
   DrawerTitle,
   DrawerFooter,
 } from '@/components/ui/drawer';
+import { DrawerType } from '@/hooks/useGlobalState';
 
 export function ProjectDrawer() {
   const {
@@ -77,7 +78,7 @@ export function ProjectDrawer() {
   return (
     <Drawer
       direction="right"
-      open={activeDrawer === 'project'}
+      open={activeDrawer === DrawerType.CREATE_PROJECT}
       onOpenChange={() => closeDrawer()}
     >
       <DrawerContent>

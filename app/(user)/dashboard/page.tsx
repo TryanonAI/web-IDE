@@ -38,7 +38,7 @@ const Dashboard = () => {
 
   return activeProject ? (
     <ResizablePanelGroup direction="horizontal">
-      <ResizablePanel defaultSize={50} minSize={30}>
+      <ResizablePanel defaultSize={50} minSize={40}>
         <Codeview />
       </ResizablePanel>
       <ResizableHandle />
