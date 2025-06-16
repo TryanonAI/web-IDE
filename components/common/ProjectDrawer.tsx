@@ -10,7 +10,7 @@ import {
   DrawerTitle,
   DrawerFooter,
 } from '@/components/ui/drawer';
-import { DrawerType } from '@/hooks/useGlobalState';
+import { DrawerType, fetchCodeVersions } from '@/hooks/useGlobalState';
 import { useEffect, useRef } from 'react';
 
 export function ProjectDrawer() {
@@ -19,12 +19,11 @@ export function ProjectDrawer() {
     activeProject,
     activeDrawer,
     closeDrawer,
-    loadProjectData,
     openModal,
     setIsLoading,
   } = useGlobalState();
   const { address } = useWallet();
-  
+
   const activeProjectRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -58,14 +57,19 @@ export function ProjectDrawer() {
 
   const handleProjectSelect = async (projectId: string) => {
     setIsLoading(true);
-    if (!Array.isArray(projects)) {
-      console.error('Projects is not an array');
-      return;
-    }
+
     const selectedProject = projects.find((p) => p.projectId === projectId);
     if (selectedProject && address) {
       closeDrawer();
-      await loadProjectData(selectedProject, address);
+      useGlobalState.setState({
+        activeProject: selectedProject,
+        codebase: selectedProject.codebase,
+        chatMessages: selectedProject.messages,
+        deploymentUrl: selectedProject.deploymentUrl,
+        dependencies: selectedProject.externalPackages as Record<string, string>,
+        codeVersions: await fetchCodeVersions(selectedProject.projectId, address),
+      });
+      // await loadProjectData(selectedProject, address);
     } else {
       console.error('Project not found with ID:', projectId);
     }

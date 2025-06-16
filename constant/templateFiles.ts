@@ -1,4 +1,6 @@
-export const HTML_TEMPLATE_FILES = `
+export const HTML_TEMPLATE_FILES = {
+  '/index.html':
+  `
 <!DOCTYPE html>
 <html>
 <head>
@@ -28,7 +30,7 @@ body {
 <p>Vibe Coding LFG!!!</p>
 </body>
 </html>
-`
+`}
 
 export const SHADCN_TEMPLATE_FILES = {
   "/src/components/ui/accordion.tsx": "\"use client\"\r\n\r\nimport * as React from \"react\"\r\nimport * as AccordionPrimitive from \"@radix-ui/react-accordion\"\r\nimport { ChevronDown } from \"lucide-react\"\r\n\r\nimport { type ClassValue, clsx } from 'clsx';\r\nimport { twMerge } from 'tailwind-merge';\r\nfunction cn(...inputs: ClassValue[]) {\r\n  return twMerge(clsx(inputs));\r\n}\r\n\r\nconst Accordion = AccordionPrimitive.Root\r\n\r\nconst AccordionItem = React.forwardRef<\r\n  React.ElementRef<typeof AccordionPrimitive.Item>,\r\n  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>\r\n>(({ className, ...props }, ref) => (\r\n  <AccordionPrimitive.Item\r\n    ref={ref}\r\n    className={cn(\"border-b\", className)}\r\n    {...props}\r\n  />\r\n))\r\nAccordionItem.displayName = \"AccordionItem\"\r\n\r\nconst AccordionTrigger = React.forwardRef<\r\n  React.ElementRef<typeof AccordionPrimitive.Trigger>,\r\n  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>\r\n>(({ className, children, ...props }, ref) => (\r\n  <AccordionPrimitive.Header className=\"flex\">\r\n    <AccordionPrimitive.Trigger\r\n      ref={ref}\r\n      className={cn(\r\n        \"flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180\",\r\n        className\r\n      )}\r\n      {...props}\r\n    >\r\n      {children}\r\n      <ChevronDown className=\"h-4 w-4 shrink-0 transition-transform duration-200\" />\r\n    </AccordionPrimitive.Trigger>\r\n  </AccordionPrimitive.Header>\r\n))\r\nAccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName\r\n\r\nconst AccordionContent = React.forwardRef<\r\n  React.ElementRef<typeof AccordionPrimitive.Content>,\r\n  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>\r\n>(({ className, children, ...props }, ref) => (\r\n  <AccordionPrimitive.Content\r\n    ref={ref}\r\n    className=\"overflow-hidden text-sm transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down\"\r\n    {...props}\r\n  >\r\n    <div className={cn(\"pb-4 pt-0\", className)}>{children}</div>\r\n  </AccordionPrimitive.Content>\r\n))\r\n\r\nAccordionContent.displayName = AccordionPrimitive.Content.displayName\r\n\r\nexport { Accordion, AccordionItem, AccordionTrigger, AccordionContent }\r\n",

@@ -41,6 +41,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+customCodeEditor.tsx
 
 #question to be asked to the users 
 

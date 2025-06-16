@@ -22,7 +22,6 @@ import React, { useState, useEffect } from 'react';
 import { useGlobalState } from '@/hooks';
 import { Octokit } from '@octokit/core';
 import Link from 'next/link';
-import axios from 'axios';
 import { useCopyToClipboard } from '@uidotdev/usehooks';
 import { useRouter } from 'next/navigation';
 
@@ -34,49 +33,43 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { DrawerType, GITHUB_STATUS } from '@/hooks/useGlobalState';
-import { uploadToTurbo } from '@/lib/api';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const TitleBar = () => {
   const disconnect = useWallet((state) => state.disconnect);
-  const [isDeploying, setIsDeploying] = useState<boolean>(false);
   const [, copyToClipboard] = useCopyToClipboard();
   const [copy, setCopy] = useState<boolean>(false);
 
   const isLoading = useGlobalState((state) => state.isLoading);
   const isCodeGenerating = useGlobalState((state) => state.isCodeGenerating);
   const { openDrawer } = useGlobalState();
-  const { connected, address, shortAddress } = useWallet();
+  const { connected, shortAddress } = useWallet();
   const {
-    setOctokit,
-    setGithubStatus,
-    setGithubToken,
     githubToken,
+    isDeploying,
     githubStatus,
+    deploymentUrl,
+    setOctokit,
+    setGithubToken,
+    setGithubStatus,
     setGithubUsername,
   } = useGlobalState();
 
-  const {
-    activeProject,
-    codebase,
-    deploymentUrl,
-    setDeploymentUrl,
-    chatMessages,
-  } = useGlobalState();
+  const { activeProject } = useGlobalState();
 
   const { user } = useWallet();
   const router = useRouter();
-  // Add unified disabled states
+
   const commonDisabledState =
     isCodeGenerating ||
     isLoading ||
     isDeploying ||
     !connected ||
     !activeProject;
-  const deployDisabledState =
-    commonDisabledState ||
-    !codebase ||
-    (chatMessages && chatMessages?.length === 0);
+  // const deployDisabledState =
+  //   commonDisabledState ||
+  //   !codebase ||
+  //   (chatMessages && chatMessages?.length === 0);
   const githubButtonDisabledState =
     !connected ||
     githubStatus ===
@@ -397,6 +390,7 @@ const TitleBar = () => {
   //   }
   // };
 
+  /*
   const handleDeploy = async () => {
     if (isDeploying) {
       toast.error('Deployment already in progress');
@@ -451,6 +445,7 @@ const TitleBar = () => {
       setIsDeploying(false);
     }
   };
+*/
 
   return (
     <>
@@ -555,7 +550,7 @@ const TitleBar = () => {
           {/* Deploy Button and Status */}
           {activeProject?.framework === Framework.Html && (
             <div className="flex items-center gap-2">
-              <Button
+              {/* <Button
                 onClick={handleDeploy}
                 disabled={deployDisabledState}
                 variant="outline"
@@ -591,7 +586,7 @@ const TitleBar = () => {
                     <span>{deploymentUrl ? 'Redeploy' : 'Deploy'}</span>
                   </>
                 )}
-              </Button>
+              </Button> */}
 
               {deploymentUrl && (
                 <div className="flex items-center bg-card/50 rounded-lg border border-border shadow-sm overflow-hidden">
@@ -650,7 +645,10 @@ const TitleBar = () => {
 
             <DropdownMenu>
               {/* <DropdownMenuTrigger className="h-9 px-3 flex items-center gap-2 bg-secondary/30 hover:bg-secondary/70 rounded-md text-sm font-medium transition-all shadow-sm hover:shadow disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"> */}
-              <DropdownMenuTrigger className="rounded-md border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 group h-9 px-3 py-5 flex items-center gap-2 tracking-wider text-sm">
+              <DropdownMenuTrigger
+                disabled={commonDisabledState}
+                className="rounded-md border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 group h-9 px-3 py-5 flex items-center gap-2 tracking-wider text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              >
                 <Avatar>
                   <AvatarImage src={user?.avatarUrl} alt={user?.username} />
                   <AvatarFallback>

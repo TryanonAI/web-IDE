@@ -4,29 +4,28 @@ import { toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
 import { Loader2Icon, RefreshCw, User } from 'lucide-react';
 import { Framework, ChatMessage, Role, Project } from '@/types';
-import { useWallet } from '@/hooks';
-import { useGlobalState } from '@/hooks';
+import { useWallet, useGlobalState } from '@/hooks';
 import LLMRenderer from './LLMRenderer';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { handleRunLua } from '@/lib/arkit';
 import { Input } from '@/components/ui/input';
 
 const Chatview = () => {
-  const [userInput, setUserInput] = useState('');
-  const [isRetrying, setIsRetrying] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [failedMessage, setFailedMessage] = useState<string | null>(null);
-
-  const { user } = useWallet();
-  const setDependencies = useGlobalState((state) => state.setDependencies);
+  const user = useWallet((state) => state.user);
   const setCodebase = useGlobalState((state) => state.setCodebase);
-  const chatMessages = useGlobalState((state) => state.chatMessages); // From global state
-  const [messages, setMessages] = useState<ChatMessage[]>(chatMessages);
+  const chatMessages = useGlobalState((state) => state.chatMessages);
   const activeProject = useGlobalState((state) => state.activeProject);
+  const setDependencies = useGlobalState((state) => state.setDependencies);
   const isCodeGenerating = useGlobalState((state) => state.isCodeGenerating);
   const setIsCodeGenerating = useGlobalState(
     (state) => state.setIsCodeGenerating
   );
+
+  const [userInput, setUserInput] = useState('');
+  const [isRetrying, setIsRetrying] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>(chatMessages);
+  const [failedMessage, setFailedMessage] = useState<string | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -172,13 +171,51 @@ const Chatview = () => {
               });
               console.log('running lua done');
             }
-
             toast.info('Code updated.', {
               duration: 5000,
               description: 'You can redeploy to see changes on permaweb',
             });
             setIsCodeGenerating(false);
             eventSource.close();
+
+            if (isHtmlStream) {
+              if (codebaserec['/index.html']) {
+                try {
+                  console.log(
+                    '🚀 Starting auto-deployment for HTML project...'
+                  );
+                  const deploymentUrl = await useGlobalState
+                    .getState()
+                    .autoDeployProject(
+                      activeProject as Project,
+                      codebaserec['/index.html'] as string,
+                      user?.walletAddress as string
+                    );
+
+                  if (deploymentUrl) {
+                    toast.success('Code updated and deployed!', {
+                      duration: 5000,
+                      description: 'Your app is now live on the permaweb',
+                      action: {
+                        label: 'Open',
+                        onClick: () => window.open(deploymentUrl, '_blank'),
+                      },
+                    });
+                  } else {
+                    throw new Error('Deployment URL not returned');
+                  }
+                } catch (error) {
+                  console.error('Auto-deployment failed:', error);
+                  toast.error('Code updated but deployment failed', {
+                    duration: 7000,
+                    description:
+                      error instanceof Error
+                        ? error.message
+                        : 'Please try deploying manually',
+                  });
+                }
+              }
+            }
           });
         });
       };

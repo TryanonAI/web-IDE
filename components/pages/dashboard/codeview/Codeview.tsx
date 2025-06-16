@@ -9,6 +9,7 @@ import {
   Minimize,
   RefreshCw,
   Save,
+  Loader2Icon,
 } from 'lucide-react';
 import {
   SandpackLayout,
@@ -42,9 +43,26 @@ interface CodeviewProps {
   isSaving?: boolean;
 }
 
+// window.quickWallet = {
+//   connect: async (permissions = []) => {
+//     console.log('Simulated connect:', permissions);
+//     return true;
+//   },
+//   getActiveAddress: async () => {
+//     return 'arweave_address_123';
+//   },
+//   getPermissions: async () => {
+//     return ['ACCESS_ADDRESS', 'SIGN_TRANSACTION'];
+//   },
+//   sign: async (data) => {
+//     return { signature: 'mock_signature' };
+//   },
+// };
+
 // Create a separate component that uses useSandpack hook inside the provider
 function CodeviewInner({ isSaving }: CodeviewProps) {
   const address = useWallet((state) => state.address);
+  const connected = useWallet((state) => state.connected);
   const codebase = useGlobalState((state) => state.codebase);
   const isLoading = useGlobalState((state) => state.isLoading);
   const setIsLoading = useGlobalState((state) => state.setIsLoading);
@@ -53,6 +71,8 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
   const isCodeGenerating = useGlobalState((state) => state.isCodeGenerating);
   const setCodebase = useGlobalState((state) => state.setCodebase);
   const setDependencies = useGlobalState((state) => state.setDependencies);
+  const isDeploying = useGlobalState((state) => state.isDeploying);
+  const deploymentUrl = useGlobalState((state) => state.deploymentUrl);
 
   const { sandpack } = useSandpack();
 
@@ -63,6 +83,13 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSavingFile, setIsSavingFile] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const commonDisabledState =
+    isCodeGenerating ||
+    isLoading ||
+    isDeploying ||
+    !connected ||
+    !activeProject;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -241,7 +268,6 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
   };
 
   if (activeProject?.framework === Framework.Html) {
-    console.log(codebase);
     return (
       <div
         className={`h-full w-full ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}
@@ -250,7 +276,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
           <div className="flex items-center justify-center gap-0.5 h-full  px-1 py-2 rounded-md">
             <div className="py-[1px] px-3 rounded-sm flex justify-center items-center gap-1 text-xs leading-5 font-medium bg-background text-foreground shadow-sm">
               <EyeIcon size={12} />
-              <span className='hidden md:block font-mono'>Preview</span>
+              <span className="hidden md:block font-mono">Preview</span>
             </div>
           </div>
 
@@ -295,14 +321,31 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
           </div>
         </div>
 
-        <div className="h-[calc(100%-2.5rem)] w-full">
+        <div className="h-[calc(100%-2.5rem)] w-full relative">
+          {isCodeGenerating ? (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
+              <div className="text-center">
+                <Loader2Icon className="w-8 h-8 animate-spin mx-auto mb-4" />
+                <p className="text-lg font-medium">Generating code...</p>
+              </div>
+            </div>
+          ) : isDeploying ? (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
+              <div className="text-center">
+                <Loader2Icon className="w-8 h-8 animate-spin mx-auto mb-4" />
+                <p className="text-lg font-medium">Deploying to Permaweb...</p>
+              </div>
+            </div>
+          ) : null}
+
           <iframe
             key={isRefreshing ? 'refreshing' : 'normal'}
-            srcDoc={
-              // @ts-expect-error ignore
-              codebase['/index.html']
+            src={
+              deploymentUrl ||
+              'https://arweave.net/UaRwv7Wlkh2jB_YAMeKML7hNMJdm87gzHAv9LwXPWpY'
             }
             className="w-full h-full"
+            sandbox="allow-scripts allow-same-origin allow-modals"
             aria-label="Code Preview"
             title="Code Preview"
           />
@@ -320,7 +363,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
             const memeGifs = [
               'https://media.tenor.com/7qFULBHgzlYAAAAi/bubu-cooking-dudu-bubu.gif',
               'https://media.tenor.com/3WClDgCrUpUAAAAi/abster-abstract.gif',
-              'https://media.tenor.com/LCex2eU6isEAAAAi/benjammins-let-me-cook.gif',
+              'https://media.tenor.com/LCex2weU6isEAAAAi/benjammins-let-me-cook.gif',
             ];
             // Pick a random meme each render
             const randomIndex = Math.floor(Math.random() * memeGifs.length);
@@ -428,10 +471,13 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
               </Tooltip>
 
               <Tooltip>
-                <TooltipTrigger asChild>
+                <TooltipTrigger asChild disabled={commonDisabledState}>
                   <button
                     onClick={() => setIsFullscreen(!isFullscreen)}
                     className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-primary/80"
+                    title={
+                      isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'
+                    }
                   >
                     {isFullscreen ? (
                       <Minimize size={14} />
@@ -446,11 +492,12 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
               </Tooltip>
 
               <Tooltip>
-                <TooltipTrigger asChild>
+                <TooltipTrigger asChild disabled={commonDisabledState}>
                   <button
                     onClick={handleRefreshClick}
                     disabled={isRefreshing}
-                    className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-primary/80 disabled:opacity-50"
+                    className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Refresh preview"
                   >
                     <RefreshCw
                       size={14}
@@ -467,7 +514,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
 
               <div className="relative opacity-80">
                 <Tooltip>
-                  <TooltipTrigger>
+                  <TooltipTrigger disabled={commonDisabledState}>
                     <OpenWithCursor
                       disabled={false}
                       activeProject={activeProject as Project}
@@ -485,10 +532,10 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
                   onClick={() =>
                     setIsVersionDropdownOpen(!isVersionDropdownOpen)
                   }
-                  disabled={isEditorDisabled() || codeVersions.length === 0}
+                  disabled={isEditorDisabled() || codeVersions?.length === 0 || !activeProject}
                   className={cn(
                     'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
-                    (isEditorDisabled() || codeVersions.length === 0) &&
+                    (isEditorDisabled() || codeVersions?.length === 0) &&
                       'opacity-50 cursor-not-allowed'
                   )}
                   title="Code version history"
@@ -496,7 +543,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
                   <History size={12} />
                   {selectedVersion
                     ? `Version ${formatTimestamp(
-                        codeVersions.find((v) => v.id === selectedVersion)
+                        codeVersions?.find((v) => v.id === selectedVersion)
                           ?.timestamp || ''
                       )}`
                     : 'Current (Latest)'}

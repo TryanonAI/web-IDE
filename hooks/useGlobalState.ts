@@ -146,6 +146,9 @@ export interface ProjectState {
   dependencies: DependencyMap;
   setDependencies: (deps: DependencyMap) => void;
   setProjects: (projects: Project[]) => void;
+  isDeploying: boolean
+  autoDeployProject: (project: Project, codebase: CodebaseType, walletAddress: string) => Promise<string | null>;
+  setIsDeploying: (isDeploying: boolean) => void
   // updateDependencies: (newDeps: string[]) => void;
 }
 
@@ -192,7 +195,7 @@ const Initial_GithubState = {
   githubStatus: GITHUB_STATUS.DISCONNECTED,
 }
 
-const Initial_ProjectState = {
+export const Initial_ProjectState = {
   projects: [],
   framework: Framework.React,
   activeProject: null,
@@ -214,6 +217,9 @@ export const useGlobalState = create<
     devtools(
       (set, get) => ({
         // ----------------Global States----------------
+        setIsDeploying: (isDeploying) => {
+          set({ isDeploying })
+        },
         error: null,
         setError: (error: string | null) => set({ error }),
         isLoading: false,
@@ -831,6 +837,64 @@ export const useGlobalState = create<
         },
 
         setProjects: (projects: Project[]) => set({ projects }),
+
+        // Auto-deployment function for HTML projects
+        autoDeployProject: async (project: Project, indexHtmlContent: string, walletAddress: string): Promise<string | null> => {
+          try {
+            get().setIsDeploying(true)
+            console.log('🚀 Starting auto-deployment for HTML project:', project.title);
+
+            if (!project.projectId || !walletAddress) {
+              throw new Error('Project ID and wallet address are required for deployment');
+            }
+
+            if (project.framework !== Framework.Html) {
+              throw new Error('Auto-deployment is only supported for HTML projects');
+            }
+
+            if (!indexHtmlContent) {
+              throw new Error('No index.html content found for deployment');
+            }
+
+            // Import uploadToTurbo dynamically to avoid circular dependency
+            const { uploadToTurbo } = await import('@/lib/api');
+
+            // Create blob and file from the HTML content
+            const blob = new Blob([indexHtmlContent], {
+              type: 'text/html',
+            });
+            const file = new File([blob], project.title, {
+              type: 'text/html',
+            });
+
+            // Upload to Turbo/Arweave
+            const txnID = await uploadToTurbo(file, walletAddress);
+            const deploymentUrl = `https://arweave.net/${txnID}`;
+
+            // Update deployment URL in backend
+            const updateResponse = await axios.patch(
+              `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${project.projectId}`,
+              { deploymentUrl: deploymentUrl },
+              { params: { walletAddress: walletAddress } }
+            );
+
+            if (updateResponse.data?.project?.deploymentUrl) {
+              // Update global state
+              set({ deploymentUrl: deploymentUrl });
+              console.log('✅ Auto-deployment completed:', deploymentUrl);
+              return deploymentUrl;
+            } else {
+              throw new Error('Failed to update deployment URL in backend');
+            }
+          } catch (error) {
+            console.error('❌ Auto-deployment failed:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Auto-deployment failed';
+            set({ error: errorMessage });
+            throw error;
+          } finally {
+            get().setIsDeploying(false)
+          }
+        },
       }),
       {
         name: 'global-state',
@@ -840,7 +904,7 @@ export const useGlobalState = create<
       name: 'global-github-state',
       partialize: (state) => ({
         githubToken: state.githubToken,
-        activeProject:state.activeProject
+        activeProject: state.activeProject,
       }),
     }
   )

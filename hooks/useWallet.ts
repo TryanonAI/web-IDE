@@ -212,37 +212,35 @@ export const useWallet = create<State>()(
                                 console.log("[useWallet:connect] fetched user data")
                                 set({ address: details.walletAddress, walletStatus: WalletStatus.CONNECTED, user: userData, trialStatus: userData.trialStatus, connected: true })
 
-                                const activeProject = useGlobalState.getState().activeProject
+                                const activeProject = useGlobalState.getState().activeProject;
+
                                 if (activeProject) {
                                     console.log("[useWallet:connect] active project found")
                                     useGlobalState.setState({
-                                        error: null,
-                                        isLoading: false,
                                         projects: userData.projects,
                                         activeProject: activeProject,
                                         codebase: activeProject.codebase,
                                         chatMessages: activeProject.messages,
                                         deploymentUrl: activeProject.deploymentUrl,
                                         dependencies: activeProject.externalPackages as Record<string, string>,
-                                        codeVersions: await fetchCodeVersions(userData.projects[0].projectId, details.walletAddress),
+                                        codeVersions: await fetchCodeVersions(activeProject.projectId, details.walletAddress),
                                     })
                                 } else {
                                     const newProject = userData.projects.reverse()[0]
                                     useGlobalState.setState({
-                                        error: null,
-                                        isLoading: false,
                                         projects: userData.projects,
                                         activeProject: newProject,
-                                        codebase: newProject.codebase,
-                                        chatMessages: newProject.messages,
-                                        deploymentUrl: newProject.deploymentUrl,
-                                        dependencies: newProject.externalPackages as Record<string, string>,
-                                        codeVersions: await fetchCodeVersions(newProject.projectId, details.walletAddress),
+                                        codebase: newProject?.codebase || {},
+                                        chatMessages: newProject?.messages || [],
+                                        deploymentUrl: newProject?.deploymentUrl || '',
+                                        dependencies: newProject?.externalPackages as Record<string, string> || {},
+                                        // codeVersions: await fetchCodeVersions(newProject.projectId, details.walletAddress),
                                     })
                                 }
 
                                 set({ walletStatus: WalletStatus.CONNECTED })
                                 useGlobalState.getState().setIsLoading(false);
+                                useGlobalState.setState({ error: null });
                                 return true;
                             } catch (error) {
                                 console.error('[useWallet] Error creating/fetching user:', error);

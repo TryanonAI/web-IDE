@@ -5,12 +5,7 @@ import { useGlobalState, useWallet } from '@/hooks';
 import { notifyNoWallet } from '@/hooks/use-mobile';
 
 const CheckConnection = ({ children }: { children: React.ReactNode }) => {
-  const {
-    setWalletLoaded,
-    checkWalletStatus,
-    syncWithWallet,
-    isWalletAvailable,
-  } = useWallet();
+  const { setWalletLoaded, syncWithWallet, isWalletAvailable } = useWallet();
   const { refreshGlobalState } = useGlobalState();
 
   useEffect(() => {
@@ -42,14 +37,16 @@ const CheckConnection = ({ children }: { children: React.ReactNode }) => {
       console.log('[CheckConnection] Wallet switch event received');
       // The actual address update is handled in useWallet.ts
       // We just trigger a status check here for extra safety
-      await checkWalletStatus();
+
+      await refreshGlobalState();
+      // await checkWalletStatus();
     };
 
     // Add event listeners (these work alongside the ones in useWallet.ts)
     window.addEventListener('arweaveWalletLoaded', handleWalletLoaded);
     window.addEventListener('disconnect', (e) => {
       console.log('disconnect');
-      console.log(e)
+      console.log(e);
     });
     window.addEventListener('walletSwitch', handleWalletSwitch);
 
