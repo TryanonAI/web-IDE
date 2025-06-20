@@ -324,7 +324,7 @@ if (typeof window !== 'undefined') {
         console.log(event)
         if (address !== state.address) {
             state.updateAddress(address);
-            toast.info(`Wallet switched to ${address.slice(0, 5)}...${address.slice(-5)}`);
+            toast.info(`Wallet switched to ${address?.slice(0, 5)}...${address?.slice(-5)}`);
         }
     };
 

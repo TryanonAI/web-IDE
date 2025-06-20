@@ -3,6 +3,7 @@ import { useGlobalState } from '@/hooks';
 import { useWallet } from '@/hooks';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 import {
   Drawer,
   DrawerContent,
@@ -10,10 +11,11 @@ import {
   DrawerTitle,
   DrawerFooter,
 } from '@/components/ui/drawer';
-import { DrawerType, fetchCodeVersions } from '@/hooks/useGlobalState';
+import { DrawerType } from '@/hooks/useGlobalState';
 import { useEffect, useRef } from 'react';
 
 export function ProjectDrawer() {
+  const router = useRouter();
   const {
     projects,
     activeProject,
@@ -21,6 +23,7 @@ export function ProjectDrawer() {
     closeDrawer,
     openModal,
     setIsLoading,
+    loadProjectData
   } = useGlobalState();
   const { address } = useWallet();
 
@@ -61,15 +64,9 @@ export function ProjectDrawer() {
     const selectedProject = projects.find((p) => p.projectId === projectId);
     if (selectedProject && address) {
       closeDrawer();
-      useGlobalState.setState({
-        activeProject: selectedProject,
-        codebase: selectedProject.codebase,
-        chatMessages: selectedProject.messages,
-        deploymentUrl: selectedProject.deploymentUrl,
-        dependencies: selectedProject.externalPackages as Record<string, string>,
-        codeVersions: await fetchCodeVersions(selectedProject.projectId, address),
-      });
-      // await loadProjectData(selectedProject, address);
+      // Update the URL with the selected project ID
+      router.push(`/dashboard/${projectId}`);
+      await loadProjectData(selectedProject, address);
     } else {
       console.error('Project not found with ID:', projectId);
     }

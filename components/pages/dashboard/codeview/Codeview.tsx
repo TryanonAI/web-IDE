@@ -355,7 +355,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
   }
 
   return (
-    <div className={`h-full w-full ${isFullscreen ? 'bg-background' : ''}`}>
+    <div className={`h-full w-full ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}>
       {isCodeGenerating ? (
         <div className="flex items-center justify-center h-full">
           {(() => {
@@ -514,9 +514,9 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
 
               <div className="relative opacity-80">
                 <Tooltip>
-                  <TooltipTrigger disabled={commonDisabledState}>
+                  <TooltipTrigger asChild disabled={commonDisabledState}>
                     <OpenWithCursor
-                      disabled={false}
+                      disabled={commonDisabledState}
                       activeProject={activeProject as Project}
                     />
                   </TooltipTrigger>
@@ -623,7 +623,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
             >
               <SandpackFileExplorer
                 className="min-w-[200px] max-w-[250px]"
-                autoHiddenFiles={true}
+                // autoHiddenFiles={true}
               />
               <div className="flex-1 min-w-[35%] h-full flex flex-col">
                 <SandpackCodeEditor

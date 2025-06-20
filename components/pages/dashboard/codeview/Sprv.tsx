@@ -36,6 +36,7 @@ const Sprv = ({ onRefreshClick, isRefreshing = false }: SprvProps) => {
         </div>
       ) : (
         <SandpackPreview
+        className=''
           showNavigator={false}
           style={{ height: '100%' }}
           showRefreshButton={true}

@@ -1,10 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { ProjectDrawer } from '@/components/common/ProjectDrawer';
 import { usePathname, useRouter } from 'next/navigation';
-
+import { Framework, WalletStatus } from '@/types';
+import { useGlobalState, useWallet } from '@/hooks';
+import { cn, validateProjectName } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import GithubDrawer from '@/components/common/GithubDrawer';
+import TitleBar from '@/components/pages/dashboard/TitleBar';
+import StatusBar from '@/components/pages/dashboard/StatusBar';
+import { ProjectInfoDrawer } from '@/components/common/ProjectInfoDrawer';
 import {
   Dialog,
   DialogContent,
@@ -12,18 +18,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useGlobalState, useWallet } from '@/hooks';
 import {
-  AlertCircle,
   Loader2,
   PlusCircle,
-  LogOutIcon,
-  UserIcon,
-  X,
   Check,
   ChevronsUpDown,
   GitCommit,
   MessageSquare,
+  Code2,
+  Palette,
+  X,
 } from 'lucide-react';
 import {
   Popover,
@@ -32,27 +36,10 @@ import {
 } from '@/components/ui/popover';
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import { Framework, WalletStatus } from '@/types';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import Link from 'next/link';
-import { cn, validateProjectName } from '@/lib/utils';
-import TitleBar from '@/components/pages/dashboard/TitleBar';
-import StatusBar from '@/components/pages/dashboard/StatusBar';
-import GithubDrawer from '@/components/common/GithubDrawer';
-import { ProjectInfoDrawer } from '@/components/common/ProjectInfoDrawer';
-import { Textarea } from '@/components/ui/textarea';
 
 interface StatusStep {
   id: string;
@@ -62,25 +49,43 @@ interface StatusStep {
   error?: string;
 }
 
+interface FrameworkOption {
+  value: Framework;
+  label: string;
+  icon: React.ReactNode;
+}
+
+const frameworks: FrameworkOption[] = [
+  {
+    value: Framework.React,
+    label: 'Code Mode',
+    icon: <Code2 className="h-4 w-4" />,
+  },
+  {
+    value: Framework.Html,
+    label: 'Vibe Mode',
+    icon: <Palette className="h-4 w-4" />,
+  },
+];
+
 interface LayoutProps {
   children: React.ReactNode;
   showProjectDrawer?: boolean;
 }
 
 const Layout = ({ children }: LayoutProps) => {
-  const router = useRouter();
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
   const [nameError, setNameError] = useState<string>('');
   const [mode, setMode] = useState<Framework>(Framework.React);
-
   // Status and commit related state
   const [commitInProgress, setCommitInProgress] = useState<boolean>(false);
   const [statusSteps, setStatusSteps] = useState<StatusStep[]>([]);
   const [commitMessage, setCommitMessage] = useState<string>('');
   const [isCommitDialogOpen, setIsCommitDialogOpen] = useState<boolean>(false);
-  const { user, shortAddress, connect, disconnect, connected } = useWallet();
+  const { connect, connected } = useWallet();
   const {
     activeModal,
     projectName,
@@ -98,21 +103,32 @@ const Layout = ({ children }: LayoutProps) => {
   } = useGlobalState();
   const { walletStatus } = useWallet();
 
+  // If mobile restriction is handled by provider, no need for checks here
   const isDashboard = pathname === '/dashboard';
 
   const handleCreateProject = async (mode: Framework) => {
     if (!projectName.trim()) return;
-    closeModal();
+    
+    // Don't close modal yet, just set loading states
     setIsLoading(true);
     setFramework(Framework.React);
     setMode(Framework.React);
+
     try {
       console.log('Creating project from modal:', projectName);
-      await createProject(projectName.trim(), mode);
+      const newProject = await createProject(projectName.trim(), mode);
       setProjectName('');
+      
+      // Only close modal after successful creation
+      closeModal();
+      
+      // Redirect to the new project's dashboard
+      if (newProject) {
+        router.push(`/dashboard/${newProject.projectId}`);
+      }
     } catch (error) {
       console.error('Error creating project:', error);
-      openModal('createProject');
+      // Don't reopen modal since it's still open
     } finally {
       setIsLoading(false);
     }
@@ -205,43 +221,7 @@ const Layout = ({ children }: LayoutProps) => {
 
       {/* Conditional Navigation Bar */}
       <div className="shrink-0 border-b border-border">
-        {isDashboard ? (
-          <TitleBar />
-        ) : (
-          <div className="h-14 px-4 flex items-center justify-between bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <span className="font-semibold">ANON</span>
-            </Link>
-            <DropdownMenu>
-              <DropdownMenuTrigger className="rounded-md border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 group h-9 px-3 py-5 flex items-center gap-2 tracking-wider text-sm">
-                <Avatar>
-                  <AvatarImage src={user?.avatarUrl} alt={user?.username} />
-                  <AvatarFallback>
-                    {user?.username?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span>{shortAddress}</span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  className="flex items-center gap-2 cursor-pointer focus:bg-secondary/80"
-                  onClick={() => router.push('/dashboard')}
-                >
-                  <UserIcon size={16} className="text-primary/80" />
-                  <span>Dashboard</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={async () => disconnect()}
-                  className="flex items-center gap-2 cursor-pointer focus:bg-destructive focus:text-destructive-foreground"
-                >
-                  <LogOutIcon size={16} />
-                  <span>Logout</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
+        <TitleBar />
       </div>
 
       {!connected ? (
@@ -280,10 +260,9 @@ const Layout = ({ children }: LayoutProps) => {
         showCommitDialog={showCommitDialog}
       />
       <ProjectInfoDrawer />
-      <ProjectDrawer />
-      
+
       <Dialog
-        open={activeModal === 'createProject' && !isCreating}
+        open={activeModal === 'createProject'}
         onOpenChange={(open) => {
           if (!isCreating) {
             if (open) openModal('createProject');
@@ -296,7 +275,9 @@ const Layout = ({ children }: LayoutProps) => {
           className="sm:max-w-md"
         >
           <DialogHeader>
-            <DialogTitle className="text-xl">Create New Project</DialogTitle>
+            <DialogTitle className="text-xl">
+              {isCreating ? 'Creating Project...' : 'Create New Project'}
+            </DialogTitle>
           </DialogHeader>
           <form
             onSubmit={async (e) => {
@@ -315,104 +296,67 @@ const Layout = ({ children }: LayoutProps) => {
                   type="text"
                   value={projectName}
                   onChange={handleNameChange}
-                  className="w-full p-3 rounded-md border border-border bg-background text-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                  className="w-full p-3 rounded-md border border-border bg-background text-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="project-name"
                   required
-                  autoFocus
+                  disabled={isCreating}
                 />
-                {nameError ? (
-                  <div className="mt-1.5 flex items-center text-destructive text-xs bg-destructive/5 p-2 rounded-md">
-                    <AlertCircle size={14} className="mr-2 shrink-0" />
-                    <span>{nameError}</span>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    {/* Choose a clear, descriptive name for your project. */}
-                  </p>
+                {nameError && (
+                  <p className="text-xs text-destructive mt-1">{nameError}</p>
                 )}
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="framework"
-                    className="text-sm font-medium opacity-50 "
-                  >
-                    Select Mode
-                  </label>
-                  <Popover open={open} onOpenChange={setOpen}>
-                    <PopoverTrigger disabled={false} asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={open}
-                        className="w-full p-3 justify-between "
-                      >
-                        {framework
-                          ? [
-                              { value: Framework.React, label: 'Code Mode' },
-                              { value: Framework.Html, label: 'Vibe Mode' },
-                            ].find((fmk) => fmk.value === framework)?.label
-                          : 'Select framework...'}
-                        {/* Code Mode */}
-                        {/* <div className="flex gap-1">
-                          <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">
-                          Coming Soon
-                        </span>
-                        </div> */}
-                        <ChevronsUpDown className="opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    {/* Commenting out the PopoverContent section for now */}
-                    <PopoverContent className="w-full p-0">
-                      <Command>
-                        {/* <CommandInput
-                          placeholder="Search Mode..."
-                          className="h-9"
-                        /> */}
-                        <CommandList>
-                          <CommandEmpty>No mode found.</CommandEmpty>
-                          <CommandGroup>
-                            {[
-                              { value: Framework.React, label: 'Code Mode' },
-                              { value: Framework.Html, label: 'Vibe Mode' },
-                            ].map((fmk) => (
-                              <CommandItem
-                                key={fmk.value}
-                                value={fmk.value}
-                                className=" data-[selected=true]:bg-muted data-[selected=true]:text-primary"
-                                onSelect={(fmk) => {
-                                  setMode(fmk as Framework);
-                                  setFramework(fmk as Framework);
-                                  setOpen(false);
-                                }}
-                              >
-                                <span
-                                  className={cn(
-                                    framework === fmk.value
-                                      ? 'text-green-500'
-                                      : 'text-foreground'
-                                  )}
-                                >
-                                  {fmk.label}
-                                </span>
-                                <Check
-                                  className={cn(
-                                    'ml-auto',
-                                    framework === fmk.value
-                                      ? 'opacity-100 text-green-500'
-                                      : 'opacity-0'
-                                  )}
-                                />
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    {/* Additional project modes will be available soon. */}
-                    Select the mode for your project.
-                  </p>
-                </div>
+              </div>
+              <div className="flex flex-col justify-center gap-2 mt-4">
+                <label className="text-sm font-medium">Project Mode</label>
+                <Popover open={open && !isCreating} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={open}
+                      className="w-full justify-between"
+                      disabled={isCreating}
+                    >
+                      {framework
+                        ? frameworks.find((fmk) => fmk.value === framework)?.label
+                        : 'Select framework...'}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandList>
+                        <CommandGroup>
+                          {frameworks.map((fmk) => (
+                            <CommandItem
+                              key={fmk.value}
+                              onSelect={() => {
+                                setFramework(fmk.value);
+                                setOpen(false);
+                              }}
+                              className="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-accent"
+                            >
+                              {fmk.icon}
+                              <span className="flex-1 text-sm">
+                                {fmk.label}
+                              </span>
+                              <Check
+                                className={cn(
+                                  'ml-auto',
+                                  framework === fmk.value
+                                    ? 'opacity-100 text-green-500'
+                                    : 'opacity-0'
+                                )}
+                              />
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Select the mode for your project.
+                </p>
               </div>
             </div>
             <DialogFooter className="flex justify-end gap-2 pt-2">
@@ -426,15 +370,20 @@ const Layout = ({ children }: LayoutProps) => {
               </Button>
               <Button
                 type="submit"
-                className="flex items-center gap-1"
+                className="flex items-center gap-2"
                 disabled={!projectName.trim() || isCreating || !!nameError}
               >
                 {isCreating ? (
-                  <Loader2 size={16} className="animate-spin mr-1" />
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
                 ) : (
-                  <PlusCircle size={16} />
+                  <>
+                    <PlusCircle className="h-4 w-4" />
+                    Create Project
+                  </>
                 )}
-                {isCreating ? 'Creating...' : 'Create Project'}
               </Button>
             </DialogFooter>
           </form>
@@ -543,7 +492,6 @@ const Layout = ({ children }: LayoutProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
 
       {isDashboard && (
         <div className="shrink-0 border-t border-border">

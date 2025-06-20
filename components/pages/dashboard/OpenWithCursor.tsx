@@ -9,9 +9,11 @@ import { AnimatedGradientText } from '@/components/magicui/animated-gradient-tex
 const OpenWithCursor = ({
   disabled = false,
   activeProject,
+  className,
 }: {
   disabled: boolean;
   activeProject: Project;
+  className?: string;
 }) => {
   const handleOpenWithCursor = async () => {
     window.open(
@@ -20,14 +22,23 @@ const OpenWithCursor = ({
   };
 
   return (
-    <button
-      disabled={disabled}
+    <div
+      role="button"
+      tabIndex={0}
+      aria-disabled={disabled}
       title="Open with Cursor IDE"
       aria-label="Open with Cursor IDE"
-      onClick={handleOpenWithCursor}
+      onClick={!disabled ? handleOpenWithCursor : undefined}
+      onKeyDown={(e) => {
+        if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          handleOpenWithCursor();
+        }
+      }}
       className={cn(
-        'h-5 px-2 rounded flex items-center gap-1.5 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
-        disabled && 'opacity-70'
+        'h-5 px-2 rounded flex items-center gap-1.5 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground cursor-pointer',
+        disabled && 'opacity-70 cursor-not-allowed',
+        className
       )}
     >
       <Image
@@ -38,8 +49,8 @@ const OpenWithCursor = ({
         width={12}
         alt="cursor-brand-logo"
       />
-      <AnimatedGradientText className='hidden md:block' >Open with Cursor</AnimatedGradientText>
-    </button>
+      <AnimatedGradientText className='hidden md:block'>Open with Cursor</AnimatedGradientText>
+    </div>
   );
 };
 

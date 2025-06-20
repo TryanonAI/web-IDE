@@ -5,6 +5,7 @@ import { ThemeProvider } from 'next-themes';
 import { Analytics } from '@vercel/analytics/react';
 import CheckConnection from '@/components/common/CheckConnection';
 import ClientInitializer from '@/components/codesandbox_not-used/ClientInitializer';
+import { MobileProvider } from '@/hooks/use-mobile';
 
 export const viewport: Viewport = {
   themeColor: '#3e7452',
@@ -33,12 +34,14 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem={true}
         >
-          <CheckConnection>
-            {children}
-            <Toaster position="bottom-center" />
-          </CheckConnection>
-          <ClientInitializer />
-          <Analytics />
+          <MobileProvider>
+            <CheckConnection>
+              {children}
+              <Toaster position="bottom-center" />
+            </CheckConnection>
+            <ClientInitializer />
+            <Analytics />
+          </MobileProvider>
         </ThemeProvider>
       </body>
     </html>

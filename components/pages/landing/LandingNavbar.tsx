@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
-import Logo from '@/public/bgRemoveLogoAnon.png';
+import Logo from '@/public/logo_black.png';
 const LandingNavbar = () => {
   return (
     <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8 py-1.5 sm:py-2 justify-between z-[100] items-center bg-[#FFFFFA] flex h-[8vh] sm:h-[9vh] md:h-[10.2vh] fixed rounded-b-xl sm:rounded-b-2xl shadowsm">

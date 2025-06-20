@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useWallet } from '@/hooks';
+import { useGlobalState, useWallet } from '@/hooks';
 import { Plan } from '@/types';
 import { motion } from 'framer-motion';
 import {
@@ -35,11 +35,13 @@ const updateUserSchema = z.object({
 const Profile = () => {
   const router = useRouter();
   const { user, connected, updateUser } = useWallet();
+  const setActiveProject = useGlobalState((state) => state.setActiveProject);
+
   const [isEditing, setIsEditing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -58,6 +60,10 @@ const Profile = () => {
       });
     }
   }, [user]);
+
+  useEffect(() => {
+    setActiveProject(null);
+  }, [setActiveProject]);
 
   // Redirect if not authenticated
   useEffect(() => {

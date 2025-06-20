@@ -8,7 +8,7 @@ import axios from 'axios';
 import Arweave from 'arweave';
 import type { JWKInterface } from 'arweave/node/lib/wallet';
 import { toast } from 'sonner';
-import { CodebaseType, Project } from '@/types';
+import { Project } from '@/types';
 
 // config constants
 export const PROTOCOL_TYPE = 'https';
@@ -21,8 +21,7 @@ export const MODE = 'legacy';
 export const GATEWAY_URL = `${PROTOCOL_TYPE}://${HOST_NAME}:${PORT_NUM}`;
 export const GRAPHQL_URL = `${'https'}://${'arweave.net'}:${443}/graphql`;
 
-// export const AOModule = 'Do_Uc2Sju_ffp6Ev0AnLVdPtot15rvMjP-a9VVaA5fM'; 
-// // regular-module on arweave
+// export const AOModule = 'Do_Uc2Sju_ffp6Ev0AnLVdPtot15rvMjP-a9VVaA5fM'; //regular-module on arweave
 export const AOModule = '33d-3X8mpv6xYBlVB-eXMrPfH5Kzf6Hiwhcv0UA10sw'; // sqlite-module on arweave
 export const AOScheduler = '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA';
 
@@ -42,28 +41,28 @@ export interface WalletDetails {
   balance?: number;
 }
 
-export interface GraphQLEdge {
+interface GraphQLEdge {
+  cursor: string;
   node: {
     id: string;
-    ingested_at: number;
     recipient: string;
-    block: {
+    block?: {
       timestamp: number;
       height: number;
     };
-    tags: Tag[];
-    data: { size: number };
+    tags: { name: string; value: string }[];
+    data: { size: string; type?: string };
     owner: { address: string };
   };
 }
 
-export interface MessageResponse {
+interface MessageResponse {
   id: string;
   recipient: string;
-  tags: Tag[];
-  data: string;
+  tags: { name: string; value: string }[];
+  // @ts-expect-error ignore
+  data;
   owner: string;
-  ingested_at: number;
 }
 
 // Common tags used across the application
@@ -76,46 +75,12 @@ export const CommonTags: Tag[] = [
 
 // GraphQL base query
 const baseData = {
-  query: `
-    query ($entityId: String!, $limit: Int!, $sortOrder: SortOrder!, $cursor: String) {
-      transactions(
-        sort: $sortOrder
-        first: $limit
-        after: $cursor
-        recipients: [$entityId]
-        ingested_at: {min: 1696107600}
-      ) {
-        count
-        edges {
-          cursor
-          node {
-            id
-            ingested_at
-            recipient
-            block {
-              timestamp
-              height
-            }
-            tags {
-              name
-              value
-            }
-            data {
-              size
-            }
-            owner {
-              address
-            }
-          }
-        }
-      }
-    }
-  `,
+  query: "query ($entityId: String!, $limit: Int!, $sortOrder: SortOrder!, $cursor: String) { transactions(sort: $sortOrder first: $limit after: $cursor recipients: [$entityId] ingested_at: {min: 1696107600}) { count edges { cursor node { id recipient block { timestamp height } tags { name value } data { size } owner { address } } } } }",
   variables: {
     cursor: '',
     entityId: '',
     limit: 25,
-    sortOrder: 'INGESTED_AT_DESC',
+    sortOrder: 'HEIGHT_DESC',
   },
 };
 
@@ -163,7 +128,6 @@ export const fetchMessagesAR = async ({
       tags: m.node.tags,
       data: m.node.data,
       owner: m.node.owner.address,
-      ingested_at: m.node.ingested_at,
     }));
 
     const detailed = await Promise.all(
@@ -188,12 +152,10 @@ export const fetchMessagesAR = async ({
 export const messageAR = async ({
   tags = [],
   data = '',
-  anchor = '',
   process,
 }: {
   tags?: Tag[];
   data?: string;
-  anchor?: string;
   process: string;
 }): Promise<string> => {
   if (typeof window === 'undefined') {
@@ -215,7 +177,6 @@ export const messageAR = async ({
     const allTags = [...CommonTags, ...tags];
     const messageId = await ao.message({
       data,
-      anchor,
       process,
       tags: allTags,
       signer: createSigner(window.arweaveWallet),
@@ -618,18 +579,17 @@ export async function getWalletDetails(): Promise<WalletDetails> {
 
 export const handleRunLua = async ({
   project,
-  codebase,
+  luaCodeToBeEval,
 }: {
   project: Project;
-  codebase: CodebaseType;
+  luaCodeToBeEval: string;
 }) => {
-  let luaCodeToBeEval = '';
-  if (!codebase) {
-    toast.error('No codebase found in the project.');
-    return;
-  }
-  // @ts-expect-error ignore
-  luaCodeToBeEval = codebase['/src/lua/index.lua'] as string;
+  // let luaCodeToBeEval = '';
+  // if (!codebase) {
+  //   toast.error('No codebase found in the project.');
+  //   return;
+  // }
+  // luaCodeToBeEval = codebase['/src/lua/index.lua'] as string;
   if (!luaCodeToBeEval) {
     toast.error('No Lua code found in the project.');
     return;

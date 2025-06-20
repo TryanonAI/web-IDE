@@ -583,6 +583,39 @@ function Toggle({
 }
 
 export { Toggle, toggleVariants }
+  `,
+  "/src/components/ui/textarea.tsx":`
+import * as React from 'react';
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
+
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <textarea
+        data-slot="textarea"
+        className={cn(
+          'file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex min-h-[80px] w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+          'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
+          'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive',
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
+
+Textarea.displayName = 'Textarea';
+
+export { Textarea };
+
   `
 }
 
@@ -1090,7 +1123,6 @@ export interface WalletDetails {
 export interface GraphQLEdge {
   node: {
     id: string;
-    ingested_at: number;
     recipient: string;
     block: {
       timestamp: number;
@@ -1108,7 +1140,6 @@ export interface MessageResponse {
   tags: Tag[];
   data: string;
   owner: string;
-  ingested_at: number;
 }
 
 // Common tags used across the application
@@ -1121,15 +1152,15 @@ export const CommonTags: Tag[] = [
 
 // GraphQL base query
 const baseData = {
-  query: ""
-  ,
+  query: "query ($entityId: String!, $limit: Int!, $sortOrder: SortOrder!, $cursor: String) { transactions(sort: $sortOrder first: $limit after: $cursor recipients: [$entityId]) { count edges { cursor node { id recipient block { timestamp height } tags { name value } data { size } owner { address } } } } }",
   variables: {
     cursor: '',
     entityId: '',
     limit: 25,
-    sortOrder: 'INGESTED_AT_DESC',
+    sortOrder: 'HEIGHT_DESC',
   },
 };
+
 // GraphQL operations
 export const fetchGraphQL = async ({
   query,
@@ -1145,7 +1176,7 @@ export const fetchGraphQL = async ({
 }) => {
   try {
     console.log('Fetching GraphQL data...');
-    const response = await axios.post("https://arweave.net/graphql", { query, variables });
+    const response = await axios.post(GRAPHQL_URL, { query, variables });
     return response.data;
   } catch (error) {
     console.error('GraphQL fetch error:', error);
@@ -1174,16 +1205,15 @@ export const fetchMessagesAR = async ({
       tags: m.node.tags,
       data: m.node.data,
       owner: m.node.owner.address,
-      ingested_at: m.node.ingested_at,
     }));
 
     const detailed = await Promise.all(
       messages.map(async (m: MessageResponse) => {
         try {
-          const res = await axios.get("https://arweave.net/" + m.id);
+          const res = await axios.get("https://arweave.net/",m.id);
           return { ...m, data: res.data };
         } catch (error) {
-          console.error('Failed to fetch message'+m.id+':', error);
+          console.error('Failed to fetch message', error);
           return null;
         }
       })

@@ -23,6 +23,7 @@ const Chatview = () => {
 
   const [userInput, setUserInput] = useState('');
   const [isRetrying, setIsRetrying] = useState(false);
+  const [mode, setMode] = useState<'UI' | 'All'>('UI');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>(chatMessages);
   const [failedMessage, setFailedMessage] = useState<string | null>(null);
@@ -90,9 +91,16 @@ const Chatview = () => {
     setTimeout(scrollToBottom, 2000);
 
     try {
+      const modeInstruction = mode === 'UI' 
+        ? "YOU JUST HAVE TO MAKE CHANGES IN `index.html` file ONLY not the BACKEND `index.lua`"
+        : "You have to make changes to both files";
+
       const requestBody = {
         framework: activeProject?.framework,
-        prompt: { role: 'user', content: messageToSend },
+        prompt: { 
+          role: 'user', 
+          content: `${messageToSend}\n\n${modeInstruction}` 
+        },
         projectId: activeProject?.projectId as string,
       };
 
@@ -136,6 +144,40 @@ const Chatview = () => {
           }
         };
 
+        eventSource.addEventListener('error', (error) => {
+          console.error('❌ Stream error occurred:', error);
+          
+          // Update the temporary message to show error state
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === tempSystemMessageId
+                ? {
+                    ...msg,
+                    content: '❌ An error occurred while processing your request. Please try again.',
+                    isLoading: false,
+                    isStreaming: false,
+                    isError: true,
+                  }
+                : msg
+            )
+          );
+          
+          // Close the event source to prevent further errors
+          eventSource.close();
+          
+          // Reset loading states
+          setIsCodeGenerating(false);
+          
+          // Show error toast to user
+          toast.error('Request failed', {
+            duration: 5000,
+            description: 'An error occurred while processing your request. Please try again.',
+          });
+          
+          // Scroll to bottom to show error message
+          scrollToBottom();
+        });
+
         eventSource.addEventListener('end', () => {
           console.log('✅ Stream ended');
           setMessages((prev) =>
@@ -154,6 +196,7 @@ const Chatview = () => {
 
         eventSource.addEventListener('complete', async (ev) => {
           console.log('✅ Stream Complete');
+          eventSource.close();
           const { codebase: codebaserec, externalPackages } = JSON.parse(
             ev.data
           );
@@ -163,20 +206,19 @@ const Chatview = () => {
             setCodebase(codebaserec),
             setDependencies(externalPackages),
           ]).then(async () => {
-            if (!isHtmlStream) {
-              console.log('running lua');
-              await handleRunLua({
-                project: activeProject as Project,
-                codebase: codebaserec, // Use the received codebase directly
-              });
-              console.log('running lua done');
-            }
+            console.log(codebaserec);
+            console.log('running lua');
+            await handleRunLua({
+              project: activeProject as Project,
+              luaCodeToBeEval: (codebaserec['/src/lua/index.lua'] || // for Code-Mode
+                codebaserec['/index.lua']) as string, // for Vibe-Mode
+            });
+            console.log('running lua done');
             toast.info('Code updated.', {
               duration: 5000,
               description: 'You can redeploy to see changes on permaweb',
             });
             setIsCodeGenerating(false);
-            eventSource.close();
 
             if (isHtmlStream) {
               if (codebaserec['/index.html']) {
@@ -349,15 +391,28 @@ const Chatview = () => {
       </div>
       <div className="shrink-0 bg-background border-t border-border p-4">
         <form onSubmit={handleSubmit} className="w-full">
-          <div className="flex gap-1.5 items-center">
-            <div className="bg-background/50 border border-border/40 rounded-sm px-1.5 flex items-center gap-1 h-8">
-              <span className="text-[11px] font-medium text-muted-foreground/70">
+          <div className="flex gap-2 items-end">
+            {/* Models section commented out
+            <div className="bg-background/50 border border-border/40 rounded-sm px-2 flex items-center gap-1 h-6">
+              <span className="text-[10px] font-medium text-muted-foreground/70">
                 Models
               </span>
-              <span className="text-[9px] font-medium bg-primary/5 text-primary/70 px-1 rounded-sm">
+              <span className="text-[8px] font-medium bg-primary/5 text-primary/70 px-1 rounded-sm">
                 Soon
               </span>
             </div>
+            */}
+            <button
+              type="button"
+              onClick={() => setMode(mode === 'UI' ? 'All' : 'UI')}
+              className={`h-9 px-2.5 text-xs tracking-wider font-medium rounded-md border transition-colors ${
+                mode === 'UI' 
+                ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/15' 
+                : 'bg-background/50 border-border/40 text-muted-foreground/70 hover:bg-background/70'
+              }`}
+            >
+              UI Only
+            </button>
             <div className="flex-1 relative">
               <Input
                 value={userInput}

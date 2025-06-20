@@ -42,9 +42,9 @@ yarn-error.log*
 next-env.d.ts
 
 customCodeEditor.tsx
+*.test.*
 
 #question to be asked to the users 
-
 
 General Impressions
 1. What are your first impressions of the product?

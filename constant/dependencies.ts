@@ -11,7 +11,8 @@ export const BASE_DEPENDENCIES: { [key: string]: string } = {
     "@tanstack/react-query": "5.80.2",
     "class-variance-authority": "^0.7.1",
     "lucide-react": "^0.485.0",
-    "@hookform/resolvers":"5.1.1"
+    "@hookform/resolvers":"5.1.1",
+    "axios": "1.8.1",
 };
 
 export const ADDITIONAL_DEPENDENCIES: { [key: string]: string } = {

@@ -133,6 +133,7 @@ export interface ProjectState {
   addChatMessage: (message: ChatMessage) => void;
   codebase: CodebaseType | null;
   activeProject: Project | null;
+  setActiveProject: (project: Project | null) => void;
   statusTimeline: StatusTimelineEvent[];
   fetchProjects: () => Promise<void>;
   setCodebase: (codebase: CodebaseType | null) => void;
@@ -146,10 +147,9 @@ export interface ProjectState {
   dependencies: DependencyMap;
   setDependencies: (deps: DependencyMap) => void;
   setProjects: (projects: Project[]) => void;
-  isDeploying: boolean
+  isDeploying: boolean;
   autoDeployProject: (project: Project, codebase: CodebaseType, walletAddress: string) => Promise<string | null>;
-  setIsDeploying: (isDeploying: boolean) => void
-  // updateDependencies: (newDeps: string[]) => void;
+  setIsDeploying: (isDeploying: boolean) => void;
 }
 
 interface SandpackState {
@@ -568,6 +568,7 @@ export const useGlobalState = create<
         setFramework: (framework: Framework) => set({ framework }),
         setDeploymentUrl: (url: string | null) => set({ deploymentUrl: url }),
         setCodebase: (codebase: CodebaseType | null) => set({ codebase }),
+        setActiveProject: (project: Project | null) => set({ activeProject: project }),
         setCodeVersions: (codeVersions: CodeVersion[]) => set({ codeVersions: codeVersions.length > 0 ? codeVersions : [] }),
         loadProjectData: async (project: Project | null, address: string) => {
           if (!project || !project.projectId || !address) {
@@ -663,7 +664,7 @@ export const useGlobalState = create<
               await res.data.projects.sort((a: Project, b: Project) => {
                 return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
               });
-              set({ projects: res.data.projects.reverse() });
+              set({ projects: res.data.projects });
 
               const storedProjectDetails = JSON.parse(localStorage.getItem('storedActiveProjects') || '[]');
               const isOwner = storedProjectDetails.find((p: { ownerAddress: string }) => p.ownerAddress === useWallet.getState().address);
@@ -680,16 +681,16 @@ export const useGlobalState = create<
                     useWallet.getState().address as string
                   );
                 } else {
-                  await get().loadProjectData(
-                    res.data.projects[0],
-                    useWallet.getState().address as string
-                  );
+                  // await get().loadProjectData(
+                  //   res.data.projects[0],
+                  //   useWallet.getState().address as string
+                  // );
                 }
               } else {
-                await get().loadProjectData(
-                  res.data.projects[0],
-                  useWallet.getState().address as string
-                );
+                // await get().loadProjectData(
+                //   res.data.projects[0],
+                //   useWallet.getState().address as string
+                // );
               }
             } else {
               set({ ...Initial_ProjectState });
@@ -904,7 +905,6 @@ export const useGlobalState = create<
       name: 'global-github-state',
       partialize: (state) => ({
         githubToken: state.githubToken,
-        activeProject: state.activeProject,
       }),
     }
   )

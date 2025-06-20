@@ -36,23 +36,23 @@ export default function manifest(): MetadataRoute.Manifest {
         "purpose": "maskable"
       }
     ],
-    "categories": ["developer", "productivity", "utilities"],
-    "lang": "en",
-    "dir": "ltr",
-    "screenshots": [
-      {
-        "src": "/screenshot-wide.png",
-        "sizes": "1280x720",
-        "type": "image/png",
-        "form_factor": "wide"
-      },
-      {
-        "src": "/screenshot-narrow.png",
-        "sizes": "720x1280",
-        "type": "image/png",
-        "form_factor": "narrow"
-      }
-    ],
+    // "categories": ["developer", "productivity", "utilities"],
+    // "lang": "en",
+    // "dir": "ltr",
+    // "screenshots": [
+    //   {
+    //     "src": "/screenshot-wide.png",
+    //     "sizes": "1280x720",
+    //     "type": "image/png",
+    //     "form_factor": "wide"
+    //   },
+    //   {
+    //     "src": "/screenshot-narrow.png",
+    //     "sizes": "720x1280",
+    //     "type": "image/png",
+    //     "form_factor": "narrow"
+    //   }
+    // ],
     "scope": "/",
     "id": "anon-ai-platform",
     "prefer_related_applications": false,
