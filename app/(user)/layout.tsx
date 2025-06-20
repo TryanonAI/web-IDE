@@ -55,22 +55,21 @@ interface FrameworkOption {
   icon: React.ReactNode;
 }
 
-const frameworks: FrameworkOption[] = [
+export const frameworks: FrameworkOption[] = [
   {
     value: Framework.React,
-    label: 'Code Mode',
+    label: 'Dev Playground',
     icon: <Code2 className="h-4 w-4" />,
   },
   {
     value: Framework.Html,
-    label: 'Vibe Mode',
+    label: 'Visual Playground',
     icon: <Palette className="h-4 w-4" />,
   },
 ];
 
 interface LayoutProps {
   children: React.ReactNode;
-  showProjectDrawer?: boolean;
 }
 
 const Layout = ({ children }: LayoutProps) => {
@@ -108,20 +107,20 @@ const Layout = ({ children }: LayoutProps) => {
 
   const handleCreateProject = async (mode: Framework) => {
     if (!projectName.trim()) return;
-    
+
     // Don't close modal yet, just set loading states
     setIsLoading(true);
-    setFramework(Framework.React);
-    setMode(Framework.React);
+    setFramework(mode);
+    setMode(mode);
 
     try {
       console.log('Creating project from modal:', projectName);
       const newProject = await createProject(projectName.trim(), mode);
       setProjectName('');
-      
+
       // Only close modal after successful creation
       closeModal();
-      
+
       // Redirect to the new project's dashboard
       if (newProject) {
         router.push(`/dashboard/${newProject.projectId}`);
@@ -317,8 +316,9 @@ const Layout = ({ children }: LayoutProps) => {
                       disabled={isCreating}
                     >
                       {framework
-                        ? frameworks.find((fmk) => fmk.value === framework)?.label
-                        : 'Select framework...'}
+                        ? frameworks.find((fmk) => fmk.value === framework)
+                            ?.label
+                        : 'Select Playground...'}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -330,13 +330,14 @@ const Layout = ({ children }: LayoutProps) => {
                             <CommandItem
                               key={fmk.value}
                               onSelect={() => {
+                                setMode(fmk.value);
                                 setFramework(fmk.value);
                                 setOpen(false);
                               }}
-                              className="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-accent"
+                              className="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-accent/50"
                             >
                               {fmk.icon}
-                              <span className="flex-1 text-sm">
+                              <span className="flex-1 text-sm group-hover:text-black">
                                 {fmk.label}
                               </span>
                               <Check

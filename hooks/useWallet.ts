@@ -226,16 +226,16 @@ export const useWallet = create<State>()(
                                         codeVersions: await fetchCodeVersions(activeProject.projectId, details.walletAddress),
                                     })
                                 } else {
-                                    const newProject = userData.projects.reverse()[0]
-                                    useGlobalState.setState({
-                                        projects: userData.projects,
-                                        activeProject: newProject,
-                                        codebase: newProject?.codebase || {},
-                                        chatMessages: newProject?.messages || [],
-                                        deploymentUrl: newProject?.deploymentUrl || '',
-                                        dependencies: newProject?.externalPackages as Record<string, string> || {},
+                                    // const newProject = userData.projects.reverse()[0]
+                                    // useGlobalState.setState({
+                                        // projects: userData.projects,
+                                        // activeProject: newProject,
+                                        // codebase: newProject?.codebase || {},
+                                        // chatMessages: newProject?.messages || [],
+                                        // deploymentUrl: newProject?.deploymentUrl || '',
+                                        // dependencies: newProject?.externalPackages as Record<string, string> || {},
                                         // codeVersions: await fetchCodeVersions(newProject.projectId, details.walletAddress),
-                                    })
+                                    // })
                                 }
 
                                 set({ walletStatus: WalletStatus.CONNECTED })

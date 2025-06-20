@@ -12,25 +12,25 @@ export default function manifest(): MetadataRoute.Manifest {
     "orientation": "portrait-primary",
     "icons": [
       {
-        "src": "/bgRemoveLogoAnon.png",
+        "src": "/logo_white.png",
         "sizes": "192x192",
         "type": "image/png",
         "purpose": "any"
       },
       {
-        "src": "/bgRemoveLogoAnon.png",
+        "src": "/logo_black.png",
         "sizes": "512x512",
         "type": "image/png",
         "purpose": "any"
       },
       {
-        "src": "/bgRemoveLogoAnon.png",
+        "src": "/logo_white.png",
         "sizes": "192x192",
         "type": "image/png",
         "purpose": "maskable"
       },
       {
-        "src": "/bgRemoveLogoAnon.png",
+        "src": "/logo_black.png",
         "sizes": "512x512",
         "type": "image/png",
         "purpose": "maskable"
@@ -65,7 +65,7 @@ export default function manifest(): MetadataRoute.Manifest {
         "url": "/",
         "icons": [
           {
-            "src": "/bgRemoveLogoAnon.png",
+            "src": "/logo_black.png",
             "sizes": "192x192"
           }
         ]
@@ -77,7 +77,7 @@ export default function manifest(): MetadataRoute.Manifest {
         "url": "/dashboard",
         "icons": [
           {
-            "src": "/bgRemoveLogoAnon.png",
+            "src": "/logo_black.png",
             "sizes": "192x192"
           }
         ]
@@ -89,7 +89,7 @@ export default function manifest(): MetadataRoute.Manifest {
         "url": "/profile",
         "icons": [
           {
-            "src": "/bgRemoveLogoAnon.png",
+            "src": "/logo_black.png",
             "sizes": "192x192"
           }
         ]

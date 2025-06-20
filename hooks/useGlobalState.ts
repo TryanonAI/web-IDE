@@ -135,7 +135,7 @@ export interface ProjectState {
   activeProject: Project | null;
   setActiveProject: (project: Project | null) => void;
   statusTimeline: StatusTimelineEvent[];
-  fetchProjects: () => Promise<void>;
+  // fetchProjects: () => Promise<void>;
   setCodebase: (codebase: CodebaseType | null) => void;
   setCodeVersions: (codeVersions: CodeVersion[]) => void;
   createProject: (projectName: string, framework: Framework) => Promise<Project | null>;
@@ -591,29 +591,29 @@ export const useGlobalState = create<
           });
 
           // Get existing stored projects
-          const existingStoredProjects = JSON.parse(localStorage.getItem('storedActiveProjects') || '[]');
+          // const existingStoredProjects = JSON.parse(localStorage.getItem('storedActiveProjects') || '[]');
 
           // Create new project entry
-          const newStoredProject = {
-            storedProjectId: project.projectId,
-            ownerAddress: address,
-          };
+          // const newStoredProject = {
+          //   storedProjectId: project.projectId,
+          //   ownerAddress: address,
+          // };
 
           // Check if project already exists for this wallet
-          const projectIndex = existingStoredProjects.findIndex(
-            (p: { ownerAddress: string }) => p.ownerAddress === address
-          );
+          // const projectIndex = existingStoredProjects.findIndex(
+          //   (p: { ownerAddress: string }) => p.ownerAddress === address
+          // );
 
-          if (projectIndex >= 0) {
+          // if (projectIndex >= 0) {
             // Update existing entry
-            existingStoredProjects[projectIndex] = newStoredProject;
-          } else {
+          //   existingStoredProjects[projectIndex] = newStoredProject;
+          // } else {
             // Add new entry
-            existingStoredProjects.push(newStoredProject);
-          }
+          //   existingStoredProjects.push(newStoredProject);
+          // }
 
           // Store updated projects array
-          localStorage.setItem('storedActiveProjects', JSON.stringify(existingStoredProjects));
+          // localStorage.setItem('storedActiveProjects', JSON.stringify(existingStoredProjects));
 
           try {
             // Fetch codebase
@@ -644,68 +644,68 @@ export const useGlobalState = create<
             set({ isLoading: false });
           }
         },
-        fetchProjects: async () => {
-          if (!useWallet.getState().connected || !useWallet.getState().address) {
-            return;
-          }
+        // fetchProjects: async () => {
+        //   if (!useWallet.getState().connected || !useWallet.getState().address) {
+        //     return;
+        //   }
 
-          try {
-            set({ isLoading: true });
+        //   try {
+        //     set({ isLoading: true });
 
-            const res = await axios.get(
-              `${backendUrl}/projects?walletAddress=${useWallet.getState().address}`
-            );
+        //     const res = await axios.get(
+        //       `${backendUrl}/projects?walletAddress=${useWallet.getState().address}`
+        //     );
 
-            if (!res.data || typeof res.data.projects === 'undefined') {
-              throw new Error('Invalid response format from server');
-            }
+        //     if (!res.data || typeof res.data.projects === 'undefined') {
+        //       throw new Error('Invalid response format from server');
+        //     }
 
-            if (res.data.projects.length > 0) {
-              await res.data.projects.sort((a: Project, b: Project) => {
-                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-              });
-              set({ projects: res.data.projects });
+        //     if (res.data.projects.length > 0) {
+        //       await res.data.projects.sort((a: Project, b: Project) => {
+        //         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        //       });
+        //       set({ projects: res.data.projects });
 
-              const storedProjectDetails = JSON.parse(localStorage.getItem('storedActiveProjects') || '[]');
-              const isOwner = storedProjectDetails.find((p: { ownerAddress: string }) => p.ownerAddress === useWallet.getState().address);
-              const storedProjectIdForOwner = storedProjectDetails.find((p: { ownerAddress: string }) => p.ownerAddress === useWallet.getState().address)?.storedProjectId;
+        //       const storedProjectDetails = JSON.parse(localStorage.getItem('storedActiveProjects') || '[]');
+        //       const isOwner = storedProjectDetails.find((p: { ownerAddress: string }) => p.ownerAddress === useWallet.getState().address);
+        //       const storedProjectIdForOwner = storedProjectDetails.find((p: { ownerAddress: string }) => p.ownerAddress === useWallet.getState().address)?.storedProjectId;
 
-              if (isOwner && storedProjectIdForOwner) {
-                const storedProjectFetched = res.data.projects.find(
-                  (p: Project) =>
-                    p.projectId === storedProjectIdForOwner
-                );
-                if (storedProjectFetched) {
-                  await get().loadProjectData(
-                    storedProjectFetched,
-                    useWallet.getState().address as string
-                  );
-                } else {
-                  // await get().loadProjectData(
-                  //   res.data.projects[0],
-                  //   useWallet.getState().address as string
-                  // );
-                }
-              } else {
-                // await get().loadProjectData(
-                //   res.data.projects[0],
-                //   useWallet.getState().address as string
-                // );
-              }
-            } else {
-              set({ ...Initial_ProjectState });
-            }
-          } catch (error) {
-            console.error('Error fetching projects:', error);
-            const errorMessage =
-              (error instanceof Error && error.message) ||
-              'Failed to fetch projects';
-            set({ error: errorMessage });
-            toast.error(errorMessage);
-          } finally {
-            set({ isLoading: false });
-          }
-        },
+        //       if (isOwner && storedProjectIdForOwner) {
+        //         const storedProjectFetched = res.data.projects.find(
+        //           (p: Project) =>
+        //             p.projectId === storedProjectIdForOwner
+        //         );
+        //         if (storedProjectFetched) {
+        //           await get().loadProjectData(
+        //             storedProjectFetched,
+        //             useWallet.getState().address as string
+        //           );
+        //         } else {
+        //           // await get().loadProjectData(
+        //           //   res.data.projects[0],
+        //           //   useWallet.getState().address as string
+        //           // );
+        //         }
+        //       } else {
+        //         // await get().loadProjectData(
+        //         //   res.data.projects[0],
+        //         //   useWallet.getState().address as string
+        //         // );
+        //       }
+        //     } else {
+        //       set({ ...Initial_ProjectState });
+        //     }
+        //   } catch (error) {
+        //     console.error('Error fetching projects:', error);
+        //     const errorMessage =
+        //       (error instanceof Error && error.message) ||
+        //       'Failed to fetch projects';
+        //     set({ error: errorMessage });
+        //     toast.error(errorMessage);
+        //   } finally {
+        //     set({ isLoading: false });
+        //   }
+        // },
         createProject: async (
           projectName: string,
           framework: Framework

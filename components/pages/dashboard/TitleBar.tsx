@@ -184,7 +184,7 @@ const TitleBar = () => {
       <div className="border-b border-border/50 bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 flex justify-between items-center pl-2 pr-5">
         {/* Logo with Link wrapper */}
         <Link 
-          href="/"
+          href="/dashboard"
           className="w-[20%] sm:w-[15%] md:w-[12%] lg:w-[10%] xl:w-[9.5%] max-w-[120px] py-2 cursor-pointer hover:opacity-80 transition-opacity"
         >
           <Image

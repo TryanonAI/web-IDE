@@ -2,13 +2,99 @@
 
 import { toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
-import { Loader2Icon, RefreshCw, User } from 'lucide-react';
+import {
+  Loader2Icon,
+  RefreshCw,
+  User,
+  Maximize2,
+  Minimize2,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import { Framework, ChatMessage, Role, Project } from '@/types';
 import { useWallet, useGlobalState } from '@/hooks';
 import LLMRenderer from './LLMRenderer';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { handleRunLua } from '@/lib/arkit';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+
+// Component to handle message truncation and expansion
+const MessageRenderer = ({ message }: { message: ChatMessage }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const MAX_LENGTH = 500; // Maximum characters before truncation
+
+  const shouldTruncate = message.content.length > MAX_LENGTH;
+  const displayContent =
+    shouldTruncate && !isExpanded
+      ? message.content.slice(0, MAX_LENGTH) + '...'
+      : message.content;
+
+  if (message.role === 'model') {
+    if (message.isLoading) {
+      return (
+        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+          <Loader2Icon className="w-4 h-4 animate-spin" />
+          <span>Generating...</span>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-3">
+        <div>
+          <LLMRenderer llmResponse={displayContent} isUserMessage={false} />
+        </div>
+        {shouldTruncate && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors py-1 px-2 rounded-md hover:bg-accent/50"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp size={12} />
+                <span>Show less</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown size={12} />
+                <span>View complete</span>
+              </>
+            )}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <LLMRenderer
+        llmResponse={displayContent}
+        isUserMessage={message.role === 'user'}
+      />
+      {shouldTruncate && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors py-1 px-2 rounded-md hover:bg-accent/50"
+        >
+          {isExpanded ? (
+            <>
+              <ChevronUp size={12} />
+              <span>Show less</span>
+            </>
+          ) : (
+            <>
+              <ChevronDown size={12} />
+              <span>
+                View complete ({message.content.length - MAX_LENGTH} more
+                characters)
+              </span>
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  );
+};
 
 const Chatview = () => {
   const user = useWallet((state) => state.user);
@@ -24,6 +110,7 @@ const Chatview = () => {
   const [userInput, setUserInput] = useState('');
   const [isRetrying, setIsRetrying] = useState(false);
   const [mode, setMode] = useState<'UI' | 'All'>('UI');
+  const [isInputMaximized, setIsInputMaximized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>(chatMessages);
   const [failedMessage, setFailedMessage] = useState<string | null>(null);
@@ -91,15 +178,19 @@ const Chatview = () => {
     setTimeout(scrollToBottom, 2000);
 
     try {
-      const modeInstruction = mode === 'UI' 
-        ? "YOU JUST HAVE TO MAKE CHANGES IN `index.html` file ONLY not the BACKEND `index.lua`"
-        : "You have to make changes to both files";
+      const modeInstruction =
+        mode === 'UI'
+          ? 'YOU JUST HAVE TO MAKE CHANGES IN `index.html` file ONLY not the BACKEND `index.lua`'
+          : 'You have to MAKE CHANGES to both files';
 
       const requestBody = {
         framework: activeProject?.framework,
-        prompt: { 
-          role: 'user', 
-          content: `${messageToSend}\n\n${modeInstruction}` 
+        prompt: {
+          role: 'user',
+          content:
+            activeProject?.framework === Framework.React
+              ? messageToSend
+              : `${messageToSend}\n\n${modeInstruction}`,
         },
         projectId: activeProject?.projectId as string,
       };
@@ -146,14 +237,15 @@ const Chatview = () => {
 
         eventSource.addEventListener('error', (error) => {
           console.error('❌ Stream error occurred:', error);
-          
+
           // Update the temporary message to show error state
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === tempSystemMessageId
                 ? {
                     ...msg,
-                    content: '❌ An error occurred while processing your request. Please try again.',
+                    content:
+                      '❌ An error occurred while processing your request. Please try again.',
                     isLoading: false,
                     isStreaming: false,
                     isError: true,
@@ -161,19 +253,20 @@ const Chatview = () => {
                 : msg
             )
           );
-          
+
           // Close the event source to prevent further errors
           eventSource.close();
-          
+
           // Reset loading states
           setIsCodeGenerating(false);
-          
+
           // Show error toast to user
           toast.error('Request failed', {
             duration: 5000,
-            description: 'An error occurred while processing your request. Please try again.',
+            description:
+              'An error occurred while processing your request. Please try again.',
           });
-          
+
           // Scroll to bottom to show error message
           scrollToBottom();
         });
@@ -206,7 +299,7 @@ const Chatview = () => {
             setCodebase(codebaserec),
             setDependencies(externalPackages),
           ]).then(async () => {
-            console.log(codebaserec);
+            // console.log(codebaserec);
             console.log('running lua');
             await handleRunLua({
               project: activeProject as Project,
@@ -215,8 +308,8 @@ const Chatview = () => {
             });
             console.log('running lua done');
             toast.info('Code updated.', {
-              duration: 5000,
-              description: 'You can redeploy to see changes on permaweb',
+              duration: 3000,
+              // description: 'You can redeploy to see changes on permaweb',
             });
             setIsCodeGenerating(false);
 
@@ -289,34 +382,22 @@ const Chatview = () => {
     }
   };
 
-  const renderMessage = (message: ChatMessage) => {
-    if (message.role === 'model') {
-      if (message.isLoading) {
-        return (
-          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-            <Loader2Icon className="w-4 h-4 animate-spin" />
-            <span>Generating...</span>
-          </div>
-        );
-      }
-      return (
-        <div>
-          <LLMRenderer llmResponse={message.content} isUserMessage={false} />
-        </div>
-      );
-    }
-    return (
-      <LLMRenderer
-        llmResponse={message.content}
-        isUserMessage={message.role === 'user'}
-      />
-    );
-  };
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
+    if (e.key === 'Enter') {
+      if (isInputMaximized) {
+        // When maximized, Ctrl+Enter or Cmd+Enter submits, plain Enter adds new line
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          handleSubmit();
+        }
+        // Allow normal Enter for new lines when maximized
+      } else {
+        // When minimized, Enter submits (unless Shift is held for new line)
+        if (!e.shiftKey) {
+          e.preventDefault();
+          handleSubmit();
+        }
+      }
     }
   };
 
@@ -369,7 +450,7 @@ const Chatview = () => {
                     : 'bg-card dark:bg-card/90 text-card-foreground shadow-sm border border-border/10 hover:border-border/20 transition-all'
                 } p-4 backdrop-blur-sm`}
               >
-                {renderMessage(message)}
+                <MessageRenderer message={message} />
               </div>
             </div>
           ))}
@@ -402,30 +483,51 @@ const Chatview = () => {
               </span>
             </div>
             */}
-            <button
-              type="button"
-              onClick={() => setMode(mode === 'UI' ? 'All' : 'UI')}
-              className={`h-9 px-2.5 text-xs tracking-wider font-medium rounded-md border transition-colors ${
-                mode === 'UI' 
-                ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/15' 
-                : 'bg-background/50 border-border/40 text-muted-foreground/70 hover:bg-background/70'
-              }`}
-            >
-              UI Only
-            </button>
+            {activeProject?.framework === Framework.Html && (
+              <button
+                type="button"
+                onClick={() => setMode(mode === 'UI' ? 'All' : 'UI')}
+                className={`h-9 px-2.5 text-xs tracking-wider font-medium rounded-md border transition-colors ${
+                  mode === 'UI'
+                    ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/15'
+                    : 'bg-background/50 border-border/40 text-muted-foreground/70 hover:bg-background/70'
+                }`}
+              >
+                UI Only
+              </button>
+            )}
             <div className="flex-1 relative">
-              <Input
+              <Textarea
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 onKeyDown={handleKeyPress}
-                className="w-full outline-none focus-visible:ring-0"
+                className={`w-full outline-none focus-visible:ring-0 resize-none transition-all duration-200 ${
+                  isInputMaximized
+                    ? 'min-h-[120px]'
+                    : 'min-h-[40px] max-h-[40px]'
+                }`}
                 disabled={disableChatInput()}
                 placeholder={
                   failedMessage
                     ? 'AI response failed. Retry or type new prompt.'
-                    : 'Type your prompt...'
+                    : isInputMaximized
+                      ? 'Type your prompt... (Ctrl+Enter to send)'
+                      : 'Type your prompt... (Enter to send)'
                 }
+                rows={isInputMaximized ? 5 : 1}
               />
+              <button
+                type="button"
+                onClick={() => setIsInputMaximized(!isInputMaximized)}
+                className="absolute top-2 right-2 p-1 text-muted-foreground hover:text-foreground transition-colors rounded-sm hover:bg-accent"
+                disabled={disableChatInput()}
+              >
+                {isInputMaximized ? (
+                  <Minimize2 size={14} />
+                ) : (
+                  <Maximize2 size={14} />
+                )}
+              </button>
             </div>
             <button
               type="submit"

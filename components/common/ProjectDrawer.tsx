@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/drawer';
 import { DrawerType } from '@/hooks/useGlobalState';
 import { useEffect, useRef } from 'react';
+import { frameworks } from '@/app/(user)/layout';
 
 export function ProjectDrawer() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export function ProjectDrawer() {
     closeDrawer,
     openModal,
     setIsLoading,
-    loadProjectData
+    loadProjectData,
   } = useGlobalState();
   const { address } = useWallet();
 
@@ -39,21 +40,25 @@ export function ProjectDrawer() {
           // Get the scroll container and active project positions
           const container = scrollContainerRef.current;
           const activeElement = activeProjectRef.current;
-          
+
           // Calculate the scroll position to center the active project
           const containerRect = container.getBoundingClientRect();
           const elementRect = activeElement.getBoundingClientRect();
-          
-          const scrollTop = container.scrollTop + (elementRect.top - containerRect.top) - (containerRect.height / 2) + (elementRect.height / 2);
-          
+
+          const scrollTop =
+            container.scrollTop +
+            (elementRect.top - containerRect.top) -
+            containerRect.height / 2 +
+            elementRect.height / 2;
+
           // Smooth scroll to the calculated position
           container.scrollTo({
             top: scrollTop,
-            behavior: 'smooth'
+            behavior: 'smooth',
           });
         }
       }, 400); // Increased delay for better reliability
-      
+
       return () => clearTimeout(timer);
     }
   }, [activeDrawer, activeProject]);
@@ -98,7 +103,11 @@ export function ProjectDrawer() {
               {projects.map((project) => (
                 <div
                   key={project.projectId}
-                  ref={activeProject?.projectId === project.projectId ? activeProjectRef : null}
+                  ref={
+                    activeProject?.projectId === project.projectId
+                      ? activeProjectRef
+                      : null
+                  }
                   onClick={() => handleProjectSelect(project.projectId)}
                   className={`p-3 border rounded-md cursor-pointer transition-all hover:shadow-sm ${
                     activeProject?.projectId === project.projectId
@@ -127,9 +136,11 @@ export function ProjectDrawer() {
                           {new Date(project.createdAt).toLocaleDateString()}
                         </div>
                         <Badge className="text-[10px] bg-primary/80 tracking-wider">
-                          {project.framework === 'React'
-                            ? 'Code Mode'
-                            : 'Vibe Mode'}
+                          {
+                            frameworks.find(
+                              (f) => f.value === project.framework
+                            )?.label
+                          }
                         </Badge>
                       </div>
                     </div>

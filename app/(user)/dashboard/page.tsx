@@ -3,24 +3,16 @@
 import { useEffect, useState } from 'react';
 import { useGlobalState, useWallet } from '@/hooks';
 import { motion } from 'framer-motion';
-import {
-  Folder,
-  FolderOpen,
-  PlusIcon,
-  Search,
-  // User,
-  // Users,
-} from 'lucide-react';
+import { Folder, FolderOpen, PlusIcon, Search, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-// import { Switch } from '@/components/ui/switch';
-// import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
+import { frameworks } from '../layout';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -36,11 +28,23 @@ export default function Dashboard() {
   const [showAllProjects] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [navigatingProjectId, setNavigatingProjectId] = useState<string | null>(
+    null
+  );
 
   // Clear active project when component mounts
   useEffect(() => {
     setActiveProject(null);
   }, [setActiveProject]);
+
+  // Reset navigation state when component unmounts
+  useEffect(() => {
+    return () => {
+      setIsNavigating(false);
+      setNavigatingProjectId(null);
+    };
+  }, []);
 
   // Handle toggle change
   // const handleToggleChange = (checked: boolean) => {
@@ -55,62 +59,67 @@ export default function Dashboard() {
   // };
 
   // Fetch all projects
-  const fetchAllProjects = async () => {
-    try {
-      setIsLoading(true);
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects?allProjects=true`
-      );
-      if (response.data && response.data.projects) {
-        console.log(response.data.projects);
-        setProjects(response.data.projects);
-      }
-    } catch (error) {
-      console.error('Error fetching all projects:', error);
-      toast.error('Failed to fetch projects');
-      setProjects([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // const fetchAllProjects = async () => {
+  //   try {
+  //     setIsLoading(true);
+  //     const response = await axios.get(
+  //       `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects?allProjects=true`
+  //     );
+  //     if (response.data && response.data.projects) {
+  //       console.log(response.data.projects);
+  //       setProjects(response.data.projects);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching all projects:', error);
+  //     toast.error('Failed to fetch projects');
+  //     setProjects([]);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   // Fetch user's projects
-  const fetchUserProjects = async () => {
-    if (!address) {
-      setProjects([]);
-      return;
-    }
-    try {
-      setIsLoading(true);
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects?walletAddress=${address}`
-      );
-      if (response.data && response.data.projects) {
-        setProjects(response.data.projects);
-      }
-    } catch (error) {
-      console.error('Error fetching user projects:', error);
-      toast.error('Failed to fetch your projects');
-      setProjects([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Effect to fetch projects based on toggle state
   useEffect(() => {
-    const fetchProjects = async () => {
-      if (showAllProjects) {
-        await fetchAllProjects();
-      } else if (connected && address) {
-        await fetchUserProjects();
-      } else {
+    const fetchUserProjects = async () => {
+      if (!address) {
         setProjects([]);
+        return;
+      }
+      try {
+        setIsLoading(true);
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects?walletAddress=${address}`
+        );
+        if (response.data && response.data.projects) {
+          setProjects(response.data.projects);
+        }
+      } catch (error) {
+        console.error('Error fetching user projects:', error);
+        toast.error('Failed to fetch your projects');
+        setProjects([]);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchProjects();
-  }, [showAllProjects, connected, address]);
+    // // Effect to fetch projects based on toggle state
+    //   const fetchProjects = async () => {
+    //     // if (showAllProjects) {
+    //     //   await fetchAllProjects();
+    //     // } else if (connected && address) {
+    //     //   await fetchUserProjects();
+    //     // } else {
+    //     //   setProjects([]);
+    //     // }
+    //     if (connected && address) {
+    //       await fetchUserProjects();
+    //     } else {
+    //       setProjects([]);
+    //     }
+    //   };
+
+    fetchUserProjects();
+  }, [connected, address, setProjects]);
 
   // Filter projects based on search query
   const filteredProjects = projects?.filter((project) => {
@@ -118,16 +127,32 @@ export default function Dashboard() {
   });
 
   const handleProjectSelect = async (projectId: string) => {
+    // Prevent multiple clicks while navigating
+    if (isNavigating) {
+      return;
+    }
+
     if (!Array.isArray(projects)) {
       console.error('Projects is not an array');
       return;
     }
+
     const selectedProject = projects.find((p) => p.projectId === projectId);
     if (selectedProject && address) {
-      // First load the project data
-      await loadProjectData(selectedProject, address);
-      // Then navigate to the dashboard with the project ID
-      router.push(`/dashboard/${projectId}`);
+      try {
+        setIsNavigating(true);
+        setNavigatingProjectId(projectId);
+
+        // First load the project data
+        await loadProjectData(selectedProject, address);
+        // Then navigate to the dashboard with the project ID
+        router.push(`/dashboard/${projectId}`);
+      } catch (error) {
+        console.error('Error navigating to project:', error);
+        toast.error('Failed to open project');
+        setIsNavigating(false);
+        setNavigatingProjectId(null);
+      }
     } else {
       console.error('Project not found with ID:', projectId);
     }
@@ -145,45 +170,23 @@ export default function Dashboard() {
     <div className="flex-1 overflow-auto">
       <div className="h-full p-8">
         {/* Header Section */}
-        <div className="flex flex-col gap-8 mb-10">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
-            <Button onClick={handleOpenCreateProjectDialog}>
-              <PlusIcon size={16} className="mr-2" />
-              New Project
-            </Button>
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center justify-between mb-8">
+          <div className="relative w-full sm:w-96">
+            <Search
+              size={18}
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              placeholder="Search projects..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
           </div>
-
-          {/* Search and Filter Section */}
-          <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between">
-            <div className="relative w-full sm:w-96">
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-              />
-              <Input
-                placeholder="Search projects..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            {/* <div className="flex items-center space-x-4">
-              <Label htmlFor="project-view" className="flex items-center gap-2">
-                <User size={16} />
-                My Projects
-              </Label>
-              <Switch
-                id="project-view"
-                checked={showAllProjects}
-                onCheckedChange={handleToggleChange}
-              />
-              <Label htmlFor="project-view" className="flex items-center gap-2">
-                <Users size={16} />
-                All Projects
-              </Label>
-            </div> */}
-          </div>
+          <Button onClick={handleOpenCreateProjectDialog} className="shrink-0">
+            <PlusIcon size={16} className="mr-2" />
+            New Project
+          </Button>
         </div>
 
         {/* Projects Grid */}
@@ -221,68 +224,94 @@ export default function Dashboard() {
           </div>
         ) : filteredProjects && filteredProjects.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {filteredProjects.map((project) => (
-              <motion.div
-                key={project.projectId}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                onClick={() => handleProjectSelect(project.projectId)}
-                className={cn(
-                  'p-4 sm:p-5 lg:p-6 border rounded-lg cursor-pointer transition-all hover:shadow-lg',
-                  activeProject?.projectId === project.projectId
-                    ? 'bg-primary/5 border-primary/20'
-                    : 'bg-card/50 hover:bg-card border-border'
-                )}
-              >
-                <div className="flex items-start gap-3 sm:gap-4">
-                  <div className="mt-0.5 shrink-0">
-                    <Folder
-                      size={20}
-                      className={
-                        activeProject?.projectId === project.projectId
-                          ? 'text-primary'
-                          : 'text-muted-foreground'
-                      }
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-medium truncate text-base sm:text-lg">
-                        {project.title}
-                      </h3>
-                      {activeProject?.projectId === project.projectId && (
-                        <div className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-md whitespace-nowrap">
-                          Active
+            {filteredProjects.map((project) => {
+              const isProjectNavigating =
+                navigatingProjectId === project.projectId;
+              const isDisabled = isNavigating;
+
+              return (
+                <motion.div
+                  key={project.projectId}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  onClick={() =>
+                    !isDisabled && handleProjectSelect(project.projectId)
+                  }
+                  className={cn(
+                    'p-4 sm:p-5 lg:p-6 border rounded-lg transition-all',
+                    isDisabled
+                      ? 'cursor-not-allowed opacity-60'
+                      : 'cursor-pointer hover:shadow-lg',
+                    activeProject?.projectId === project.projectId
+                      ? 'bg-primary/5 border-primary/20'
+                      : 'bg-card/50 hover:bg-card border-border',
+                    isProjectNavigating && 'ring-2 ring-primary/20'
+                  )}
+                >
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="mt-0.5 shrink-0">
+                      <Folder
+                        size={20}
+                        className={
+                          activeProject?.projectId === project.projectId
+                            ? 'text-primary'
+                            : 'text-muted-foreground'
+                        }
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-medium truncate text-base sm:text-lg">
+                          {project.title}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          {isProjectNavigating && (
+                            <div className="flex items-center gap-1 bg-blue-50 text-blue-600 text-xs px-2 py-0.5 rounded-md whitespace-nowrap">
+                              <Loader2 size={12} className="animate-spin" />
+                              Opening...
+                            </div>
+                          )}
+                          {activeProject?.projectId === project.projectId &&
+                            !isProjectNavigating && (
+                              <div className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-md whitespace-nowrap">
+                                Active
+                              </div>
+                            )}
                         </div>
-                      )}
-                    </div>
-                    <div className="mt-2 sm:mt-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-                      <div className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                        Created: {new Date(project.createdAt).toLocaleDateString()}
                       </div>
-                      <Badge
-                        variant="secondary"
-                        className="bg-primary/5 text-primary hover:bg-primary/10 text-xs whitespace-nowrap"
-                      >
-                        {project.framework === 'React' ? 'Code Mode' : 'Vibe Mode'}
-                      </Badge>
-                    </div>
-                    <div className="mt-2 sm:mt-3 w-full">
-                      <div className="max-w-full overflow-hidden">
-                        <Badge 
-                          variant="outline" 
-                          className="text-xs truncate max-w-full block"
-                          title={project.creator?.walletAddress}
+                      <div className="mt-2 sm:mt-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                        <div className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                          Created:{' '}
+                          {new Date(project.createdAt).toLocaleDateString()}
+                        </div>
+                        <Badge
+                          variant="secondary"
+                          className="bg-primary/5 text-primary hover:bg-primary/10 text-xs whitespace-nowrap"
                         >
-                          {project.creator?.walletAddress}
+                          {
+                            frameworks.find(
+                              (f) => f.value === project.framework
+                            )?.label
+                          }
                         </Badge>
                       </div>
+                      <div className="mt-2 sm:mt-3 w-full">
+                        <div className="max-w-full overflow-hidden">
+                          <Badge
+                            variant="outline"
+                            className="text-xs truncate max-w-full block"
+                            title={project.creator?.walletAddress}
+                          >
+                            {project.creator?.walletAddress}
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-12">
