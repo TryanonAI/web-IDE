@@ -289,7 +289,7 @@ const TitleBar = () => {
                       size={16}
                       className="text-primary mr-2"
                     />
-                    <span className="text-sm font-medium">View Live</span>
+                    <span className="text-sm font-medium">View Permaweb</span>
                   </Link>
                   <button
                     className="flex items-center px-4 py-2 transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"

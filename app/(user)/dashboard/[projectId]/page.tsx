@@ -1,12 +1,14 @@
 'use client';
 
-import { use } from 'react';
-import { useEffect } from 'react';
-import { PlusCircle } from 'lucide-react';
+import { use, useEffect, useState } from 'react';
 import { useGlobalState } from '@/hooks';
 import { useWallet } from '@/hooks';
-import { Button } from '@/components/ui/button';
 import { Loading_Gif } from '@/app/loading';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, ArrowLeft } from 'lucide-react';
 
 import {
   ResizableHandle,
@@ -26,30 +28,72 @@ const Dashboard = ({ params }: DashboardProps) => {
   // Properly unwrap the params promise
   const { projectId } = use(params);
   const { address } = useWallet();
-  const openModal = useGlobalState((state) => state.openModal);
+  const router = useRouter();
   const isLoading = useGlobalState((state) => state.isLoading);
-  const activeProject = useGlobalState((state) => state.activeProject);
   const projects = useGlobalState((state) => state.projects);
   const loadProjectData = useGlobalState((state) => state.loadProjectData);
   const setIsLoading = useGlobalState((state) => state.setIsLoading);
+  const setProjects = useGlobalState((state) => state.setProjects);
+  const activeProject = useGlobalState((state) => state.activeProject);
+  
+  // State to track if project was found
+  const [projectNotFound, setProjectNotFound] = useState(false);
+  const [hasCheckedProject, setHasCheckedProject] = useState(false);
 
   // Load project data when component mounts or projectId changes
   useEffect(() => {
-    const loadProject = async () => {
-      if (projectId && address && projects.length > 0) {
-        setIsLoading(true);
-        const project = projects.find(p => p.projectId === projectId);
-        if (project) {
-          await loadProjectData(project, address);
-        }
-        setIsLoading(false);
+    const loadData = async () => {
+      if (!address || !projectId) {
+        return;
       }
+
+      setIsLoading(true);
+      setProjectNotFound(false);
+      setHasCheckedProject(false);
+
+      let currentProjects = projects;
+
+      // If projects are not loaded, fetch them
+      if (currentProjects.length === 0) {
+        try {
+          const response = await axios.get(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects?walletAddress=${address}`
+          );
+          if (response.data && response.data.projects) {
+            currentProjects = response.data.projects;
+            setProjects(currentProjects);
+          } else {
+            setProjects([]);
+          }
+        } catch (error) {
+          console.error('Error fetching user projects:', error);
+          toast.error('Failed to fetch your projects');
+          setProjects([]);
+          setIsLoading(false);
+          setHasCheckedProject(true);
+          return;
+        }
+      }
+
+      // Now find and load the specific project
+      const project = currentProjects.find((p) => p.projectId === projectId);
+      if (project) {
+        await loadProjectData(project, address);
+        setProjectNotFound(false);
+      } else {
+        toast.error('Project not found or you do not have access.');
+        setProjectNotFound(true);
+      }
+      
+      setHasCheckedProject(true);
+      setIsLoading(false);
     };
 
-    loadProject();
-  }, [projectId, address, projects, loadProjectData, setIsLoading]);
+    loadData();
+  }, [projectId, address, loadProjectData, setIsLoading, setProjects]);
 
-  if (isLoading) {
+  // Show loading while checking
+  if (isLoading || !hasCheckedProject) {
     return (
       <div className="flex flex-1 items-center justify-center bg-background">
         <Loading_Gif count={3} />
@@ -57,7 +101,42 @@ const Dashboard = ({ params }: DashboardProps) => {
     );
   }
 
-  return activeProject ? (
+  // Show error page if project not found
+  if (projectNotFound || !activeProject || activeProject.projectId !== projectId) {
+    return (
+      <div className="flex flex-1 items-center justify-center bg-background">
+        <div className="text-center space-y-6 max-w-md mx-auto p-6">
+          <div className="flex justify-center">
+            <AlertTriangle className="h-16 w-16 text-destructive" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-foreground">Project Not Found</h1>
+                         <p className="text-muted-foreground">
+               The project with ID &quot;{projectId}&quot; could not be found or you don&apos;t have access to it.
+             </p>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <Button
+              variant="outline"
+              onClick={() => router.back()}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Go Back
+            </Button>
+            <Button
+              onClick={() => router.push('/dashboard')}
+              className="flex items-center gap-2"
+            >
+              View All Projects
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
     <ResizablePanelGroup direction="horizontal">
       <ResizablePanel defaultSize={50} minSize={40}>
         <Codeview />
@@ -67,24 +146,7 @@ const Dashboard = ({ params }: DashboardProps) => {
         <Chatview />
       </ResizablePanel>
     </ResizablePanelGroup>
-  ) : (
-    <div className="flex flex-1 items-center justify-center bg-background">
-      <div className="flex flex-col items-center justify-center text-center">
-        <p className="mb-6 text-xl font-semibold text-foreground">
-          Create your first project and start vibe coding with{' '}
-          <span className="font-bold">Anon</span>
-        </p>
-        <Button
-          size="lg"
-          onClick={() => openModal('createProject')}
-          className="flex items-center gap-2 px-4 py-2.5 text-base h-auto cursor-pointer"
-        >
-          <PlusCircle size={20} />
-          <span>Create New Project</span>
-        </Button>
-      </div>
-    </div>
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

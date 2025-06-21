@@ -193,7 +193,8 @@ export const messageAR = async ({
 // Process operations
 export const spawnProcess = async (
   name: string,
-  tags: Tag[] = []
+  tags: Tag[] = [],
+  data?: string
 ): Promise<string> => {
   if (typeof window === 'undefined') {
     throw new Error('Cannot spawn process in non-browser environment');
@@ -217,6 +218,7 @@ export const spawnProcess = async (
       scheduler: AOScheduler,
       signer: createSigner(window.arweaveWallet),
       tags: allTags,
+      data: data
     });
     console.log('processId', processId);
 

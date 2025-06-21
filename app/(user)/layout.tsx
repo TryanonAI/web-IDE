@@ -372,7 +372,7 @@ const Layout = ({ children }: LayoutProps) => {
               <Button
                 type="submit"
                 className="flex items-center gap-2"
-                disabled={!projectName.trim() || isCreating || !!nameError}
+                disabled={!projectName.trim() || isCreating || !!nameError || !framework}
               >
                 {isCreating ? (
                   <>

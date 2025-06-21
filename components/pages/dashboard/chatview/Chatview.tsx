@@ -8,10 +8,8 @@ import {
   User,
   Maximize2,
   Minimize2,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
-import { Framework, ChatMessage, Role, Project } from '@/types';
+import { Framework, ChatMessage, Role, Project, CodebaseType } from '@/types';
 import { useWallet, useGlobalState } from '@/hooks';
 import LLMRenderer from './LLMRenderer';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -20,14 +18,14 @@ import { Textarea } from '@/components/ui/textarea';
 
 // Component to handle message truncation and expansion
 const MessageRenderer = ({ message }: { message: ChatMessage }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const MAX_LENGTH = 500; // Maximum characters before truncation
-
-  const shouldTruncate = message.content.length > MAX_LENGTH;
+  // const [isExpanded, setIsExpanded] = useState(false);
+  // const MAX_LENGTH = 500; // Maximum characters before truncation
+  // const shouldTruncate = message.content.length > MAX_LENGTH;
+  
   const displayContent =
-    shouldTruncate && !isExpanded
-      ? message.content.slice(0, MAX_LENGTH) + '...'
-      : message.content;
+    // shouldTruncate && !isExpanded
+    //   ? message.content.slice(0, MAX_LENGTH) + '...':
+    message.content;
 
   if (message.role === 'model') {
     if (message.isLoading) {
@@ -43,7 +41,7 @@ const MessageRenderer = ({ message }: { message: ChatMessage }) => {
         <div>
           <LLMRenderer llmResponse={displayContent} isUserMessage={false} />
         </div>
-        {shouldTruncate && (
+        {/* {shouldTruncate && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors py-1 px-2 rounded-md hover:bg-accent/50"
@@ -60,7 +58,7 @@ const MessageRenderer = ({ message }: { message: ChatMessage }) => {
               </>
             )}
           </button>
-        )}
+        )} */}
       </div>
     );
   }
@@ -71,7 +69,7 @@ const MessageRenderer = ({ message }: { message: ChatMessage }) => {
         llmResponse={displayContent}
         isUserMessage={message.role === 'user'}
       />
-      {shouldTruncate && (
+      {/* {shouldTruncate && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors py-1 px-2 rounded-md hover:bg-accent/50"
@@ -91,7 +89,7 @@ const MessageRenderer = ({ message }: { message: ChatMessage }) => {
             </>
           )}
         </button>
-      )}
+      )} */}
     </div>
   );
 };
@@ -178,21 +176,14 @@ const Chatview = () => {
     setTimeout(scrollToBottom, 2000);
 
     try {
-      const modeInstruction =
-        mode === 'UI'
-          ? 'YOU JUST HAVE TO MAKE CHANGES IN `index.html` file ONLY not the BACKEND `index.lua`'
-          : 'You have to MAKE CHANGES to both files';
-
       const requestBody = {
         framework: activeProject?.framework,
         prompt: {
           role: 'user',
-          content:
-            activeProject?.framework === Framework.React
-              ? messageToSend
-              : `${messageToSend}\n\n${modeInstruction}`,
+          content: messageToSend,
         },
         projectId: activeProject?.projectId as string,
+        mode: activeProject?.framework === Framework.Html ? mode : undefined,
       };
 
       const handleStreamEvents = (
@@ -299,7 +290,6 @@ const Chatview = () => {
             setCodebase(codebaserec),
             setDependencies(externalPackages),
           ]).then(async () => {
-            // console.log(codebaserec);
             console.log('running lua');
             await handleRunLua({
               project: activeProject as Project,
@@ -309,10 +299,8 @@ const Chatview = () => {
             console.log('running lua done');
             toast.info('Code updated.', {
               duration: 3000,
-              // description: 'You can redeploy to see changes on permaweb',
             });
             setIsCodeGenerating(false);
-
             if (isHtmlStream) {
               if (codebaserec['/index.html']) {
                 try {
@@ -323,7 +311,7 @@ const Chatview = () => {
                     .getState()
                     .autoDeployProject(
                       activeProject as Project,
-                      codebaserec['/index.html'] as string,
+                      codebaserec as CodebaseType,
                       user?.walletAddress as string
                     );
 
@@ -364,7 +352,7 @@ const Chatview = () => {
       } else if (activeProject?.framework === Framework.Html) {
         console.log('Generating HTML code...');
         const eventSource = new EventSource(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/html/stream?projectId=${requestBody.projectId}&prompt=${encodeURIComponent(requestBody.prompt.content)}`
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/html/stream?projectId=${requestBody.projectId}&prompt=${encodeURIComponent(requestBody.prompt.content)}&mode=${mode}`
         );
         handleStreamEvents(eventSource, true);
       }

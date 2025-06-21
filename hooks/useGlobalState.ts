@@ -148,7 +148,7 @@ export interface ProjectState {
   setDependencies: (deps: DependencyMap) => void;
   setProjects: (projects: Project[]) => void;
   isDeploying: boolean;
-  autoDeployProject: (project: Project, codebase: CodebaseType, walletAddress: string) => Promise<string | null>;
+  autoDeployProject: (project: Project, codebaserec: CodebaseType, walletAddress: string) => Promise<string | null>;
   setIsDeploying: (isDeploying: boolean) => void;
 }
 
@@ -197,7 +197,7 @@ const Initial_GithubState = {
 
 export const Initial_ProjectState = {
   projects: [],
-  framework: Framework.React,
+  framework: null,
   activeProject: null,
   isCreating: false,
   codebase: null,
@@ -605,10 +605,10 @@ export const useGlobalState = create<
           // );
 
           // if (projectIndex >= 0) {
-            // Update existing entry
+          // Update existing entry
           //   existingStoredProjects[projectIndex] = newStoredProject;
           // } else {
-            // Add new entry
+          // Add new entry
           //   existingStoredProjects.push(newStoredProject);
           // }
 
@@ -840,10 +840,14 @@ export const useGlobalState = create<
         setProjects: (projects: Project[]) => set({ projects }),
 
         // Auto-deployment function for HTML projects
-        autoDeployProject: async (project: Project, indexHtmlContent: string, walletAddress: string): Promise<string | null> => {
+        autoDeployProject: async (project: Project, codebaserec: CodebaseType, walletAddress: string): Promise<string | null> => {
           try {
             get().setIsDeploying(true)
             console.log('🚀 Starting auto-deployment for HTML project:', project.title);
+
+            // @ts-expect-error ignore
+            const indexHtmlContent = codebaserec['/index.html'] as string;
+            // const indexLuaContent = codebaserec['/index.lua'] as string;
 
             if (!project.projectId || !walletAddress) {
               throw new Error('Project ID and wallet address are required for deployment');
@@ -856,6 +860,22 @@ export const useGlobalState = create<
             if (!indexHtmlContent) {
               throw new Error('No index.html content found for deployment');
             }
+
+            // const newProcessId = await spawnProcess(project.title, [
+            //   { name: 'Action', value: 'Deployment' },
+            //   { name: 'Content-Type', value: "text/html" },
+            //   {
+            //     name: 'Pushed-For',
+            //     value: project.processId
+            //   }
+            // ],
+            //   indexHtmlContent
+            // );
+
+            // await runLua({
+            //   process: newProcessId,
+            //   code: indexLuaContent
+            // })
 
             // Import uploadToTurbo dynamically to avoid circular dependency
             const { uploadToTurbo } = await import('@/lib/api');
