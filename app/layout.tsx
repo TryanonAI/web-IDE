@@ -6,6 +6,7 @@ import { Analytics } from '@vercel/analytics/react';
 import CheckConnection from '@/components/common/CheckConnection';
 import ClientInitializer from '@/components/codesandbox_not-used/ClientInitializer';
 import { MobileProvider } from '@/hooks/use-mobile';
+import { GoogleAnalytics, GoogleTagManager } from '@next/third-parties/google';
 
 export const viewport: Viewport = {
   themeColor: '#3e7452',
@@ -23,6 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" style={{ colorScheme: 'dark' }}>
+      <GoogleTagManager gtmId="GTM-TBDJQL4Z" />
       <body
         style={{
           fontFamily: 'Inter, Helvetica, Arial, sans-serif',
@@ -44,6 +46,7 @@ export default function RootLayout({
           </MobileProvider>
         </ThemeProvider>
       </body>
+      <GoogleAnalytics gaId="G-X4QGWH9859" />
     </html>
   );
 }
