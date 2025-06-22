@@ -18,6 +18,7 @@
     "@codesandbox/sdk": "^1.1.2",
     "@heroui/react": "^2.7.9",
     "@monaco-editor/react": "^4.7.0",
+    "@next/third-parties": "^15.3.4",
     "@octokit/core": "^6.1.4",
     "@othent/kms": "^2.1.1",
     "@permaweb/aoconnect": "^0.0.77",
