@@ -186,8 +186,8 @@ export default function AnonLanding() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#00FFD1]/20 to-[#7C3AED]/20 border border-[#00FFD1]/30 backdrop-blur-sm mb-8">
             <Zap className="h-4 w-4 text-[#00FFD1]" />
-            <span className="text-sm font-medium text-white/90">
-              AO dApp Builder
+            <span className="tracking-wider font-mono text-sm font-medium text-white/90">
+              AI dApp Builder
             </span>
           </div>
 
@@ -199,7 +199,7 @@ export default function AnonLanding() {
           </h1>
 
           <p className="text-xl text-white/70 mb-16 max-w-2xl mx-auto leading-relaxed">
-            Vibe check your Web3 ideas into production-ready dApps
+            Vibe code your Web3 ideas into production-ready dApps
           </p>
 
           {/* Get Started button — only visible on md+ */}
@@ -213,16 +213,16 @@ export default function AnonLanding() {
               <ArrowRight className="h-5 w-5" />
             </button>
             {/* Mobile-only message */}
-            <div className="flex md:hidden max-w-md mx-auto mt-10 px-4 text-center text-white/70 text-sm">
-              <p>
-                This dApp is currently only available on desktop devices. Please
-                switch to a larger screen to continue.
-              </p>
-            </div>
+          </div>
+          <div className="flex md:hidden max-w-md mx-auto mt-10 px-4 text-center text-white/70 text-sm">
+            <p>
+              This dApp is currently only available on desktop devices. Please
+              switch to a larger screen to continue.
+            </p>
           </div>
         </div>
       </section>
-      <StarsBackground className="absolute inset-0 flex items-center justify-center rounded-xl" />
+      <StarsBackground className="absolute inset-0 flex items-center justify-center rounded-x"/>
     </div>
   );
 }
