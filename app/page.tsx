@@ -1,102 +1,211 @@
 'use client';
+
 import React, { useEffect, useState } from 'react';
+import {
+  Zap,
+  Shield,
+  Github,
+  Twitter,
+  ArrowRight,
+  Loader2,
+} from 'lucide-react';
+import Logo from '@/public/logo_white.png';
 import Image from 'next/image';
-import Link from 'next/link';
-import { ArrowRight, Monitor } from 'lucide-react';
-import LandingNavbar from '@/components/pages/landing/LandingNavbar';
-import { useMobile } from '@/hooks/use-mobile';
+import { useRouter } from 'next/navigation';
+import { connectWallet, disconnectWallet, getWalletDetails } from '@/lib/arkit';
 
-// Preload images with proper dimensions
-const images = {
-  L1: { src: '/landing/L1.png', width: 290, height: 290 },
-  L2: { src: '/landing/L2.png', width: 260, height: 260 },
-  R1: { src: '/landing/R1.png', width: 300, height: 300 },
-  R2: { src: '/landing/R2.png', width: 210, height: 210 },
-};
-
-export default function Home() {
-  const [isClient, setIsClient] = useState(false);
-  const { isMobile } = useMobile();
+export default function AnonLanding() {
+  const [wallet, setWallet] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
+    const checkWalletStatus = async () => {
+      try {
+        setIsLoading(true);
+        console.log('Checking wallet connection status...');
+        const { walletAddress } = await getWalletDetails();
+        setWallet(walletAddress);
+        console.log(
+          'Wallet status checked:',
+          walletAddress ? 'Connected' : 'Not connected'
+        );
+      } catch (error) {
+        console.error('Error checking wallet status:', error);
+        setWallet('');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkWalletStatus();
   }, []);
 
+  const handleConnectWallet = async () => {
+    try {
+      setIsConnecting(true);
+      console.log('Initiating wallet connection...');
+      await connectWallet();
+
+      // Add a small delay to ensure the wallet connection is processed
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const { walletAddress } = await getWalletDetails();
+      setWallet(walletAddress);
+      console.log('Wallet connected successfully:', walletAddress);
+    } catch (error) {
+      console.error('Error connecting wallet:', error);
+      // You could add a toast notification here for better UX
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnectWallet = async () => {
+    try {
+      setIsDisconnecting(true);
+      console.log('Initiating wallet disconnection...');
+      await disconnectWallet();
+      setWallet('');
+      console.log('Wallet disconnected successfully');
+    } catch (error) {
+      console.error('Error disconnecting wallet:', error);
+      // You could add a toast notification here for better UX
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
+
+  const router = useRouter();
+
+  const handleGetStarted = () => {
+    if (!wallet) {
+      console.log('User not connected, prompting to connect wallet first');
+      // You could add a toast notification here to prompt user to connect wallet
+      return;
+    }
+    console.log('Navigating to dashboard...');
+    router.push('/dashboard');
+  };
+
   return (
-    isClient && (
-      <div className="bg-[#FFFFFA] min-h-screen w-full">
-        <LandingNavbar />
-        <main className="w-full h-[93vh] flex items-end justify-center relative">
-          <section className="w-[94%] pt-6 h-[87%] bg-[#F2F2E8] rounded-[20px] flex flex-col items-center justify-center relative">
-            {/* Main heading */}
-            <h1 className="w-full f19 text-[2rem] sm:text-[3rem] md:text-[4.5rem] lg:text-[5.5rem] xl:text-[6.2rem] text-[#213130] leading-[2.2rem] sm:leading-[3.2rem] md:leading-[4.8rem] lg:leading-[5.8rem] xl:leading-[6.8rem] text-center transition-all duration-300">
-              <span className="block mb-2 sm:mb-3">Vibe code,</span>
-              <span className="block">everywhere</span>
-            </h1>
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#1a1a1a] text-white">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-200px] left-1/4 w-[600px] h-[600px] bg-gradient-to-r from-[#00FFD1]/10 to-[#7C3AED]/5 blur-[150px]" />
+        <div className="absolute bottom-[-200px] right-1/4 w-[500px] h-[500px] bg-gradient-to-l from-[#FF6B6B]/8 to-[#4ECDC4]/10 blur-[120px]" />
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.02]" />
+      </div>
 
-            {/* Description and CTA */}
-            <div className="f18 w-full text-center mt-4 sm:mt-6 md:mt-8 lg:mt-10">
-              <p className="text-sm sm:text-base md:text-lg max-w-[280px] sm:max-w-[400px] md:max-w-[500px] mx-auto px-4 sm:px-0 leading-relaxed text-[#515E5B]/90">
-                Plan, create, and build products with the most flexible Arweave
-                toolkit.
-              </p>
-
-              {isMobile ? (
-                <div className="mt-10 mb-8 flex flex-col items-center gap-4 px-4">
-                  <div className="flex items-center gap-2 text-[#515E5B]/90">
-                    <Monitor className="w-5 h-5" />
-                    <p className="text-sm">Desktop-only application</p>
-                  </div>
-                  <p className="text-xs text-[#515E5B]/75 max-w-[280px]">
-                    Please access the full application from a desktop browser
-                    for the best experience.
-                  </p>
-                </div>
-              ) : (
-                <div className="flex mt-10 mb-8 items-center justify-center w-full">
-                  <Link
-                    href="/dashboard"
-                    className="px-3 sm:px-4 md:px-5 w-full sm:w-[50%] md:w-[30%] lg:w-[20%] xl:w-[15%] bg-[#B0EC9C] text-[#213130] flex items-center gap-2 justify-center py-[12px] sm:py-[14px] md:py-[16px] rounded-full text-base sm:text-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer"
-                    aria-label="Get started now"
-                  >
-                    <span className="whitespace-nowrap flex items-center gap-2">
-                      {'Get started now'}
-                      <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
-                    </span>
-                  </Link>
-                </div>
-              )}
+      <header className="relative z-10 border-b border-white/5 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Image
+              src={Logo}
+              alt="Anon"
+              width={160}
+              height={40}
+              className="ml-2"
+              style={{
+                minWidth: 105,
+                minHeight: 32,
+                height: 40,
+                width: 'auto',
+              }}
+              priority
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <a
+                href="https://x.com/a0_anon"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-[#00FFD1] hover:border-[#00FFD1]/50 transition-all duration-300"
+              >
+                <Twitter className="h-4 w-4" />
+              </a>
+              <a
+                href="http://github.com/tryanonAI"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-[#00FFD1] hover:border-[#00FFD1]/50 transition-all duration-300"
+              >
+                <Github className="h-4 w-4" />
+              </a>
             </div>
 
-            {/* Decorative images - Only show on desktop */}
-            {!isMobile &&
-              Object.entries({
-                'top-[19%] -left-[1%] w-[150px] sm:w-[200px] md:w-[240px] lg:w-[290px]':
-                  images.L1,
-                'top-[27%] right-[1%] w-[130px] sm:w-[180px] md:w-[220px] lg:w-[260px]':
-                  images.L2,
-                'top-[58%] left-[1%] w-[160px] sm:w-[200px] md:w-[250px] lg:w-[300px]':
-                  images.R1,
-                'bottom-[0%] right-[6%] w-[110px] sm:w-[150px] md:w-[180px] lg:w-[210px]':
-                  images.R2,
-              }).map(([position, img], index) => (
-                <div
-                  key={index}
-                  className={`absolute ${position} transition-all duration-300 hidden sm:block`}
-                >
-                  <Image
-                    src={img.src}
-                    alt="Decorative illustration"
-                    width={img.width}
-                    height={img.height}
-                    className="w-full h-auto object-contain"
-                    priority={index < 2}
-                  />
-                </div>
-              ))}
-          </section>
-        </main>
-      </div>
-    )
+            {isLoading ? (
+              <div className="h-10 px-4 py-2 border border-white/10 text-white/60 bg-white/5 flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Loading...</span>
+              </div>
+            ) : wallet ? (
+              <button
+                onClick={handleDisconnectWallet}
+                disabled={isDisconnecting}
+                className="h-10 px-4 py-2 border border-[#00FFD1]/50 text-[#00FFD1] bg-[#00FFD1]/10 hover:bg-[#00FFD1]/20 transition-all duration-300 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDisconnecting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Shield className="h-4 w-4" />
+                )}
+                {isDisconnecting
+                  ? 'Disconnecting...'
+                  : `${wallet.slice(0, 6)}...${wallet.slice(-4)}`}
+              </button>
+            ) : (
+              <button
+                onClick={handleConnectWallet}
+                disabled={isConnecting}
+                className="h-10 px-4 py-2 border border-[#00FFD1]/50 text-[#00FFD1] bg-[#00FFD1]/10 hover:bg-[#00FFD1]/20 transition-all duration-300 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isConnecting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Shield className="h-4 w-4" />
+                )}
+                {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="relative z-10 max-w-7xl mx-auto px-8 pt-20 pb-32">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#00FFD1]/20 to-[#7C3AED]/20 border border-[#00FFD1]/30 backdrop-blur-sm mb-8">
+            <Zap className="h-4 w-4 text-[#00FFD1]" />
+            <span className="text-sm font-medium text-white/90">
+              AO dApp Builder
+            </span>
+          </div>
+
+          <h1 className="text-6xl md:text-8xl font-bold leading-tight mb-7">
+            Build your{' '}
+            <span className="bg-gradient-to-r from-white via-[#00FFD1] to-[#7C3AED] bg-clip-text text-transparent">
+              {'<'}dApp{'>'}
+            </span>
+          </h1>
+
+          <p className="text-xl text-white/70 mb-16 max-w-2xl mx-auto leading-relaxed">
+            Vibe check your Web3 ideas into production-ready dApps
+          </p>
+
+          <div className="max-w-3xl mx-auto mb-20 flex items-center w-full justify-center">
+            <button
+              onClick={handleGetStarted}
+              disabled={!wallet}
+              className="px-16 py-4 bg-gradient-to-r from-[#00FFD1] to-[#4ECDC4] text-black font-bold text-lg hover:from-[#00FFD1]/90 hover:to-[#4ECDC4]/90 transition-all duration-300 hover:shadow-lg hover:shadow-[#00FFD1]/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {wallet ? 'Get Started' : 'Connect Wallet to Continue'}
+              <ArrowRight className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }

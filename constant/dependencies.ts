@@ -1,22 +1,4 @@
-export const BASE_DEPENDENCIES: { [key: string]: string } = {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "motion": "^12.15.0",
-    "react-router-dom": "7.2.0",
-    'next-themes': '^0.3.0',
-    "sonner": "^1.2.3",
-    "@permaweb/aoconnect": "0.0.82",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^3.2.0",
-    "@tanstack/react-query": "5.80.2",
-    "class-variance-authority": "^0.7.1",
-    "lucide-react": "^0.485.0",
-    "@hookform/resolvers":"5.1.1",
-    "axios": "1.8.1",
-};
-
 export const ADDITIONAL_DEPENDENCIES: { [key: string]: string } = {
-    "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-separator": "^1.0.3",
     "embla-carousel-react": "^8.6.0",
     "@radix-ui/react-tooltip": "^1.0.6",
@@ -70,4 +52,23 @@ export const DEV_DEPENDENCIES = {
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",
     "vite": "^6.3.5"
+};
+
+export const BASE_DEPENDENCIES: { [key: string]: string } = {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "motion": "^12.15.0",
+    "react-router-dom": "7.2.0",
+    'next-themes': '^0.3.0',
+    "sonner": "^1.2.3",
+    "@permaweb/aoconnect": "0.0.82",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.2.0",
+    "@tanstack/react-query": "5.80.2",
+    "class-variance-authority": "^0.7.1",
+    "lucide-react": "^0.485.0",
+    "@hookform/resolvers": "5.1.1",
+    "axios": "1.8.1",
+    "@radix-ui/react-dialog": "^1.1.1",
+    ...ADDITIONAL_DEPENDENCIES
 };

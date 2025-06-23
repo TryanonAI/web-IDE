@@ -302,7 +302,7 @@ const Chatview = () => {
             });
             setIsCodeGenerating(false);
             if (isHtmlStream) {
-              if (codebaserec['/index.html']) {
+              // if (codebaserec['/index.html']) {
                 try {
                   console.log(
                     '🚀 Starting auto-deployment for HTML project...'
@@ -337,7 +337,7 @@ const Chatview = () => {
                         : 'Please try deploying manually',
                   });
                 }
-              }
+              // }
             }
           });
         });

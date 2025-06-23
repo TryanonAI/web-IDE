@@ -16,6 +16,8 @@ import {
 } from '@/types';
 import { defaultFiles } from '@/lib/utils';
 import { ANON_LUA_TEMPLATE } from '@/constant/templateFiles';
+import { uploadToTurbo } from '@/lib/api';
+import mime from 'mime-types';
 
 export interface GithubError extends Error {
   status?: number;
@@ -839,59 +841,39 @@ export const useGlobalState = create<
 
         setProjects: (projects: Project[]) => set({ projects }),
 
-        // Auto-deployment function for HTML projects
         autoDeployProject: async (project: Project, codebaserec: CodebaseType, walletAddress: string): Promise<string | null> => {
+          const sampleCodebase: CodebaseType = codebaserec;
           try {
-            get().setIsDeploying(true)
-            console.log('🚀 Starting auto-deployment for HTML project:', project.title);
+            console.log("🚀 Starting deployment of multi-file project...");
+            const uploadedMap: Record<string, string> = {};
 
+            // Step 1: Upload all non-HTML files first
+            for (const [filename, content] of Object.entries(sampleCodebase)) {
+              if (filename === "/index.html") continue;
+
+              const type = mime.lookup(filename) || 'application/octet-stream';
+              const file = new File([new Blob([content], { type })], filename, { type });
+              const txId = await uploadToTurbo(file, walletAddress);
+              uploadedMap[filename] = `https://arweave.net/${txId}`;
+            }
+
+            // Step 2: Rewrite HTML to replace ./style.css and ./script.js with Arweave URLs
             // @ts-expect-error ignore
-            const indexHtmlContent = codebaserec['/index.html'] as string;
-            // const indexLuaContent = codebaserec['/index.lua'] as string;
-
-            if (!project.projectId || !walletAddress) {
-              throw new Error('Project ID and wallet address are required for deployment');
+            let rawHtml = sampleCodebase["/index.html"];
+            for (const [path, url] of Object.entries(uploadedMap)) {
+              const plainPath = path.replace(/^\.\//, '').replace(/^\//, '');
+              rawHtml = rawHtml.replaceAll(`./${plainPath}`, url).replaceAll(`/${plainPath}`, url);
             }
 
-            if (project.framework !== Framework.Html) {
-              throw new Error('Auto-deployment is only supported for HTML projects');
-            }
-
-            if (!indexHtmlContent) {
-              throw new Error('No index.html content found for deployment');
-            }
-
-            // const newProcessId = await spawnProcess(project.title, [
-            //   { name: 'Action', value: 'Deployment' },
-            //   { name: 'Content-Type', value: "text/html" },
-            //   {
-            //     name: 'Pushed-For',
-            //     value: project.processId
-            //   }
-            // ],
-            //   indexHtmlContent
-            // );
-
-            // await runLua({
-            //   process: newProcessId,
-            //   code: indexLuaContent
-            // })
-
-            // Import uploadToTurbo dynamically to avoid circular dependency
-            const { uploadToTurbo } = await import('@/lib/api');
-
-            // Create blob and file from the HTML content
-            const blob = new Blob([indexHtmlContent], {
-              type: 'text/html',
-            });
-            const file = new File([blob], project.title, {
+            // Step 3: Upload final index.html
+            const htmlFile = new File([new Blob([rawHtml], { type: 'text/html' })], 'index.html', {
               type: 'text/html',
             });
 
-            // Upload to Turbo/Arweave
-            const txnID = await uploadToTurbo(file, walletAddress);
-            const deploymentUrl = `https://arweave.net/${txnID}`;
+            const htmlTxId = await uploadToTurbo(htmlFile, walletAddress);
+            const deploymentUrl = `https://arweave.net/${htmlTxId}`;
 
+            console.log("✅ Deployment complete:", deploymentUrl);
             // Update deployment URL in backend
             const updateResponse = await axios.patch(
               `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${project.projectId}`,
@@ -900,20 +882,15 @@ export const useGlobalState = create<
             );
 
             if (updateResponse.data?.project?.deploymentUrl) {
-              // Update global state
               set({ deploymentUrl: deploymentUrl });
               console.log('✅ Auto-deployment completed:', deploymentUrl);
               return deploymentUrl;
             } else {
               throw new Error('Failed to update deployment URL in backend');
             }
-          } catch (error) {
-            console.error('❌ Auto-deployment failed:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Auto-deployment failed';
-            set({ error: errorMessage });
-            throw error;
-          } finally {
-            get().setIsDeploying(false)
+          } catch (err) {
+            console.error("❌ Deployment failed:", err);
+            return null;
           }
         },
       }),

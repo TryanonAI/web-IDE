@@ -58,12 +58,12 @@ interface FrameworkOption {
 export const frameworks: FrameworkOption[] = [
   {
     value: Framework.React,
-    label: 'Dev Playground',
+    label: 'Dev Mode',
     icon: <Code2 className="h-4 w-4" />,
   },
   {
     value: Framework.Html,
-    label: 'Visual Playground',
+    label: 'Vibe Mode',
     icon: <Palette className="h-4 w-4" />,
   },
 ];
@@ -372,7 +372,9 @@ const Layout = ({ children }: LayoutProps) => {
               <Button
                 type="submit"
                 className="flex items-center gap-2"
-                disabled={!projectName.trim() || isCreating || !!nameError || !framework}
+                disabled={
+                  !projectName.trim() || isCreating || !!nameError || !framework
+                }
               >
                 {isCreating ? (
                   <>
