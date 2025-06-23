@@ -1,4 +1,5 @@
 'use client';
+import { StarsBackground } from '@/components/animate-ui/backgrounds/stars';
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -90,15 +91,16 @@ export default function AnonLanding() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#1a1a1a] text-white">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#1a1a1a] text-white">
+      {/* <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-200px] left-1/4 w-[600px] h-[600px] bg-gradient-to-r from-[#00FFD1]/10 to-[#7C3AED]/5 blur-[150px]" />
         <div className="absolute bottom-[-200px] right-1/4 w-[500px] h-[500px] bg-gradient-to-l from-[#FF6B6B]/8 to-[#4ECDC4]/10 blur-[120px]" />
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.02]" />
-      </div>
+      </div> */}
 
       <header className="relative z-10 border-b border-white/5 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4 md:gap-0">
+          {/* Logo */}
           <div className="flex items-center gap-3">
             <Image
               src={Logo}
@@ -115,7 +117,10 @@ export default function AnonLanding() {
               priority
             />
           </div>
+
+          {/* Right Side: socials (always) + wallet (desktop only) */}
           <div className="flex items-center gap-4">
+            {/* Social icons — always visible */}
             <div className="flex items-center gap-3">
               <a
                 href="https://x.com/a0_anon"
@@ -135,46 +140,49 @@ export default function AnonLanding() {
               </a>
             </div>
 
-            {isLoading ? (
-              <div className="h-10 px-4 py-2 border border-white/10 text-white/60 bg-white/5 flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Loading...</span>
-              </div>
-            ) : wallet ? (
-              <button
-                onClick={handleDisconnectWallet}
-                disabled={isDisconnecting}
-                className="h-10 px-4 py-2 border border-[#00FFD1]/50 text-[#00FFD1] bg-[#00FFD1]/10 hover:bg-[#00FFD1]/20 transition-all duration-300 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isDisconnecting ? (
+            {/* Wallet connect — desktop only */}
+            <div className="hidden md:block">
+              {isLoading ? (
+                <div className="h-10 px-4 py-2 border border-white/10 text-white/60 bg-white/5 flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Shield className="h-4 w-4" />
-                )}
-                {isDisconnecting
-                  ? 'Disconnecting...'
-                  : `${wallet.slice(0, 6)}...${wallet.slice(-4)}`}
-              </button>
-            ) : (
-              <button
-                onClick={handleConnectWallet}
-                disabled={isConnecting}
-                className="h-10 px-4 py-2 border border-[#00FFD1]/50 text-[#00FFD1] bg-[#00FFD1]/10 hover:bg-[#00FFD1]/20 transition-all duration-300 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isConnecting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Shield className="h-4 w-4" />
-                )}
-                {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-              </button>
-            )}
+                  <span className="text-sm">Loading...</span>
+                </div>
+              ) : wallet ? (
+                <button
+                  onClick={handleDisconnectWallet}
+                  disabled={isDisconnecting}
+                  className="h-10 px-4 py-2 border border-[#00FFD1]/50 text-[#00FFD1] bg-[#00FFD1]/10 hover:bg-[#00FFD1]/20 transition-all duration-300 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDisconnecting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Shield className="h-4 w-4" />
+                  )}
+                  {isDisconnecting
+                    ? 'Disconnecting...'
+                    : `${wallet.slice(0, 6)}...${wallet.slice(-4)}`}
+                </button>
+              ) : (
+                <button
+                  onClick={handleConnectWallet}
+                  disabled={isConnecting}
+                  className="h-10 px-4 py-2 border border-[#00FFD1]/50 text-[#00FFD1] bg-[#00FFD1]/10 hover:bg-[#00FFD1]/20 transition-all duration-300 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isConnecting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Shield className="h-4 w-4" />
+                  )}
+                  {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="relative z-10 max-w-7xl mx-auto px-8 pt-20 pb-32">
+      <section className="relative z-10 max-w-7xl my-auto mx-auto px-8 pt-20">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#00FFD1]/20 to-[#7C3AED]/20 border border-[#00FFD1]/30 backdrop-blur-sm mb-8">
             <Zap className="h-4 w-4 text-[#00FFD1]" />
@@ -194,7 +202,8 @@ export default function AnonLanding() {
             Vibe check your Web3 ideas into production-ready dApps
           </p>
 
-          <div className="max-w-3xl mx-auto mb-20 flex items-center w-full justify-center">
+          {/* Get Started button — only visible on md+ */}
+          <div className="hidden md:flex max-w-3xl mx-auto mb-20 items-center justify-center">
             <button
               onClick={handleGetStarted}
               disabled={!wallet}
@@ -203,9 +212,17 @@ export default function AnonLanding() {
               {wallet ? 'Get Started' : 'Connect Wallet to Continue'}
               <ArrowRight className="h-5 w-5" />
             </button>
+            {/* Mobile-only message */}
+            <div className="flex md:hidden max-w-md mx-auto mt-10 px-4 text-center text-white/70 text-sm">
+              <p>
+                This dApp is currently only available on desktop devices. Please
+                switch to a larger screen to continue.
+              </p>
+            </div>
           </div>
         </div>
       </section>
+      <StarsBackground className="absolute inset-0 flex items-center justify-center rounded-xl" />
     </div>
   );
 }
