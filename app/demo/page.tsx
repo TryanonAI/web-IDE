@@ -39,7 +39,7 @@ export default function DemoPage() {
 
             <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-border/50 shadow-sm">
               <iframe
-                src="https://www.youtube.com/embed/RpMAEqHVPKU?si=nwN_dBmvCWNCn9pB"
+                src="https://www.youtube.com/embed/T0GJ6qHNprA?si=3PVGcUp7hGRE90Ud"
                 title="ANON AI Demo Video"
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
