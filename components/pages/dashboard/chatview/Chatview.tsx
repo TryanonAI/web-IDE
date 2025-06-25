@@ -8,6 +8,8 @@ import {
   User,
   Maximize2,
   Minimize2,
+  Zap,
+  Layout,
 } from 'lucide-react';
 import { Framework, ChatMessage, Role, Project, CodebaseType } from '@/types';
 import { useWallet, useGlobalState } from '@/hooks';
@@ -15,6 +17,7 @@ import LLMRenderer from './LLMRenderer';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { handleRunLua } from '@/lib/arkit';
 import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Component to handle message truncation and expansion
 const MessageRenderer = ({ message }: { message: ChatMessage }) => {
@@ -120,6 +123,15 @@ const Chatview = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleModeChange = (newMode: 'UI' | 'All') => {
+    setMode(newMode);
+    // Show a brief toast to confirm the mode change
+    // toast.info(`Switched to ${newMode} mode`, {
+    //   duration: 2000,
+    //   description: newMode === 'UI' ? 'Will modify UI components only' : 'Can modify entire codebase',
+    // });
+  };
 
   const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
     if (e) {
@@ -302,7 +314,7 @@ const Chatview = () => {
             });
             setIsCodeGenerating(false);
             if (isHtmlStream) {
-              // if (codebaserec['/index.html']) {
+               if (codebaserec['/index.html']) {
                 try {
                   console.log(
                     '🚀 Starting auto-deployment for HTML project...'
@@ -337,7 +349,7 @@ const Chatview = () => {
                         : 'Please try deploying manually',
                   });
                 }
-              // }
+               }
             }
           });
         });
@@ -461,29 +473,6 @@ const Chatview = () => {
       <div className="shrink-0 bg-background border-t border-border p-4">
         <form onSubmit={handleSubmit} className="w-full">
           <div className="flex gap-2 items-end">
-            {/* Models section commented out
-            <div className="bg-background/50 border border-border/40 rounded-sm px-2 flex items-center gap-1 h-6">
-              <span className="text-[10px] font-medium text-muted-foreground/70">
-                Models
-              </span>
-              <span className="text-[8px] font-medium bg-primary/5 text-primary/70 px-1 rounded-sm">
-                Soon
-              </span>
-            </div>
-            */}
-            {activeProject?.framework === Framework.Html && (
-              <button
-                type="button"
-                onClick={() => setMode(mode === 'UI' ? 'All' : 'UI')}
-                className={`h-9 px-2.5 text-xs tracking-wider font-medium rounded-md border transition-colors ${
-                  mode === 'UI'
-                    ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/15'
-                    : 'bg-background/50 border-border/40 text-muted-foreground/70 hover:bg-background/70'
-                }`}
-              >
-                UI Only
-              </button>
-            )}
             <div className="flex-1 relative">
               <Textarea
                 value={userInput}
@@ -491,19 +480,37 @@ const Chatview = () => {
                 onKeyDown={handleKeyPress}
                 className={`w-full outline-none focus-visible:ring-0 resize-none transition-all duration-200 ${
                   isInputMaximized
-                    ? 'min-h-[120px]'
-                    : 'min-h-[40px] max-h-[40px]'
+                    ? 'min-h-[120px] pt-8 pl-3'
+                    : 'min-h-[40px] max-h-[40px] pt-2 pl-16'
                 }`}
                 disabled={disableChatInput()}
                 placeholder={
                   failedMessage
                     ? 'AI response failed. Retry or type new prompt.'
                     : isInputMaximized
-                      ? 'Type your prompt... (Ctrl+Enter to send)'
-                      : 'Type your prompt... (Enter to send)'
+                      ? `Type your prompt... (Ctrl+Enter to send)`
+                      : `Type your prompt... (Enter to send)`
                 }
                 rows={isInputMaximized ? 5 : 1}
               />
+              {/* Mode indicator in the input area */}
+              <div className={`absolute ${isInputMaximized ? 'top-2 left-2' : 'top-2 left-2'} px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${
+                mode === 'UI'
+                  ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
+                  : 'bg-orange-500/10 text-orange-500 border border-orange-500/20'
+              }`}>
+                {mode === 'UI' ? (
+                  <>
+                    <Layout className="h-2.5 w-2.5" />
+                    UI
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-2.5 w-2.5" />
+                    All
+                  </>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => setIsInputMaximized(!isInputMaximized)}
@@ -517,9 +524,76 @@ const Chatview = () => {
                 )}
               </button>
             </div>
+            {activeProject?.framework === Framework.Html && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => handleModeChange(mode === 'UI' ? 'All' : 'UI')}
+                    className={`h-10 px-3 text-xs tracking-wider font-medium rounded-md border transition-all duration-200 flex items-center gap-1.5 ${
+                      mode === 'UI'
+                        ? 'bg-blue-500/10 border-blue-500/20 text-blue-500 hover:bg-blue-500/15'
+                        : 'bg-orange-500/10 border-orange-500/20 text-orange-500 hover:bg-orange-500/15'
+                    }`}
+                  >
+                    {mode === 'UI' ? (
+                      <>
+                        <Layout className="h-3 w-3" />
+                        UI
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-3 w-3" />
+                        All
+                      </>
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-sm p-0 bg-neutral-900 border-neutral-700">
+                  <div className="p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      {mode === 'UI' ? (
+                        <Layout className="h-4 w-4 text-blue-400" />
+                      ) : (
+                        <Zap className="h-4 w-4 text-orange-400" />
+                      )}
+                      <span className="font-semibold text-white text-sm">
+                        {mode === 'UI' ? 'UI Mode' : 'All Code Mode'}
+                      </span>
+                    </div>
+                    
+                    <div className="text-xs text-neutral-300 leading-relaxed mb-3">
+                      {mode === 'UI' 
+                        ? 'Focuses on visual elements: styling, layouts, components, and user interface modifications'
+                        : 'Full codebase access: logic, functions, data handling, structure, and all file modifications'
+                      }
+                    </div>
+                    
+                    <div className="border-t border-neutral-700 pt-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-neutral-400">Click to switch to:</span>
+                        <div className="flex items-center gap-1 text-neutral-200 font-medium">
+                          {mode === 'UI' ? (
+                            <>
+                              <Zap className="h-3 w-3 text-orange-400" />
+                              All Mode
+                            </>
+                          ) : (
+                            <>
+                              <Layout className="h-3 w-3 text-blue-400" />
+                              UI Mode
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            )}
             <button
               type="submit"
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-md disabled:opacity-50 flex items-center justify-center"
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-md disabled:opacity-50 flex items-center justify-center h-10"
               disabled={
                 (!userInput.trim() && !failedMessage) || // Disable if no input and no failed message to retry
                 isCodeGenerating || // Disable during generation

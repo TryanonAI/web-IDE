@@ -842,6 +842,7 @@ export const useGlobalState = create<
         setProjects: (projects: Project[]) => set({ projects }),
 
         autoDeployProject: async (project: Project, codebaserec: CodebaseType, walletAddress: string): Promise<string | null> => {
+          set({ isDeploying: true });
           const sampleCodebase: CodebaseType = codebaserec;
           try {
             console.log("🚀 Starting deployment of multi-file project...");
@@ -891,6 +892,8 @@ export const useGlobalState = create<
           } catch (err) {
             console.error("❌ Deployment failed:", err);
             return null;
+          } finally {
+            set({ isDeploying: false });
           }
         },
       }),

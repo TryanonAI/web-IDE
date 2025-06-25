@@ -638,7 +638,7 @@ export const handleRunLua = async ({
     });
     console.log('[Codeview.ts] Lua result:', result);
 
-    toast.success('Lua code executed successfully');
+    // toast.success('Lua code executed successfully');
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error';
