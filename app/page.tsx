@@ -1,92 +1,91 @@
 'use client';
 import { StarsBackground } from '@/components/animate-ui/backgrounds/stars';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   Zap,
-  Shield,
+  // Shield,
   Github,
   Twitter,
   ArrowRight,
-  Loader2,
+  // Loader2,
 } from 'lucide-react';
 import Logo from '@/public/logo_white.png';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { connectWallet, disconnectWallet, getWalletDetails } from '@/lib/arkit';
+// import { getWalletDetails } from '@/lib/arkit';
 
 export default function AnonLanding() {
-  const [wallet, setWallet] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  // const [wallet, setWallet] = useState('');
+  // const [setIsLoading] = useState(false);
+  // const [isConnecting, setIsConnecting] = useState(false);
+  // const [isDisconnecting, setIsDisconnecting] = useState(false);
 
   useEffect(() => {
-    const checkWalletStatus = async () => {
-      try {
-        setIsLoading(true);
-        console.log('Checking wallet connection status...');
-        const { walletAddress } = await getWalletDetails();
-        setWallet(walletAddress);
-        console.log(
-          'Wallet status checked:',
-          walletAddress ? 'Connected' : 'Not connected'
-        );
-      } catch (error) {
-        console.error('Error checking wallet status:', error);
-        setWallet('');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkWalletStatus();
+    // const checkWalletStatus = async () => {
+    //   try {
+    //     // setIsLoading(true);
+    //     console.log('Checking wallet connection status...');
+    //     const { walletAddress } = await getWalletDetails();
+    //     setWallet(walletAddress);
+    //     console.log(
+    //       'Wallet status checked:',
+    //       walletAddress ? 'Connected' : 'Not connected'
+    //     );
+    //   } catch (error) {
+    //     console.error('Error checking wallet status:', error);
+    //     setWallet('');
+    //   } finally {
+    //     // setIsLoading(false);
+    //   }
+    // };
+    // checkWalletStatus();
   }, []);
 
-  const handleConnectWallet = async () => {
-    try {
-      setIsConnecting(true);
-      console.log('Initiating wallet connection...');
-      await connectWallet();
+  // const handleConnectWallet = async () => {
+  //   try {
+  //     setIsConnecting(true);
+  //     console.log('Initiating wallet connection...');
+  //     await connectWallet();
 
-      // Add a small delay to ensure the wallet connection is processed
-      await new Promise((resolve) => setTimeout(resolve, 500));
+  //     // Add a small delay to ensure the wallet connection is processed
+  //     await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const { walletAddress } = await getWalletDetails();
-      setWallet(walletAddress);
-      console.log('Wallet connected successfully:', walletAddress);
-    } catch (error) {
-      console.error('Error connecting wallet:', error);
-      // You could add a toast notification here for better UX
-    } finally {
-      setIsConnecting(false);
-    }
-  };
+  //     const { walletAddress } = await getWalletDetails();
+  //     setWallet(walletAddress);
+  //     console.log('Wallet connected successfully:', walletAddress);
+  //   } catch (error) {
+  //     console.error('Error connecting wallet:', error);
+  //     // You could add a toast notification here for better UX
+  //   } finally {
+  //     setIsConnecting(false);
+  //   }
+  // };
 
-  const handleDisconnectWallet = async () => {
-    try {
-      setIsDisconnecting(true);
-      console.log('Initiating wallet disconnection...');
-      await disconnectWallet();
-      setWallet('');
-      console.log('Wallet disconnected successfully');
-    } catch (error) {
-      console.error('Error disconnecting wallet:', error);
-      // You could add a toast notification here for better UX
-    } finally {
-      setIsDisconnecting(false);
-    }
-  };
+  // const handleDisconnectWallet = async () => {
+  //   try {
+  //     setIsDisconnecting(true);
+  //     console.log('Initiating wallet disconnection...');
+  //     await disconnectWallet();
+  //     setWallet('');
+  //     console.log('Wallet disconnected successfully');
+  //   } catch (error) {
+  //     console.error('Error disconnecting wallet:', error);
+  //     // You could add a toast notification here for better UX
+  //   } finally {
+  //     setIsDisconnecting(false);
+  //   }
+  // };
 
   const router = useRouter();
 
   const handleGetStarted = () => {
-    if (!wallet) {
-      console.log('User not connected, prompting to connect wallet first');
-      // You could add a toast notification here to prompt user to connect wallet
-      return;
-    }
-    console.log('Navigating to dashboard...');
+    // if (!wallet) {
+    //   console.log('User not connected, prompting to connect wallet first');
+    //   // You could add a toast notification here to prompt user to connect wallet
+    //   return;
+    // }
+    // console.log('Navigating to dashboard...');
     router.push('/dashboard');
   };
 
@@ -141,7 +140,7 @@ export default function AnonLanding() {
             </div>
 
             {/* Wallet connect — desktop only */}
-            <div className="hidden md:block">
+            {/* <div className="hidden md:block">
               {isLoading ? (
                 <div className="h-10 px-4 py-2 border border-white/10 text-white/60 bg-white/5 flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -176,7 +175,7 @@ export default function AnonLanding() {
                   {isConnecting ? 'Connecting...' : 'Connect Wallet'}
                 </button>
               )}
-            </div>
+            </div> */}
           </div>
         </div>
       </header>
@@ -206,10 +205,11 @@ export default function AnonLanding() {
           <div className="hidden md:flex max-w-3xl mx-auto mb-20 items-center justify-center">
             <button
               onClick={handleGetStarted}
-              disabled={!wallet}
+              // disabled={!wallet}
               className="px-16 py-4 bg-gradient-to-r from-[#00FFD1] to-[#4ECDC4] text-black font-bold text-lg hover:from-[#00FFD1]/90 hover:to-[#4ECDC4]/90 transition-all duration-300 hover:shadow-lg hover:shadow-[#00FFD1]/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {wallet ? 'Get Started' : 'Connect Wallet to Continue'}
+              Get Started
+              {/* {wallet ? 'Get Started' : 'Connect Wallet to Continue'} */}
               <ArrowRight className="h-5 w-5" />
             </button>
             {/* Mobile-only message */}
@@ -222,7 +222,7 @@ export default function AnonLanding() {
           </div>
         </div>
       </section>
-      <StarsBackground className="absolute inset-0 flex items-center justify-center rounded-x"/>
+      <StarsBackground className="absolute inset-0 flex items-center justify-center rounded-x" />
     </div>
   );
 }
