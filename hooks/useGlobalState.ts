@@ -91,6 +91,12 @@ export interface GlobalState extends GithubState, ProjectState, SandpackState, M
   setStatusBarMessage: (message: string) => void;
   refreshGlobalState: () => Promise<void>;
   resetGlobalState: () => void;
+  // Console Error tracking
+  consoleErrors: ConsoleError[];
+  addConsoleError: (error: ConsoleError) => void;
+  clearConsoleErrors: () => void;
+  hasUnhandledErrors: boolean;
+  setHasUnhandledErrors: (hasErrors: boolean) => void;
 }
 
 interface GithubState {
@@ -122,6 +128,14 @@ interface GithubState {
 
 export interface DependencyMap {
   [key: string]: string;  // package name -> version
+}
+
+export interface ConsoleError {
+  id: string;
+  message: string;
+  type: 'error' | 'warning';
+  timestamp: number;
+  stack?: string;
 }
 
 export interface ProjectState {
@@ -212,6 +226,11 @@ export const Initial_ProjectState = {
   dependencies: {},
 }
 
+const Initial_ConsoleState = {
+  consoleErrors: [],
+  hasUnhandledErrors: false,
+}
+
 export const useGlobalState = create<
   GlobalState & GithubState & ProjectState & SandpackState
 >()(
@@ -228,6 +247,21 @@ export const useGlobalState = create<
         setIsLoading: (isLoading: boolean) => set({ isLoading }),
         statusBarMessage: '',
         setStatusBarMessage: (message: string) => set({ statusBarMessage: message }),
+        
+        // ----------------Console Error States----------------
+        ...Initial_ConsoleState,
+        addConsoleError: (error: ConsoleError) => {
+          set((state) => ({
+            consoleErrors: [...state.consoleErrors, error],
+            hasUnhandledErrors: true,
+          }));
+        },
+        clearConsoleErrors: () => {
+          set({ consoleErrors: [], hasUnhandledErrors: false });
+        },
+        setHasUnhandledErrors: (hasErrors: boolean) => {
+          set({ hasUnhandledErrors: hasErrors });
+        },
 
         validateWalletConnection: () => {
           if (!useWallet.getState().connected) {
@@ -263,6 +297,8 @@ export const useGlobalState = create<
             statusBarMessage: '',
             sandpackAction: SandpackAction.PREVIEW,
             githubStatus: GITHUB_STATUS.DISCONNECTED,
+            consoleErrors: [],
+            hasUnhandledErrors: false,
           });
         },
         // clearPersistedState: () => {

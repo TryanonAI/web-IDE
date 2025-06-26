@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from 'sonner';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import {
   Loader2Icon,
   RefreshCw,
@@ -17,14 +17,18 @@ import LLMRenderer from './LLMRenderer';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { handleRunLua } from '@/lib/arkit';
 import { Textarea } from '@/components/ui/textarea';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 // Component to handle message truncation and expansion
 const MessageRenderer = ({ message }: { message: ChatMessage }) => {
   // const [isExpanded, setIsExpanded] = useState(false);
   // const MAX_LENGTH = 500; // Maximum characters before truncation
   // const shouldTruncate = message.content.length > MAX_LENGTH;
-  
+
   const displayContent =
     // shouldTruncate && !isExpanded
     //   ? message.content.slice(0, MAX_LENGTH) + '...':
@@ -97,7 +101,11 @@ const MessageRenderer = ({ message }: { message: ChatMessage }) => {
   );
 };
 
-const Chatview = () => {
+export interface ChatviewRef {
+  sendMessage: (message: string) => void;
+}
+
+const Chatview = forwardRef<ChatviewRef>((props, ref) => {
   const user = useWallet((state) => state.user);
   const setCodebase = useGlobalState((state) => state.setCodebase);
   const chatMessages = useGlobalState((state) => state.chatMessages);
@@ -133,6 +141,21 @@ const Chatview = () => {
     // });
   };
 
+  // Expose sendMessage function via ref
+  useImperativeHandle(ref, () => ({
+    sendMessage: (message: string) => {
+      // Directly submit the message without setting input
+      handleSubmitWithMessage(message);
+    },
+  }));
+
+  const handleSubmitWithMessage = async (messageText: string) => {
+    if (!messageText.trim()) return;
+    
+    // Use the provided message directly
+    await submitMessage(messageText, false);
+  };
+
   const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
     if (e) {
       e.preventDefault();
@@ -140,8 +163,12 @@ const Chatview = () => {
 
     const messageToSend = failedMessage || userInput;
     if (!messageToSend.trim()) return;
+    
+    // Use the current input/failed message
+    await submitMessage(messageToSend, !!failedMessage);
+  };
 
-    const currentlyRetrying = !!failedMessage && !userInput.trim();
+  const submitMessage = async (messageToSend: string, currentlyRetrying: boolean) => {
     if (currentlyRetrying) {
       setIsRetrying(true);
     }
@@ -166,7 +193,10 @@ const Chatview = () => {
       );
     }
 
-    setUserInput('');
+    // Clear input and failed message state
+    if (!currentlyRetrying) {
+      setUserInput('');
+    }
     setFailedMessage(null);
 
     // Create placeholder for AI response
@@ -208,7 +238,7 @@ const Chatview = () => {
         eventSource.onmessage = (ev) => {
           try {
             const { text } = JSON.parse(ev.data);
-
+            console.log(text);
             // Only process new content
             const newContent = text.slice(lastProcessedLength);
             accumulatedText += text;
@@ -314,7 +344,7 @@ const Chatview = () => {
             });
             setIsCodeGenerating(false);
             if (isHtmlStream) {
-               if (codebaserec['/index.html']) {
+              if (codebaserec['/index.html']) {
                 try {
                   console.log(
                     '🚀 Starting auto-deployment for HTML project...'
@@ -349,7 +379,7 @@ const Chatview = () => {
                         : 'Please try deploying manually',
                   });
                 }
-               }
+              }
             }
           });
         });
@@ -480,8 +510,8 @@ const Chatview = () => {
                 onKeyDown={handleKeyPress}
                 className={`w-full outline-none focus-visible:ring-0 resize-none transition-all duration-200 ${
                   isInputMaximized
-                    ? 'min-h-[120px] pt-8 pl-3'
-                    : 'min-h-[40px] max-h-[40px] pt-2 pl-16'
+                    ? `min-h-[120px] ${activeProject?.framework === Framework.Html ? 'pt-8 pl-3' : 'pt-3 pl-3'}`
+                    : `min-h-[40px] max-h-[40px] ${activeProject?.framework === Framework.Html ? 'pt-2 pl-16' : 'pt-2 pl-3'}`
                 }`}
                 disabled={disableChatInput()}
                 placeholder={
@@ -493,24 +523,28 @@ const Chatview = () => {
                 }
                 rows={isInputMaximized ? 5 : 1}
               />
-              {/* Mode indicator in the input area */}
-              <div className={`absolute ${isInputMaximized ? 'top-2 left-2' : 'top-2 left-2'} px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${
-                mode === 'UI'
-                  ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
-                  : 'bg-orange-500/10 text-orange-500 border border-orange-500/20'
-              }`}>
-                {mode === 'UI' ? (
-                  <>
-                    <Layout className="h-2.5 w-2.5" />
-                    UI
-                  </>
-                ) : (
-                  <>
-                    <Zap className="h-2.5 w-2.5" />
-                    All
-                  </>
-                )}
-              </div>
+              {/* Mode indicator in the input area - only for HTML framework */}
+              {activeProject?.framework === Framework.Html && (
+                <div
+                  className={`absolute ${isInputMaximized ? 'top-2 left-2' : 'top-2 left-2'} px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${
+                    mode === 'UI'
+                      ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
+                      : 'bg-orange-500/10 text-orange-500 border border-orange-500/20'
+                  }`}
+                >
+                  {mode === 'UI' ? (
+                    <>
+                      <Layout className="h-2.5 w-2.5" />
+                      UI
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-2.5 w-2.5" />
+                      All
+                    </>
+                  )}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => setIsInputMaximized(!isInputMaximized)}
@@ -529,7 +563,9 @@ const Chatview = () => {
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    onClick={() => handleModeChange(mode === 'UI' ? 'All' : 'UI')}
+                    onClick={() =>
+                      handleModeChange(mode === 'UI' ? 'All' : 'UI')
+                    }
                     className={`h-10 px-3 text-xs tracking-wider font-medium rounded-md border transition-all duration-200 flex items-center gap-1.5 ${
                       mode === 'UI'
                         ? 'bg-blue-500/10 border-blue-500/20 text-blue-500 hover:bg-blue-500/15'
@@ -549,7 +585,10 @@ const Chatview = () => {
                     )}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-sm p-0 bg-neutral-900 border-neutral-700">
+                <TooltipContent
+                  side="top"
+                  className="max-w-sm p-0 bg-neutral-900 border-neutral-700"
+                >
                   <div className="p-3">
                     <div className="flex items-center gap-2 mb-2">
                       {mode === 'UI' ? (
@@ -561,17 +600,18 @@ const Chatview = () => {
                         {mode === 'UI' ? 'UI Mode' : 'All Code Mode'}
                       </span>
                     </div>
-                    
+
                     <div className="text-xs text-neutral-300 leading-relaxed mb-3">
-                      {mode === 'UI' 
+                      {mode === 'UI'
                         ? 'Focuses on visual elements: styling, layouts, components, and user interface modifications'
-                        : 'Full codebase access: logic, functions, data handling, structure, and all file modifications'
-                      }
+                        : 'Full codebase access: logic, functions, data handling, structure, and all file modifications'}
                     </div>
-                    
+
                     <div className="border-t border-neutral-700 pt-2">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-neutral-400">Click to switch to:</span>
+                        <span className="text-neutral-400">
+                          Click to switch to:
+                        </span>
                         <div className="flex items-center gap-1 text-neutral-200 font-medium">
                           {mode === 'UI' ? (
                             <>
@@ -622,6 +662,8 @@ const Chatview = () => {
       </div>
     </div>
   );
-};
+});
+
+Chatview.displayName = 'Chatview';
 
 export default Chatview;

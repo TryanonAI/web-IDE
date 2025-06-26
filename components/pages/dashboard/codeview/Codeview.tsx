@@ -10,13 +10,16 @@ import {
   RefreshCw,
   Save,
   Loader2Icon,
+  Terminal,
 } from 'lucide-react';
 import {
   SandpackLayout,
   SandpackProvider,
   SandpackFileExplorer,
   SandpackCodeEditor,
+  SandpackConsole,
   useSandpack,
+  useSandpackConsole,
 } from '@codesandbox/sandpack-react';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -33,6 +36,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import OpenWithCursor from '../OpenWithCursor';
+import ErrorFixButton from './ErrorFixButton';
 import Image from 'next/image';
 
 interface CodebaseType {
@@ -41,6 +45,7 @@ interface CodebaseType {
 
 interface CodeviewProps {
   isSaving?: boolean;
+  onSendErrorToChat?: (errorMessage: string) => void;
 }
 
 // window.quickWallet = {
@@ -60,7 +65,7 @@ interface CodeviewProps {
 // };
 
 // Create a separate component that uses useSandpack hook inside the provider
-function CodeviewInner({ isSaving }: CodeviewProps) {
+function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
   const address = useWallet((state) => state.address);
   const connected = useWallet((state) => state.connected);
   const codebase = useGlobalState((state) => state.codebase);
@@ -73,8 +78,15 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
   const setDependencies = useGlobalState((state) => state.setDependencies);
   const isDeploying = useGlobalState((state) => state.isDeploying);
   const deploymentUrl = useGlobalState((state) => state.deploymentUrl);
+  const addConsoleError = useGlobalState((state) => state.addConsoleError);
+  const clearConsoleErrors = useGlobalState((state) => state.clearConsoleErrors);
 
   const { sandpack } = useSandpack();
+  const { logs } = useSandpackConsole({ 
+    maxMessageCount: 1000, 
+    resetOnPreviewRestart: true,
+    showSyntaxError: true 
+  });
 
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
@@ -83,6 +95,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSavingFile, setIsSavingFile] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const processedErrorIds = useRef<Set<string>>(new Set());
 
   const commonDisabledState =
     isCodeGenerating ||
@@ -106,6 +119,42 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Monitor console errors from sandpack using proper hook
+  useEffect(() => {
+    if (!logs || !activeProject) return;
+
+    // Check for new ERRORS only (exclude warnings)
+    const newErrors = logs.filter(log => {
+      const isError = log.method === 'error'; // Only actual errors, not warnings
+      const isNotProcessed = !processedErrorIds.current.has(log.id);
+      return isError && isNotProcessed;
+    });
+
+    // Add new errors to global state
+    newErrors.forEach(log => {
+      if (!log.data) return;
+      
+      const error = {
+        id: log.id,
+        message: log.data.join(' '),
+        type: 'error' as const,
+        timestamp: Date.now(),
+      };
+      
+      console.log('Sandpack console error detected:', error);
+      addConsoleError(error);
+      processedErrorIds.current.add(log.id);
+    });
+  }, [logs, activeProject, addConsoleError]);
+
+  // Clear console errors when switching projects or when code generation starts
+  useEffect(() => {
+    if (isCodeGenerating) {
+      clearConsoleErrors();
+      processedErrorIds.current.clear();
+    }
+  }, [isCodeGenerating, clearConsoleErrors]);
 
   // Track file changes to detect unsaved changes
   useEffect(() => {
@@ -258,13 +307,23 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
     }
   };
 
-  const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
+  const [activeTab, setActiveTab] = useState<'code' | 'preview' | 'console'>('code');
 
   const handleRefreshClick = () => {
     setIsRefreshing(true);
     setTimeout(() => {
       setIsRefreshing(false);
     }, 15000);
+  };
+
+  // Callback to send errors to chat
+  const handleSendErrorToChat = (errorMessage: string) => {
+    if (onSendErrorToChat) {
+      onSendErrorToChat(errorMessage);
+    } else {
+      console.log('Sending error to chat:', errorMessage);
+      toast.info('Error details will be sent to chat when integration is complete');
+    }
   };
 
   if (activeProject?.framework === Framework.Html) {
@@ -355,7 +414,7 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
   }
 
   return (
-    <div className={`h-full w-full ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}>
+    <div className={`${isFullscreen ? 'fixed inset-0 z-[9999] bg-background' : 'h-full w-full relative'}`}>
       {isCodeGenerating ? (
         <div className="flex items-center justify-center h-full">
           {(() => {
@@ -381,8 +440,8 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
           })()}
         </div>
       ) : (
-        <>
-          <div className="bg-background h-10 w-full px-2 flex items-center justify-between border-border border-b p-2">
+        <div className="flex flex-col h-full">
+          <div className="bg-background h-10 w-full px-2 flex items-center justify-between border-border border-b p-2 shrink-0">
             <div className="flex items-center justify-center gap-0.5 h-full bg-muted/50 px-1 py-2 rounded-md">
               <button
                 onClick={() => setActiveTab('code')}
@@ -409,6 +468,19 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
               >
                 <EyeIcon size={12} />
                 {'Preview'}
+              </button>
+              <button
+                onClick={() => setActiveTab('console')}
+                className={cn(
+                  'py-[1px] px-3 rounded-sm flex justify-center items-center gap-1 text-xs leading-5 font-medium transition-colors',
+                  activeTab === 'console'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                  isEditorDisabled() && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                <Terminal size={12} />
+                Console
               </button>
             </div>
 
@@ -614,49 +686,67 @@ function CodeviewInner({ isSaving }: CodeviewProps) {
             </div>
           </div>
 
-          <SandpackLayout className="h-full min-h-full w-full flex relative">
-            <div
-              className={cn(
-                'absolute inset-0 flex',
-                activeTab === 'code' ? 'z-50' : 'z-10'
-              )}
-            >
-              <SandpackFileExplorer
-                className="min-w-[200px] max-w-[250px]"
-                // autoHiddenFiles={true}
-              />
-              <div className="flex-1 min-w-[35%] h-full flex flex-col">
-                <SandpackCodeEditor
-                  showTabs={false}
-                  showLineNumbers={true}
-                  showInlineErrors={true}
-                  wrapContent={false}
-                  closableTabs={true}
-                  readOnly={false}
-                  showRunButton={false}
-                  style={{ height: '100%', minHeight: '0' }}
+          <div className="flex-1 overflow-hidden">
+            <SandpackLayout className="h-full min-h-full w-full flex relative">
+              <div
+                className={cn(
+                  'absolute inset-0 flex',
+                  activeTab === 'code' ? 'z-50' : 'z-10'
+                )}
+              >
+                <SandpackFileExplorer
+                  className="min-w-[200px] max-w-[250px]"
+                  // autoHiddenFiles={true}
+                />
+                <div className="flex-1 min-w-[35%] h-full flex flex-col">
+                  <SandpackCodeEditor
+                    showTabs={false}
+                    showLineNumbers={true}
+                    showInlineErrors={true}
+                    wrapContent={false}
+                    closableTabs={true}
+                    readOnly={false}
+                    showRunButton={false}
+                    style={{ height: '100%', minHeight: '0' }}
+                  />
+                </div>
+              </div>
+              <div
+                className={cn(
+                  'absolute inset-0',
+                  activeTab === 'preview' ? 'z-50' : 'z-10'
+                )}
+              >
+                <Sprv
+                  onRefreshClick={handleRefreshClick}
+                  isRefreshing={isRefreshing}
                 />
               </div>
-            </div>
-            <div
-              className={cn(
-                'absolute inset-0',
-                activeTab === 'preview' ? 'z-50' : 'z-10'
-              )}
-            >
-              <Sprv
-                onRefreshClick={handleRefreshClick}
-                isRefreshing={isRefreshing}
-              />
-            </div>
-          </SandpackLayout>
-        </>
+              <div
+                className={cn(
+                  'absolute inset-0',
+                  activeTab === 'console' ? 'z-50' : 'z-10'
+                )}
+              >
+                <SandpackConsole
+                  style={{ height: '100%', minHeight: '0' }}
+                  showHeader={true}
+                  showSyntaxError={true}
+                  maxMessageCount={1000}
+                />
+              </div>
+            </SandpackLayout>
+          </div>
+        </div>
       )}
+      
+      {/* Error Fix Button - shows when console errors are detected */}
+      <ErrorFixButton onSendErrorToChat={handleSendErrorToChat} />
     </div>
   );
 }
 
-export default function Codeview({ isSaving }: CodeviewProps) {
+export default function Codeview({ isSaving, onSendErrorToChat }: CodeviewProps) {
   const codebase = useGlobalState((state) => state.codebase);
   const dependencies = useGlobalState((state) => state.dependencies);
 
@@ -716,7 +806,7 @@ export default function Codeview({ isSaving }: CodeviewProps) {
         autoReload: true,
       }}
     >
-      <CodeviewInner isSaving={isSaving} />
+      <CodeviewInner isSaving={isSaving} onSendErrorToChat={onSendErrorToChat} />
     </SandpackProvider>
   );
 }

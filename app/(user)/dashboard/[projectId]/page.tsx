@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useState, useRef } from 'react';
 import { useGlobalState } from '@/hooks';
 import { useWallet } from '@/hooks';
 import { Loading_Gif } from '@/app/loading';
@@ -39,6 +39,19 @@ const Dashboard = ({ params }: DashboardProps) => {
   // State to track if project was found
   const [projectNotFound, setProjectNotFound] = useState(false);
   const [hasCheckedProject, setHasCheckedProject] = useState(false);
+  
+  // Ref to access chat functionality
+  const chatRef = useRef<{ sendMessage: (message: string) => void } | null>(null);
+  
+  // Function to send error messages to chat
+  const handleSendErrorToChat = (errorMessage: string) => {
+    if (chatRef.current) {
+      chatRef.current.sendMessage(errorMessage);
+    } else {
+      console.warn('Chat is not available to receive error message');
+      toast.error('Unable to send error to chat. Please try again.');
+    }
+  };
 
   // Load project data when component mounts or projectId changes
   useEffect(() => {
@@ -139,11 +152,11 @@ const Dashboard = ({ params }: DashboardProps) => {
   return (
     <ResizablePanelGroup direction="horizontal">
       <ResizablePanel defaultSize={50} minSize={40}>
-        <Codeview />
+        <Codeview onSendErrorToChat={handleSendErrorToChat} />
       </ResizablePanel>
       <ResizableHandle />
       <ResizablePanel defaultSize={50} minSize={20}>
-        <Chatview />
+        <Chatview ref={chatRef} />
       </ResizablePanel>
     </ResizablePanelGroup>
   );
