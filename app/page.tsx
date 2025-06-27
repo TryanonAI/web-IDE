@@ -122,7 +122,7 @@ export default function AnonLanding() {
             {/* Social icons — always visible */}
             <div className="flex items-center gap-3">
               <a
-                href="https://x.com/a0_anon"
+                href="https://x.com/tryanonai"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-[#00FFD1] hover:border-[#00FFD1]/50 transition-all duration-300"
