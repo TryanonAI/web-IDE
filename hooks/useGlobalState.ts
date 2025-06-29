@@ -877,41 +877,49 @@ export const useGlobalState = create<
 
         setProjects: (projects: Project[]) => set({ projects }),
 
-        autoDeployProject: async (project: Project, codebaserec: CodebaseType, walletAddress: string): Promise<string | null> => {
+        autoDeployProject: async (project: Project, codebase: CodebaseType, walletAddress: string): Promise<string | null> => {
           set({ isDeploying: true });
-          const sampleCodebase: CodebaseType = codebaserec;
           try {
-            console.log("🚀 Starting deployment of multi-file project...");
+            console.log("🚀 Starting deployment...");
             const uploadedMap: Record<string, string> = {};
+            const manifestPaths: Record<string, { id: string }> = {};
 
-            // Step 1: Upload all non-HTML files first
-            for (const [filename, content] of Object.entries(sampleCodebase)) {
-              if (filename === "/index.html") continue;
-
-              const type = mime.lookup(filename) || 'application/octet-stream';
-              const file = new File([new Blob([content], { type })], filename, { type });
+            // Step 1: Upload all files and store txIds
+            for (const [filename, content] of Object.entries(codebase)) {
+              const cleanName = filename.replace(/^\//, '');
+              const type = mime.lookup(cleanName) || 'application/octet-stream';
+              const file = new File([new Blob([content], { type })], cleanName, { type });
               const txId = await uploadToTurbo(file, walletAddress);
-              uploadedMap[filename] = `https://arweave.net/${txId}`;
+              // @ts-expect-error ignore
+              uploadedMap[cleanName] = txId;
+              // @ts-expect-error ignore
+              manifestPaths[cleanName] = { id: txId };
             }
 
-            // Step 2: Rewrite HTML to replace ./style.css and ./script.js with Arweave URLs
-            // @ts-expect-error ignore
-            let rawHtml = sampleCodebase["/index.html"];
-            for (const [path, url] of Object.entries(uploadedMap)) {
-              const plainPath = path.replace(/^\.\//, '').replace(/^\//, '');
-              rawHtml = rawHtml.replaceAll(`./${plainPath}`, url).replaceAll(`/${plainPath}`, url);
-            }
+            // Step 2: Construct the AR.IO manifest
+            const manifest = {
+              manifest: "arweave/paths",
+              version: "0.2.0",
+              index: { path: "index.html" },
+              fallback: manifestPaths["404.html"] ? { id: manifestPaths["404.html"].id } : undefined,
+              paths: manifestPaths
+            };
 
-            // Step 3: Upload final index.html
-            const htmlFile = new File([new Blob([rawHtml], { type: 'text/html' })], 'index.html', {
-              type: 'text/html',
+            console.log('manifestFile', manifest);
+
+            const manifestBlob = new Blob([JSON.stringify(manifest, null, 2)], {
+              type: 'application/x.arweave-manifest+json',
+            });
+            const manifestFile = new File([manifestBlob], 'manifest.json', {
+              type: 'application/x.arweave-manifest+json',
             });
 
-            const htmlTxId = await uploadToTurbo(htmlFile, walletAddress);
-            const deploymentUrl = `https://arweave.net/${htmlTxId}`;
+            // Step 3: Upload manifest
+            const manifestTxId = await uploadToTurbo(manifestFile, walletAddress, true);
+            const deploymentUrl = `https://arweave.net/${manifestTxId}`;
 
-            console.log("✅ Deployment complete:", deploymentUrl);
-            // Update deployment URL in backend
+            console.log("✅ Deployment complete via manifest:", deploymentUrl);
+            // Step 4: Update deployment URL in backend
             const updateResponse = await axios.patch(
               `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${project.projectId}`,
               { deploymentUrl: deploymentUrl },
@@ -920,7 +928,7 @@ export const useGlobalState = create<
 
             if (updateResponse.data?.project?.deploymentUrl) {
               set({ deploymentUrl: deploymentUrl });
-              console.log('✅ Auto-deployment completed:', deploymentUrl);
+              console.log('✅ Backend DB updated with deployment URL' );
               return deploymentUrl;
             } else {
               throw new Error('Failed to update deployment URL in backend');
