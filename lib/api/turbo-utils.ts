@@ -10,7 +10,7 @@ function fileToUint8Array(file: File): Promise<Uint8Array> {
     });
 }
 
-export const uploadToTurbo = async (file: File, walletAddress: string) => {
+export const uploadToTurbo = async (file: File, walletAddress: string, isManifest = false) => {
     const fileSize = file.size;
     const fileName = file.name;
     const contentType = file.type || mime.lookup(fileName) || 'application/octet-stream';
@@ -58,10 +58,10 @@ export const uploadToTurbo = async (file: File, walletAddress: string) => {
             dataItemOpts: {
                 tags: [
                     { name: 'Version', value: '2.0.1' },
-                    { name: "App-Name", value: "Anon" },
+                    { name: 'App-Name', value: 'Anon' },
+                    { name: 'Owner', value: walletAddress },
                     { name: 'Content-Type', value: contentType },
-                    { name: 'Avatar-Owner', value: walletAddress.toString() },
-                    { name: 'File-Extension', value: fileName.split('.').pop() || 'jpg' },
+                  ...(isManifest ? [{ name: 'Type', value: 'manifest' }] : [])
                 ]
             }
         });
@@ -71,6 +71,7 @@ export const uploadToTurbo = async (file: File, walletAddress: string) => {
     } catch (error) {
         if (error instanceof Error && error.message.includes("File size is too large")) {
             console.log("File size is too large");
+            return;
         }
         throw error;
     }

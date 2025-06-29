@@ -238,7 +238,7 @@ const Chatview = forwardRef<ChatviewRef>((props, ref) => {
         eventSource.onmessage = (ev) => {
           try {
             const { text } = JSON.parse(ev.data);
-            console.log(text);
+            // console.log(text);
             // Only process new content
             const newContent = text.slice(lastProcessedLength);
             accumulatedText += text;
