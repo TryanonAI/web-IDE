@@ -334,7 +334,7 @@ const Layout = ({ children }: LayoutProps) => {
                                 setFramework(fmk.value);
                                 setOpen(false);
                               }}
-                              className="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-accent/50"
+                              className="flex group items-center gap-2 px-4 py-2 cursor-pointer hover:text-white hover:bg-primary/80"
                             >
                               {fmk.icon}
                               <span className="flex-1 text-sm group-hover:text-black">
@@ -344,7 +344,7 @@ const Layout = ({ children }: LayoutProps) => {
                                 className={cn(
                                   'ml-auto',
                                   framework === fmk.value
-                                    ? 'opacity-100 text-green-500'
+                                    ? 'opacity-100 text-primary'
                                     : 'opacity-0'
                                 )}
                               />

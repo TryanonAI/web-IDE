@@ -14,6 +14,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
 import { frameworks } from '../layout';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import ARNS from '@/components/pages/dashboard/ARNS';
+
+const TAB_STORAGE_KEY = 'dashboard_active_tab';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -33,7 +36,22 @@ export default function Dashboard() {
   const [navigatingProjectId, setNavigatingProjectId] = useState<string | null>(
     null
   );
-  const [activeTab, setActiveTab] = useState('projects');
+  // Persist activeTab in localStorage
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem(TAB_STORAGE_KEY);
+      return stored || 'projects';
+    }
+    return 'projects';
+  });
+
+  // Keep activeTab in sync with localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(TAB_STORAGE_KEY, activeTab);
+      console.log('[Dashboard] Persisted activeTab:', activeTab);
+    }
+  }, [activeTab]);
 
   // Clear active project when component mounts
   useEffect(() => {
@@ -47,38 +65,6 @@ export default function Dashboard() {
       setNavigatingProjectId(null);
     };
   }, []);
-
-  // Handle toggle change
-  // const handleToggleChange = (checked: boolean) => {
-  //   if (!checked) {
-  //     // If switching to "My Projects" and not connected, prevent the toggle
-  //     if (!connected) {
-  //       toast.error('Please connect your wallet to view your projects');
-  //       return;
-  //     }
-  //   }
-  //   setShowAllProjects(checked);
-  // };
-
-  // Fetch all projects
-  // const fetchAllProjects = async () => {
-  //   try {
-  //     setIsLoading(true);
-  //     const response = await axios.get(
-  //       `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects?allProjects=true`
-  //     );
-  //     if (response.data && response.data.projects) {
-  //       console.log(response.data.projects);
-  //       setProjects(response.data.projects);
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching all projects:', error);
-  //     toast.error('Failed to fetch projects');
-  //     setProjects([]);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
 
   // Fetch user's projects
   useEffect(() => {
@@ -103,22 +89,6 @@ export default function Dashboard() {
         setIsLoading(false);
       }
     };
-
-    // // Effect to fetch projects based on toggle state
-    //   const fetchProjects = async () => {
-    //     // if (showAllProjects) {
-    //     //   await fetchAllProjects();
-    //     // } else if (connected && address) {
-    //     //   await fetchUserProjects();
-    //     // } else {
-    //     //   setProjects([]);
-    //     // }
-    //     if (connected && address) {
-    //       await fetchUserProjects();
-    //     } else {
-    //       setProjects([]);
-    //     }
-    //   };
 
     fetchUserProjects();
   }, [connected, address, setProjects]);
@@ -168,6 +138,15 @@ export default function Dashboard() {
     openModal('createProject');
   };
 
+  // Handler to persist tab change
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(TAB_STORAGE_KEY, tab);
+      console.log('[Dashboard] Tab changed and persisted:', tab);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-auto">
       <div className="h-full p-8">
@@ -177,11 +156,12 @@ export default function Dashboard() {
             <Tabs
               defaultValue="projects"
               value={activeTab}
-              onValueChange={setActiveTab}
+              onValueChange={handleTabChange}
             >
               <TabsList>
                 <TabsTrigger value="projects">Projects</TabsTrigger>
                 <TabsTrigger value="templates">Templates</TabsTrigger>
+                <TabsTrigger value="arns">ARNS</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -204,7 +184,7 @@ export default function Dashboard() {
         </div>
 
         {/* Content Sections */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsContent value="projects">
             {/* Projects Grid */}
             {!connected && !showAllProjects ? (
@@ -364,6 +344,9 @@ export default function Dashboard() {
                 to help you get started.
               </p>
             </div>
+          </TabsContent>
+          <TabsContent value="arns">
+            <ARNS />
           </TabsContent>
         </Tabs>
       </div>
