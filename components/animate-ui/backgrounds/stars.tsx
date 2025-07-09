@@ -83,7 +83,7 @@ function StarsBackground({
   children,
   className,
   factor = 0.05,
-  speed = 50,
+  speed = 40,
   transition = { stiffness: 50, damping: 20 },
   starColor = '#fff',
   pointerEvents = true,
@@ -139,7 +139,7 @@ function StarsBackground({
         />
         <StarLayer
           count={200}
-          size={3}
+          size={2.45}
           transition={{
             repeat: Infinity,
             duration: speed * 3,
