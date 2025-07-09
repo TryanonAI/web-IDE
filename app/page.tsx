@@ -6,6 +6,11 @@ import { Zap, Github, Twitter, ArrowRight } from 'lucide-react';
 import Logo from '@/public/logo_white.png';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+// Register ScrollTrigger plugin
+gsap.registerPlugin(ScrollTrigger);
 
 const socialLinks = [
   {
@@ -51,30 +56,50 @@ const socialLinks = [
 
 export default function AnonLanding() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
   // const [wallet, setWallet] = useState('');
   // const [setIsLoading] = useState(false);
   // const [isConnecting, setIsConnecting] = useState(false);
   // const [isDisconnecting, setIsDisconnecting] = useState(false);
 
   useEffect(() => {
-    // const checkWalletStatus = async () => {
-    //   try {
-    //     // setIsLoading(true);
-    //     console.log('Checking wallet connection status...');
-    //     const { walletAddress } = await getWalletDetails();
-    //     setWallet(walletAddress);
-    //     console.log(
-    //       'Wallet status checked:',
-    //       walletAddress ? 'Connected' : 'Not connected'
-    //     );
-    //   } catch (error) {
-    //     console.error('Error checking wallet status:', error);
-    //     setWallet('');
-    //   } finally {
-    //     // setIsLoading(false);
-    //   }
-    // };
-    // checkWalletStatus();
+    // Setup GSAP ScrollTrigger for video
+    if (videoRef.current && videoContainerRef.current) {
+      ScrollTrigger.create({
+        trigger: videoContainerRef.current,
+        start: '35% bottom', // When 35% of video is visible from bottom
+        end: 'bottom top', // Until video completely leaves viewport
+        onEnter: () => {
+          // Play video when scrolling down and 35% visible
+          if (videoRef.current) {
+            videoRef.current.play().catch(console.log);
+          }
+        },
+        onLeave: () => {
+          // Pause video when scrolling past it
+          if (videoRef.current) {
+            videoRef.current.pause();
+          }
+        },
+        onEnterBack: () => {
+          // Resume video when scrolling back up into view
+          if (videoRef.current) {
+            videoRef.current.play().catch(console.log);
+          }
+        },
+        onLeaveBack: () => {
+          // Pause video when scrolling back up past trigger point
+          if (videoRef.current) {
+            videoRef.current.pause();
+          }
+        },
+      });
+    }
+
+    // Cleanup ScrollTrigger on unmount
+    return () => {
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+    };
   }, []);
 
   // const handleConnectWallet = async () => {
@@ -206,7 +231,7 @@ export default function AnonLanding() {
         </header>
 
         {/* Hero Section */}
-        <section className="relative z-10 max-w-7xl myauto mx-auto px-8 py-20">
+        <section className="relative z-10 max-w-7xl myauto mx-auto px-8 pt-20 pb-10">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#00FFD1]/20 to-[#7C3AED]/20 border border-[#00FFD1]/30 backdrop-blur-sm mb-8">
               <Zap className="h-4 w-4 text-[#00FFD1]" />
@@ -237,39 +262,34 @@ export default function AnonLanding() {
                 {/* {wallet ? 'Get Started' : 'Connect Wallet to Continue'} */}
                 <ArrowRight className="h-5 w-5" />
               </button>
-              {/* Mobile-only message */}
-            </div>
-            <div className="flex md:hidden max-w-md mx-auto mt-10 px-4 text-center text-white/70 text-sm">
-              <p>
-                This dApp is currently only available on desktop devices. Please
-                switch to a larger screen to continue.
-              </p>
             </div>
           </div>
 
           {/* Demo Video */}
-          <div className="relative max-w-5xl mx-auto aspect-video bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-white/20 overflow-hidden group">
+          <div
+            ref={videoContainerRef}
+            className="relative max-w-5xl mx-auto aspect-video bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-white/20 overflow-hidden group"
+          >
             <video
               ref={videoRef}
-              autoPlay
               muted
               loop
               playsInline
               preload="auto"
               className="w-full h-full object-cover"
-              onLoadedData={() => {
-                // Ensure video plays when loaded
-                if (videoRef.current) {
-                  videoRef.current.play().catch(console.log);
-                }
-              }}
             >
               <source src="/videos/hero_demo_tryanonai.mp4" type="video/mp4" />
               Your browser does not support the video tag.
             </video>
           </div>
         </section>
-
+        {/* Mobile-only message */}
+        <div className="flex md:hidden max-w- mx-auto mt-10 px-4 text-center text-white/70 text-sm">
+          <p>
+            This dApp is currently only available on desktop devices. Please
+            switch to a larger screen to continue.
+          </p>
+        </div>
         {/* Featured Projects */}
         {/* <section className="relative z-10 max-w-7xl mx-auto px-8 py-24">
           <div className="text-center mb-20">
