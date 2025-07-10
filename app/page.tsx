@@ -1,13 +1,15 @@
 'use client';
 import { StarsBackground } from '@/components/animate-ui/backgrounds/stars';
 
-import React, { useEffect, useRef } from 'react';
-import { Zap, Github, Twitter, ArrowRight } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Zap, Github, Twitter, ArrowRight, Loader2 } from 'lucide-react';
 import Logo from '@/public/logo_white.png';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { toast } from 'sonner';
+import { useWallet } from '@/hooks';
 
 // Register ScrollTrigger plugin
 gsap.registerPlugin(ScrollTrigger);
@@ -23,11 +25,6 @@ const socialLinks = [
     icon: Github,
     label: 'GitHub',
   },
-  // {
-  //   href: '#',
-  //   icon: MessageCircle,
-  //   label: 'Message',
-  // },
 ];
 
 // const featuredProjects = [
@@ -57,38 +54,76 @@ const socialLinks = [
 export default function AnonLanding() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
-  // const [wallet, setWallet] = useState('');
-  // const [setIsLoading] = useState(false);
-  // const [isConnecting, setIsConnecting] = useState(false);
-  // const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const { connected, connect } = useWallet();
+
+  const handleGetStarted = () => {
+    try {
+      setIsLoading(true);
+      if (!wallet) {
+        console.log('User not connected, prompting to connect wallet first');
+        toast.error('Please connect your wallet first');
+        return;
+      }
+      console.log('Navigating to dashboard...');
+      router.push('/projects');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const [wallet, setWallet] = useState('');
+
+  const handleConnectWallet = async () => {
+    if (!window.arweaveWallet) {
+      toast.error('Please install the Wander Wallet');
+      return;
+    }
+    if (connected) {
+      const address = await window.arweaveWallet.getActiveAddress();
+      setWallet(address || '');
+      return;
+    }
+    try {
+      setIsLoading(true);
+      await connect();
+      const address = await window.arweaveWallet.getActiveAddress();
+      setWallet(address);
+      toast.success('Wallet connected successfully');
+    } catch (err) {
+      console.log(err);
+      toast.error('Error connecting wallet');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Setup GSAP ScrollTrigger for video
     if (videoRef.current && videoContainerRef.current) {
       ScrollTrigger.create({
         trigger: videoContainerRef.current,
-        start: '35% bottom', // When 35% of video is visible from bottom
-        end: 'bottom top', // Until video completely leaves viewport
+        start: '35% bottom',
+        end: 'bottom top',
         onEnter: () => {
-          // Play video when scrolling down and 35% visible
           if (videoRef.current) {
             videoRef.current.play().catch(console.log);
           }
         },
         onLeave: () => {
-          // Pause video when scrolling past it
           if (videoRef.current) {
             videoRef.current.pause();
           }
         },
         onEnterBack: () => {
-          // Resume video when scrolling back up into view
           if (videoRef.current) {
             videoRef.current.play().catch(console.log);
           }
         },
         onLeaveBack: () => {
-          // Pause video when scrolling back up past trigger point
           if (videoRef.current) {
             videoRef.current.pause();
           }
@@ -96,58 +131,10 @@ export default function AnonLanding() {
       });
     }
 
-    // Cleanup ScrollTrigger on unmount
     return () => {
       ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
     };
   }, []);
-
-  // const handleConnectWallet = async () => {
-  //   try {
-  //     setIsConnecting(true);
-  //     console.log('Initiating wallet connection...');
-  //     await connectWallet();
-
-  //     // Add a small delay to ensure the wallet connection is processed
-  //     await new Promise((resolve) => setTimeout(resolve, 500));
-
-  //     const { walletAddress } = await getWalletDetails();
-  //     setWallet(walletAddress);
-  //     console.log('Wallet connected successfully:', walletAddress);
-  //   } catch (error) {
-  //     console.error('Error connecting wallet:', error);
-  //     // You could add a toast notification here for better UX
-  //   } finally {
-  //     setIsConnecting(false);
-  //   }
-  // };
-
-  // const handleDisconnectWallet = async () => {
-  //   try {
-  //     setIsDisconnecting(true);
-  //     console.log('Initiating wallet disconnection...');
-  //     await disconnectWallet();
-  //     setWallet('');
-  //     console.log('Wallet disconnected successfully');
-  //   } catch (error) {
-  //     console.error('Error disconnecting wallet:', error);
-  //     // You could add a toast notification here for better UX
-  //   } finally {
-  //     setIsDisconnecting(false);
-  //   }
-  // };
-
-  const router = useRouter();
-
-  const handleGetStarted = () => {
-    // if (!wallet) {
-    //   console.log('User not connected, prompting to connect wallet first');
-    //   // You could add a toast notification here to prompt user to connect wallet
-    //   return;
-    // }
-    // console.log('Navigating to dashboard...');
-    router.push('/dashboard');
-  };
 
   return (
     <StarBg>
@@ -188,44 +175,6 @@ export default function AnonLanding() {
                   </a>
                 ))}
               </div>
-
-              {/* Wallet connect — desktop only */}
-              {/* <div className="hidden md:block">
-              {isLoading ? (
-                <div className="h-10 px-4 py-2 border border-white/10 text-white/60 bg-white/5 flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">Loading...</span>
-                </div>
-              ) : wallet ? (
-                <button
-                  onClick={handleDisconnectWallet}
-                  disabled={isDisconnecting}
-                  className="h-10 px-4 py-2 border border-[#00FFD1]/50 text-[#00FFD1] bg-[#00FFD1]/10 hover:bg-[#00FFD1]/20 transition-all duration-300 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isDisconnecting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Shield className="h-4 w-4" />
-                  )}
-                  {isDisconnecting
-                    ? 'Disconnecting...'
-                    : `${wallet.slice(0, 6)}...${wallet.slice(-4)}`}
-                </button>
-              ) : (
-                <button
-                  onClick={handleConnectWallet}
-                  disabled={isConnecting}
-                  className="h-10 px-4 py-2 border border-[#00FFD1]/50 text-[#00FFD1] bg-[#00FFD1]/10 hover:bg-[#00FFD1]/20 transition-all duration-300 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isConnecting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Shield className="h-4 w-4" />
-                  )}
-                  {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-                </button>
-              )}
-            </div> */}
             </div>
           </div>
         </header>
@@ -251,17 +200,34 @@ export default function AnonLanding() {
               Vibe code your Web3 ideas into production-ready dApps
             </p>
 
-            {/* Get Started button — only visible on md+ */}
             <div className="hidden md:flex max-w-3xl mx-auto mb-20 items-center justify-center">
-              <button
-                onClick={handleGetStarted}
-                // disabled={!wallet}
-                className="px-16 py-4 bg-gradient-to-r from-[#00FFD1] to-[#4ECDC4] text-black font-bold text-lg hover:from-[#00FFD1]/90 hover:to-[#4ECDC4]/90 transition-all duration-300 hover:shadow-lg hover:shadow-[#00FFD1]/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                Get Started
-                {/* {wallet ? 'Get Started' : 'Connect Wallet to Continue'} */}
-                <ArrowRight className="h-5 w-5" />
-              </button>
+              {wallet ? (
+                <button
+                  onClick={handleGetStarted}
+                  disabled={isLoading}
+                  className="px-16 py-4 bg-gradient-to-r from-[#00FFD1] to-[#4ECDC4] text-black font-bold text-lg hover:from-[#00FFD1]/90 hover:to-[#4ECDC4]/90 transition-all duration-300 hover:shadow-lg hover:shadow-[#00FFD1]/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Let's Go"
+                  )}
+                  <ArrowRight className="h-5 w-5" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleConnectWallet}
+                  disabled={isLoading}
+                  className="px-16 py-4 bg-gradient-to-r from-[#00FFD1] to-[#4ECDC4] text-black font-bold text-lg hover:from-[#00FFD1]/90 hover:to-[#4ECDC4]/90 transition-all duration-300 hover:shadow-lg hover:shadow-[#00FFD1]/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Connect Wallet'
+                  )}
+                  <ArrowRight className="h-5 w-5" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -283,7 +249,7 @@ export default function AnonLanding() {
             </video>
           </div>
         </section>
-        {/* Mobile-only message */}
+
         <div className="flex md:hidden max-w- mx-auto mt-10 px-4 text-center text-white/70 text-sm">
           <p>
             This dApp is currently only available on desktop devices. Please

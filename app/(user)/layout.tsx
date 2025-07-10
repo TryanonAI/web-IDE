@@ -1,16 +1,17 @@
 'use client';
 
+import { Framework } from '@/types';
 import React, { useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { Framework, WalletStatus } from '@/types';
-import { useGlobalState, useWallet } from '@/hooks';
-import { cn, validateProjectName } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { useGlobalState, useWallet } from '@/hooks';
+import { cn, validateProjectName } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 import GithubDrawer from '@/components/common/GithubDrawer';
 import TitleBar from '@/components/pages/dashboard/TitleBar';
-import StatusBar from '@/components/pages/dashboard/StatusBar';
 import { ProjectInfoDrawer } from '@/components/common/ProjectInfoDrawer';
+import Sidebar from '@/components/layout/Sidebar';
+
 import {
   Dialog,
   DialogContent,
@@ -73,18 +74,18 @@ interface LayoutProps {
 }
 
 const Layout = ({ children }: LayoutProps) => {
-  const pathname = usePathname();
+  
   const router = useRouter();
+  // const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
   const [nameError, setNameError] = useState<string>('');
   const [mode, setMode] = useState<Framework>(Framework.React);
-  // Status and commit related state
-  const [commitInProgress, setCommitInProgress] = useState<boolean>(false);
-  const [statusSteps, setStatusSteps] = useState<StatusStep[]>([]);
   const [commitMessage, setCommitMessage] = useState<string>('');
+  const [statusSteps, setStatusSteps] = useState<StatusStep[]>([]);
+  const [commitInProgress, setCommitInProgress] = useState<boolean>(false);
   const [isCommitDialogOpen, setIsCommitDialogOpen] = useState<boolean>(false);
-  const { connect, connected } = useWallet();
+
   const {
     activeModal,
     projectName,
@@ -98,17 +99,11 @@ const Layout = ({ children }: LayoutProps) => {
     framework,
     activeProject,
     commitToRepository,
-    isLoading,
   } = useGlobalState();
-  const { walletStatus } = useWallet();
-
-  // If mobile restriction is handled by provider, no need for checks here
-  const isDashboard = pathname === '/dashboard';
 
   const handleCreateProject = async (mode: Framework) => {
     if (!projectName.trim()) return;
 
-    // Don't close modal yet, just set loading states
     setIsLoading(true);
     setFramework(mode);
     setMode(mode);
@@ -118,16 +113,13 @@ const Layout = ({ children }: LayoutProps) => {
       const newProject = await createProject(projectName.trim(), mode);
       setProjectName('');
 
-      // Only close modal after successful creation
       closeModal();
 
-      // Redirect to the new project's dashboard
       if (newProject) {
-        router.push(`/dashboard/${newProject.projectId}`);
+        router.push(`/projects/${newProject.projectId}`);
       }
     } catch (error) {
       console.error('Error creating project:', error);
-      // Don't reopen modal since it's still open
     } finally {
       setIsLoading(false);
     }
@@ -146,7 +138,6 @@ const Layout = ({ children }: LayoutProps) => {
     }
   };
 
-  // Status and commit functions
   const showCommitDialog = () => {
     setIsCommitDialogOpen(true);
   };
@@ -169,7 +160,6 @@ const Layout = ({ children }: LayoutProps) => {
     setCommitInProgress(true);
     setIsCommitDialogOpen(false);
 
-    // Add commit step to status steps
     setStatusSteps([
       {
         id: 'commit',
@@ -201,7 +191,6 @@ const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
-      {/* Announcement Banner */}
       {showBanner && (
         <div className="relative bg-primary/5 border-b border-primary/10">
           <div className="max-w-screen-xl mx-auto py-2 px-3 sm:px-6 lg:px-8">
@@ -218,39 +207,28 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       )}
 
-      {/* Conditional Navigation Bar */}
       <div className="shrink-0 border-b border-border">
         <TitleBar />
       </div>
 
-      {!connected ? (
-        <div className="flex flex-1 items-center justify-center">
-          <Button
-            className="cursor-pointer flex items-center gap-2 px-4 py-2.5 text-base h-auto"
-            onClick={() => {
-              connect();
-            }}
-            disabled={walletStatus === WalletStatus.CONNECTING || isLoading}
-            size="lg"
-          >
-            {walletStatus === WalletStatus.CONNECTING || isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Connecting...
-              </>
-            ) : (
-              'Connect Wallet'
-            )}
-          </Button>
-        </div>
-      ) : (
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-background pb-2">
+        <aside
+          className={cn(
+            'transition-all duration-300 ease-in-out h-full border-r border-border',
+            useGlobalState((state) => state.sidebarOpen) 
+              ? 'w-64 translate-x-0' 
+              : 'w-0 -translate-x-full border-r-0'
+          )}
+        >
+          <Sidebar />
+        </aside>
         <div
           id="main-container"
-          className="flex flex-1 min-h-0 overflow-hidden bg-background pb-2"
+          className="flex-1 transition-all duration-300 ease-in-out overflow-hidden"
         >
           {children}
         </div>
-      )}
+      </div>
 
       <GithubDrawer
         statusSteps={statusSteps}
@@ -393,54 +371,6 @@ const Layout = ({ children }: LayoutProps) => {
         </DialogContent>
       </Dialog>
 
-      {/* Commit Dialog */}
-      {/* <Dialog
-        open={isCommitDialogOpen}
-        onOpenChange={(open) => setIsCommitDialogOpen(open)}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Commit Changes</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="commitMessage" className="text-sm font-medium">
-                Commit Message
-              </label>
-              <input
-                id="commitMessage"
-                type="text"
-                value={commitMessage}
-                onChange={(e) => setCommitMessage(e.target.value)}
-                className="w-full p-3 mt-2 rounded-md border border-border bg-background text-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                placeholder="Describe your changes..."
-                autoFocus
-              />
-            </div>
-          </div>
-          <DialogFooter className="flex justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsCommitDialogOpen(false)}
-              disabled={commitInProgress}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCommitToRepo}
-              disabled={!commitMessage.trim() || commitInProgress}
-            >
-              {commitInProgress ? (
-                <Loader2 size={16} className="animate-spin mr-1" />
-              ) : null}
-              {commitInProgress ? 'Committing...' : 'Commit'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog> */}
-
-      {/* Add Commit Message Dialog */}
       <Dialog open={isCommitDialogOpen} onOpenChange={setIsCommitDialogOpen}>
         <DialogContent aria-description="Commit Changes" className="max-w-md">
           <DialogHeader>
@@ -496,37 +426,13 @@ const Layout = ({ children }: LayoutProps) => {
         </DialogContent>
       </Dialog>
 
-      {isDashboard && (
+      {/* {isDashboard && (
         <div className="shrink-0 border-t border-border">
           <StatusBar />
         </div>
-      )}
+      )} */}
     </div>
   );
 };
 
 export default Layout;
-
-// const [lastStrategy] = useLocalStorage<ConnectionStrategies | null>(
-//   'anon-conn-strategy',
-//   null
-// );
-// const {
-//   connect,
-//   wanderInstance,
-//   connected,
-//   connectionStrategy,
-// } = useWallet();
-// useEffect(() => {
-//   console.log('connected', connected);
-//   console.log('lastStrategy', lastStrategy);
-//   if (!connected && lastStrategy) {
-//     console.log('Connecting with last strategy', lastStrategy);
-//     connect(lastStrategy).then(() => {
-//       if (connectionStrategy == ConnectionStrategies.WanderConnect) {
-//         wanderInstance?.close();
-//       }
-//     });
-//   }
-//   // eslint-disable-next-line react-hooks/exhaustive-deps
-// }, [lastStrategy, connected]);

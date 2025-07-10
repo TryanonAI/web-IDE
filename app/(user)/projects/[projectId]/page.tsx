@@ -35,14 +35,16 @@ const Dashboard = ({ params }: DashboardProps) => {
   const setIsLoading = useGlobalState((state) => state.setIsLoading);
   const setProjects = useGlobalState((state) => state.setProjects);
   const activeProject = useGlobalState((state) => state.activeProject);
-  
+
   // State to track if project was found
   const [projectNotFound, setProjectNotFound] = useState(false);
   const [hasCheckedProject, setHasCheckedProject] = useState(false);
-  
+
   // Ref to access chat functionality
-  const chatRef = useRef<{ sendMessage: (message: string) => void } | null>(null);
-  
+  const chatRef = useRef<{ sendMessage: (message: string) => void } | null>(
+    null
+  );
+
   // Function to send error messages to chat
   const handleSendErrorToChat = (errorMessage: string) => {
     if (chatRef.current) {
@@ -97,7 +99,7 @@ const Dashboard = ({ params }: DashboardProps) => {
         toast.error('Project not found or you do not have access.');
         setProjectNotFound(true);
       }
-      
+
       setHasCheckedProject(true);
       setIsLoading(false);
     };
@@ -115,7 +117,11 @@ const Dashboard = ({ params }: DashboardProps) => {
   }
 
   // Show error page if project not found
-  if (projectNotFound || !activeProject || activeProject.projectId !== projectId) {
+  if (
+    projectNotFound ||
+    !activeProject ||
+    activeProject.projectId !== projectId
+  ) {
     return (
       <div className="flex flex-1 items-center justify-center bg-background">
         <div className="text-center space-y-6 max-w-md mx-auto p-6">
@@ -123,10 +129,13 @@ const Dashboard = ({ params }: DashboardProps) => {
             <AlertTriangle className="h-16 w-16 text-destructive" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-foreground">Project Not Found</h1>
-                         <p className="text-muted-foreground">
-               The project with ID &quot;{projectId}&quot; could not be found or you don&apos;t have access to it.
-             </p>
+            <h1 className="text-2xl font-bold text-foreground">
+              Project Not Found
+            </h1>
+            <p className="text-muted-foreground">
+              The project with ID &quot;{projectId}&quot; could not be found or
+              you don&apos;t have access to it.
+            </p>
           </div>
           <div className="flex gap-3 justify-center">
             <Button
@@ -138,7 +147,7 @@ const Dashboard = ({ params }: DashboardProps) => {
               Go Back
             </Button>
             <Button
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push('/projects')}
               className="flex items-center gap-2"
             >
               View All Projects
@@ -151,12 +160,12 @@ const Dashboard = ({ params }: DashboardProps) => {
 
   return (
     <ResizablePanelGroup direction="horizontal">
-      <ResizablePanel defaultSize={50} minSize={40}>
-        <Codeview onSendErrorToChat={handleSendErrorToChat} />
-      </ResizablePanel>
-      <ResizableHandle />
       <ResizablePanel defaultSize={50} minSize={20}>
         <Chatview ref={chatRef} />
+      </ResizablePanel>
+      <ResizableHandle />
+      <ResizablePanel defaultSize={50} minSize={40}>
+        <Codeview onSendErrorToChat={handleSendErrorToChat} />
       </ResizablePanel>
     </ResizablePanelGroup>
   );

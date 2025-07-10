@@ -10,6 +10,8 @@ import {
   Minimize2,
   Zap,
   Layout,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { Framework, ChatMessage, Role, Project, CodebaseType } from '@/types';
 import { useWallet, useGlobalState } from '@/hooks';
@@ -115,6 +117,7 @@ const Chatview = forwardRef<ChatviewRef>((props, ref) => {
   const setIsCodeGenerating = useGlobalState(
     (state) => state.setIsCodeGenerating
   );
+  const { sidebarOpen, toggleSidebar } = useGlobalState();
 
   const [userInput, setUserInput] = useState('');
   const [isRetrying, setIsRetrying] = useState(false);
@@ -446,6 +449,22 @@ const Chatview = forwardRef<ChatviewRef>((props, ref) => {
 
   return (
     <div className="h-full flex flex-col bg-background relative">
+      {/* Sidebar Toggle Button - Top Left Corner */}
+      <div className="absolute top-4 left-4 z-10">
+        <button
+          onClick={toggleSidebar}
+          className="h-8 w-8 bg-background/80 backdrop-blur-sm border border-border/40 rounded-md flex items-center justify-center hover:bg-accent/50 transition-all duration-200 shadow-sm"
+          title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+          aria-label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+        >
+          {sidebarOpen ? (
+            <PanelLeftClose size={16} className="text-muted-foreground" />
+          ) : (
+            <PanelLeftOpen size={16} className="text-muted-foreground" />
+          )}
+        </button>
+      </div>
+
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages &&
           messages.length > 0 &&

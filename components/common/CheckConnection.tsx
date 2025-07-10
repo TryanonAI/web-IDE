@@ -8,9 +8,9 @@ const CheckConnection = ({ children }: { children: React.ReactNode }) => {
   const { setWalletLoaded, syncWithWallet, isWalletAvailable } = useWallet();
   const { refreshGlobalState } = useGlobalState();
 
-  useEffect(() => {
-    refreshGlobalState();
-  }, []);
+  // useEffect(() => {
+  //   refreshGlobalState();
+  // }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

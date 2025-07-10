@@ -11,7 +11,6 @@ import {
   LogOutIcon,
   UserIcon,
   SquareArrowOutUpRight,
-  // SquarePen,
 } from 'lucide-react';
 import { useWallet } from '@/hooks';
 import { Button } from '@/components/ui/button';
@@ -62,7 +61,7 @@ const TitleBar = () => {
   const router = useRouter();
 
   // Check if we're in the codeview route
-  const isCodeView = pathname?.includes('/dashboard/') && activeProject;
+  const isCodeView = pathname?.includes('/projects/') && activeProject;
 
   const commonDisabledState =
     isCodeGenerating ||
@@ -119,10 +118,8 @@ const TitleBar = () => {
     }
   };
 
-  // Determine if repo is ready to commit
   const isRepoReadyToCommit = githubStatus === GITHUB_STATUS.REPO_EXISTS;
 
-  // Handle Github auth redirect
   useEffect(() => {
     const handleGithubAuth = async () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -183,8 +180,8 @@ const TitleBar = () => {
     <>
       <div className="border-b border-border/50 bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 flex justify-between items-center pl-2 pr-5">
         {/* Logo with Link wrapper */}
-        <Link 
-          href="/dashboard"
+        <Link
+          href="/projects"
           className="w-[20%] sm:w-[15%] md:w-[12%] lg:w-[10%] xl:w-[9.5%] max-w-[120px] py-2 cursor-pointer hover:opacity-80 transition-opacity"
         >
           <Image

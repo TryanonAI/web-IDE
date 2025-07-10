@@ -1,9 +1,9 @@
 import { Project } from '@/types';
 
 import { cn } from '@/lib/utils';
-
 import Image from 'next/image';
 import { AnimatedGradientText } from '@/components/magicui/animated-gradient-text';
+import CursorLogo from '@/public/cursor_logo.webp';
 
 // Open Active-Project with CursorIDE
 const OpenWithCursor = ({
@@ -42,9 +42,7 @@ const OpenWithCursor = ({
       )}
     >
       <Image
-        src={
-          'https://www.cursor.com/_next/static/media/placeholder-logo.737626f1.webp'
-        }
+        src={CursorLogo}
         height={12}
         width={12}
         alt="cursor-brand-logo"

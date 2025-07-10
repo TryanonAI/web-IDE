@@ -1,19 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useWallet, useGlobalState } from '@/hooks';
-import {
-  ARIO,
-  ANTRegistry,
-  AoArNSNameData,
-  AoPrimaryName,
-  ANT,
-  ArconnectSigner,
-} from '@ar.io/sdk';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useWallet, useGlobalState } from '@/hooks';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -42,8 +34,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-type arnsrecord = AoArNSNameData & {
+type arnsrecord = {
   name: string;
+  processId: string;
+  startTimestamp: number;
+  endTimestamp?: number;
+  type: 'lease' | 'permabuy';
   isPrimary: boolean;
 };
 
@@ -51,133 +47,134 @@ const ARNS = () => {
   const { connected, address } = useWallet();
   const { projects } = useGlobalState();
 
-  // State for ArNS records and primary names
   const [arnsRecords, setArnsRecords] = useState<arnsrecord[]>([]);
-  const [primaryName, setPrimaryName] = useState<AoPrimaryName | null>(null);
+  const [primaryName, setPrimaryName] = useState<{
+    name: string;
+    startTimestamp: number;
+  } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [lastAddress, setLastAddress] = useState<string | null>(null);
 
-  // State for deployments and migration
-  const [isLoadingDeployments, setIsLoadingDeployments] = useState(false);
+  const [isLoadingDeployments] = useState(false);
   const [selectedArns, setSelectedArns] = useState<string>('');
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [customUrl, setCustomUrl] = useState<string>('');
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationError, setMigrationError] = useState<string | null>(null);
 
-  // to change the ant name
-  // const { id: txId } = await ant.setName(
-  //   { name: 'My ANT' },
-  //   // optional additional tags
-  //   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
-  // );
-
-  // Migration function
-  const migrateToArns = async (
-    processId: string,
-    undername: string,
-    arweaveUrl: string,
-    ttlSeconds: number
-  ): Promise<{ arnsUrl: string; transactionId: string }> => {
-    try {
-      // Extract transaction ID from arweave URL
-      console.log('Arweave URL:', arweaveUrl);
-      const txIdMatch = arweaveUrl.match(/\/([a-zA-Z0-9_-]+)$/);
-      if (!txIdMatch) {
-        throw new Error('Invalid Arweave URL format');
-      }
-
-      const transactionId = txIdMatch[1];
-      console.log('Migrating transaction ID:', transactionId);
-      console.log('To ANT process:', processId);
-      console.log('With undername:', undername);
-
-      // Check if ArConnect is available
-      if (typeof window === 'undefined' || !window.arweaveWallet) {
-        throw new Error('ArConnect wallet not found');
-      }
-
-      // Initialize ANT
-      const ant = ANT.init({
-        processId,
-        signer: new ArconnectSigner(window.arweaveWallet),
-      });
-      let result;
-      if (undername === '@') {
-        const { id: txId } = await ant.removeUndernameRecord(
-          { undername: '@' },
-          // optional additional tags
-          { tags: [{ name: 'App-Name', value: 'tryanon.ai' }] }
-        );
-        console.log(txId);
-
-        // Update the basename '@' record
-        result = await ant.setBaseNameRecord(
-          {
-            transactionId,
-            ttlSeconds,
-          },
-          {
-            tags: [
-              { name: 'App-Name', value: 'Anon-Project-Link' },
-              { name: 'Project-Link', value: arweaveUrl },
-              { name: 'Timestamp', value: new Date().toISOString() },
-            ],
-          }
-        );
-      } else {
-        result = await ant.setUndernameRecord(
-          {
-            undername,
-            transactionId,
-            ttlSeconds,
-          },
-          {
-            tags: [
-              { name: 'App-Name', value: 'Anon-Project-Link' },
-              { name: 'Project-Link', value: arweaveUrl },
-              { name: 'Timestamp', value: new Date().toISOString() },
-            ],
-          }
+  const migrateToArns = useCallback(
+    async (
+      processId: string,
+      undername: string,
+      arweaveUrl: string,
+      ttlSeconds: number
+    ): Promise<{ arnsUrl: string; transactionId: string }> => {
+      if (typeof window === 'undefined') {
+        throw new Error(
+          'This operation is only supported in a browser environment'
         );
       }
-      // Get the ARNS name from the process ID
-      const arnsRecord = arnsRecords.find(
-        (record) => record.processId === processId
-      );
 
-      if (!arnsRecord) {
-        throw new Error('Could not find ARNS name for the given process ID');
+      try {
+        const { ANT, ArconnectSigner } = await import('@ar.io/sdk');
+        const txIdMatch = arweaveUrl.match(/\/([a-zA-Z0-9_-]+)$/);
+        if (!txIdMatch) {
+          throw new Error('Invalid Arweave URL format');
+        }
+
+        const transactionId = txIdMatch[1];
+        console.log('Migrating transaction ID:', transactionId);
+        console.log('To ANT process:', processId);
+        console.log('With undername:', undername);
+
+        if (!window.arweaveWallet) {
+          throw new Error('ArConnect wallet not found');
+        }
+
+        const ant = ANT.init({
+          processId,
+          signer: new ArconnectSigner(window.arweaveWallet),
+        });
+
+        let result;
+        if (undername === '@') {
+          const { id: txId } = await ant.removeUndernameRecord(
+            { undername: '@' },
+            { tags: [{ name: 'App-Name', value: 'tryanon.ai' }] }
+          );
+          console.log(txId);
+
+          result = await ant.setBaseNameRecord(
+            {
+              transactionId,
+              ttlSeconds,
+            },
+            {
+              tags: [
+                { name: 'App-Name', value: 'Anon' },
+                { name: 'Utility', value: 'Anon-Project-Link' },
+                { name: 'Project-Link', value: arweaveUrl },
+                { name: 'Timestamp', value: new Date().toISOString() },
+              ],
+            }
+          );
+        } else {
+          result = await ant.setUndernameRecord(
+            {
+              undername,
+              transactionId,
+              ttlSeconds,
+            },
+            {
+              tags: [
+                { name: 'App-Name', value: 'Anon' },
+                { name: 'Utility', value: 'Anon-Project-Link' },
+                { name: 'Project-Link', value: arweaveUrl },
+                { name: 'Timestamp', value: new Date().toISOString() },
+              ],
+            }
+          );
+        }
+
+        const arnsRecord = arnsRecords.find(
+          (record) => record.processId === processId
+        );
+
+        if (!arnsRecord) {
+          throw new Error('Could not find ARNS name for the given process ID');
+        }
+
+        const arnsUrl =
+          undername === '@' || !undername
+            ? `https://${arnsRecord.name}.ar.io`
+            : `https://${undername}_${arnsRecord.name}.ar.io`;
+
+        console.log('Migration successful:', {
+          arnsUrl,
+          transactionId: result.id || 'pending',
+        });
+
+        return {
+          arnsUrl,
+          transactionId: result.id || 'pending',
+        };
+      } catch (error) {
+        console.error('Error during migration:', error);
+        throw new Error(
+          `Migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
+    },
+    [arnsRecords]
+  );
 
-      // Construct the final ARNS URL
-      const arnsUrl =
-        undername === '@' || !undername
-          ? `https://${arnsRecord.name}.ar.io`
-          : `https://${undername}_${arnsRecord.name}.ar.io`;
-
-      console.log('Migration successful:', {
-        arnsUrl,
-        transactionId: result.id || 'pending',
-      });
-
-      return {
-        arnsUrl,
-        transactionId: result.id || 'pending',
-      };
-    } catch (error) {
-      console.error('Error during migration:', error);
-      throw new Error(
-        `Migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
-  };
-
-  // Fetch user's primary name
   const fetchPrimaryName = useCallback(async (userAddress: string) => {
+    if (typeof window === 'undefined') return null;
+
     try {
-      const ario = ARIO.testnet();
+      const { ARIO } = await import('@ar.io/sdk');
+      const ario = ARIO.mainnet();
       const primary = await ario.getPrimaryName({ address: userAddress });
       console.log('Primary name:', primary);
       setPrimaryName(primary);
@@ -197,66 +194,65 @@ const ARNS = () => {
     }
   }, []);
 
-  // Fetch all ArNS records owned or controlled by the user
-  const fetchAllArnsRecords = useCallback(async (userAddress: string) => {
-    try {
-      const antRegistry = ANTRegistry.init();
-      const ario = ARIO.testnet();
+  const fetchAllArnsRecords = useCallback(
+    async (userAddress: string) => {
+      if (typeof window === 'undefined') return [];
 
-      // Get access control list for the user
-      const acl = await antRegistry.accessControlList({
-        address: userAddress,
-      });
+      try {
+        const { ANTRegistry, ARIO } = await import('@ar.io/sdk');
+        const antRegistry = ANTRegistry.init();
+        const ario = ARIO.mainnet();
 
-      // Get all ArNS records for owned and skipped controlled process IDs
-      const allProcessIds = {
-        ...acl.Owned,
-      };
+        const acl = await antRegistry.accessControlList({
+          address: userAddress,
+        });
 
-      if (Object.keys(allProcessIds).length === 0) {
-        console.log('No process IDs found for user');
+        const allProcessIds = {
+          ...acl.Owned,
+        };
+
+        if (Object.keys(allProcessIds).length === 0) {
+          console.log('No process IDs found for user');
+          return [];
+        }
+
+        const arnsRecords = await ario.getArNSRecords({
+          filters: {
+            processId: {
+              ...allProcessIds,
+            },
+          },
+        });
+
+        const recordsWithNames = arnsRecords.items.map((record) => ({
+          ...record,
+          name: record.name,
+          isPrimary: primaryName?.name === record.name,
+        }));
+
+        return recordsWithNames;
+      } catch (error) {
+        console.error('Error fetching ArNS records:', error);
         return [];
       }
+    },
+    [primaryName]
+  );
 
-      const arnsRecords = await ario.getArNSRecords({
-        filters: {
-          processId: {
-            ...allProcessIds,
-          },
-        },
-      });
-
-      // Convert to our format with name included
-      const recordsWithNames = arnsRecords.items.map((record) => ({
-        ...record,
-        name: record.name,
-      }));
-
-      return recordsWithNames;
-    } catch (error) {
-      console.error('Error fetching ArNS records:', error);
-      return [];
-    }
-  }, []);
-
-  // Main fetch function that gets both primary name and ArNS records
   const fetchUserData = useCallback(async () => {
     if (!connected || !address) return;
 
-    // Prevent duplicate requests for the same address
     if (lastAddress === address) return;
 
     setIsLoading(true);
     setLastAddress(address);
 
     try {
-      // Fetch primary name and ArNS records in parallel
       const [primary, records] = await Promise.all([
         fetchPrimaryName(address),
         fetchAllArnsRecords(address),
       ]);
 
-      // Mark the primary name record if it exists
       const recordsWithPrimary = records.map((record) => ({
         ...record,
         isPrimary: primary?.name === record.name,
@@ -266,14 +262,12 @@ const ARNS = () => {
     } catch (error) {
       console.error('Error fetching user data:', error);
       toast.error('Failed to fetch your ArNS names');
-      // Reset the last address on error so it can be retried
       setLastAddress(null);
     } finally {
       setIsLoading(false);
     }
   }, [connected, address, lastAddress, fetchPrimaryName, fetchAllArnsRecords]);
 
-  // Handle migration
   const handleMigration = async () => {
     if (!selectedArns || !selectedProject) {
       setMigrationError(
@@ -286,7 +280,6 @@ const ARNS = () => {
 
     if (selectedProject) {
       const project = projects.find((p) => p.projectId === selectedProject);
-      console.log(project);
       if (!project?.deploymentUrl) {
         setMigrationError('Selected project has no deployment URL');
         return;
@@ -318,7 +311,6 @@ const ARNS = () => {
         `Successfully migrated to ${result.arnsUrl}! Transaction ID: ${result.transactionId.slice(0, 8)}...`
       );
 
-      // Reset form
       setSelectedArns('');
       setSelectedProject('');
       setCustomUrl('');
@@ -331,14 +323,12 @@ const ARNS = () => {
     }
   };
 
-  // Initial load when address changes
   useEffect(() => {
     if (connected && address && lastAddress !== address) {
       fetchUserData();
     }
   }, [connected, address, lastAddress, fetchUserData]);
 
-  // Filter ArNS records based on search
   const filteredRecords = arnsRecords.filter((record) =>
     record.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -367,15 +357,14 @@ const ARNS = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-2">My ArNS Names</h1>
+      <div className="my-6">
         <p className="text-muted-foreground">
           Manage your Arweave Name System (ArNS) names and link them to your
           deployments.
         </p>
       </div>
 
-      <Tabs defaultValue="names" className="w-full">
+      <Tabs defaultValue="names" className="w-full gap-4">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="names">ArNS Names</TabsTrigger>
           <TabsTrigger value="migrate">Link Deployments</TabsTrigger>
@@ -384,7 +373,6 @@ const ARNS = () => {
         <TabsContent value="names" className="space-y-6">
           <Card className="border-0 shadow-none">
             <CardContent className="p-6 space-y-6">
-              {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -395,7 +383,6 @@ const ARNS = () => {
                 />
               </div>
 
-              {/* Primary name display */}
               {primaryName && (
                 <div className="p-4 rounded-lg border border-primary/20 bg-primary/5">
                   <div className="flex items-center gap-2 mb-2">
@@ -403,6 +390,7 @@ const ARNS = () => {
                       Primary Name
                     </Badge>
                   </div>
+                  in{' '}
                   <div className="font-medium text-lg">
                     {primaryName.name}.ar.io
                   </div>
@@ -413,7 +401,6 @@ const ARNS = () => {
                 </div>
               )}
 
-              {/* Loading state */}
               {isLoading && (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
@@ -423,7 +410,6 @@ const ARNS = () => {
                 </div>
               )}
 
-              {/* ArNS records list */}
               {!isLoading && (
                 <div className="space-y-3">
                   {filteredRecords.length > 0 ? (
@@ -492,7 +478,6 @@ const ARNS = () => {
                 </div>
               )}
 
-              {/* Refresh button */}
               <div className="flex justify-center pt-4">
                 <Button
                   variant="outline"
@@ -517,7 +502,6 @@ const ARNS = () => {
         </TabsContent>
 
         <TabsContent value="migrate" className="space-y-6">
-          {/* Migration Form */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -573,21 +557,6 @@ const ARNS = () => {
                 </div>
               </div>
 
-              {/* <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Or Enter Custom Arweave URL
-                </label>
-                <Input
-                  placeholder="https://example.arweave.net/txId or https://example.ar.io/txId"
-                  value={customUrl}
-                  onChange={(e) => setCustomUrl(e.target.value)}
-                  disabled={!!selectedProject}
-                />
-                <p className="text-xs text-muted-foreground">
-                  URL must point to a valid Arweave transaction ID
-                </p>
-              </div> */}
-
               {migrationError && (
                 <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
                   {migrationError}
@@ -618,7 +587,6 @@ const ARNS = () => {
             </CardContent>
           </Card>
 
-          {/* Project Deployments Table */}
           <Card>
             <CardHeader>
               <CardTitle>Your Project Deployments</CardTitle>
