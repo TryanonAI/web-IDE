@@ -36,9 +36,7 @@ export default function AnonLanding() {
 
     try {
       setIsLoading(true);
-
       let address;
-
       try {
         address = await window.arweaveWallet.getActiveAddress();
       } catch (error) {
@@ -50,12 +48,10 @@ export default function AnonLanding() {
           throw error;
         }
       }
-
       setWallet(address);
       toast.success('Wallet connected successfully');
     } catch (err) {
       console.error(err);
-      toast.error('Error connecting wallet');
     } finally {
       setIsLoading(false);
     }
@@ -159,11 +155,7 @@ export default function AnonLanding() {
                   disabled={isLoading}
                   className="px-16 py-4 bg-gradient-to-r from-[#00FFD1] to-[#4ECDC4] text-black font-bold text-lg hover:from-[#00FFD1]/90 hover:to-[#4ECDC4]/90 transition-all duration-300 hover:shadow-lg hover:shadow-[#00FFD1]/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center rounded-sm gap-2"
                 >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    'Connect Wallet'
-                  )}
+                  {isLoading ? 'Connecting...' : 'Connect Wallet'}
                   <ArrowRight className="h-5 w-5" />
                 </button>
               )}

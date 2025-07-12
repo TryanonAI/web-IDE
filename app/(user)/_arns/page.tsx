@@ -25,7 +25,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Search,
   Loader2,
-  User,
   Calendar,
   Hash,
   ExternalLink,
@@ -44,7 +43,7 @@ type arnsrecord = {
 };
 
 const ARNS = () => {
-  const { connected, address } = useWallet();
+  const { address } = useWallet();
   const { projects } = useGlobalState();
 
   const [arnsRecords, setArnsRecords] = useState<arnsrecord[]>([]);
@@ -240,7 +239,7 @@ const ARNS = () => {
   );
 
   const fetchUserData = useCallback(async () => {
-    if (!connected || !address) return;
+    if (!address) return;
 
     if (lastAddress === address) return;
 
@@ -266,7 +265,7 @@ const ARNS = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [connected, address, lastAddress, fetchPrimaryName, fetchAllArnsRecords]);
+  }, [address, lastAddress, fetchPrimaryName, fetchAllArnsRecords]);
 
   const handleMigration = async () => {
     if (!selectedArns || !selectedProject) {
@@ -332,28 +331,10 @@ const ARNS = () => {
   };
 
   useEffect(() => {
-    if (connected && address && lastAddress !== address) {
+    if (address && lastAddress !== address) {
       fetchUserData();
     }
-  }, [connected, address, lastAddress, fetchUserData]);
-
-  if (!connected) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Card className="w-96 border-0 shadow-none">
-          <CardContent className="flex flex-col items-center justify-center p-8">
-            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
-              <User className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-medium mb-2">Connect Wallet</h3>
-            <p className="text-muted-foreground text-center text-sm">
-              Connect your wallet to view your ArNS names.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  }, [address, lastAddress, fetchUserData]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">

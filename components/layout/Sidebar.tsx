@@ -21,8 +21,7 @@ const sidebarButtonClass =
 export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { projects, activeProject, openModal, loadProjectData } =
-    useGlobalState();
+  const { projects, activeProject, openModal } = useGlobalState();
   const { connected, address } = useWallet();
 
   const navigationTabs = [
@@ -50,11 +49,9 @@ export default function Sidebar() {
   const handleProjectClick = async (projectId: string) => {
     const selectedProject = projects.find((p) => p.projectId === projectId);
     if (selectedProject && address) {
-      try {
-        await loadProjectData(selectedProject, address);
+      // Only navigate if not already on this project
+      if (activeProject?.projectId !== projectId) {
         router.push(`/projects/${projectId}`);
-      } catch (error) {
-        console.error('Error navigating to project:', error);
       }
     }
   };
@@ -140,13 +137,6 @@ export default function Sidebar() {
           <div className="absolute inset-0 overflow-y-auto p-2 pb-8">
             {!connected ? (
               <div className="px-3 py-8 text-center">
-                <FolderOpen
-                  size={32}
-                  className="mx-auto text-muted-foreground/30 mb-2"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Connect wallet to view projects
-                </p>
               </div>
             ) : sortedProjects.length === 0 ? (
               <div className="px-3 py-8 text-center">

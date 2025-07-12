@@ -91,6 +91,8 @@ export interface SidebarState {
 export interface GlobalState extends GithubState, ProjectState, SandpackState, ModalState, DrawerState, SidebarState {
   isLoading: boolean;
   setIsLoading: (isLoading: boolean) => void;
+  isProjectSwitching: boolean;
+  setIsProjectSwitching: (isSwitching: boolean) => void;
   error: string | null;
   setError: (error: string | null) => void;
   statusBarMessage: string;
@@ -251,6 +253,8 @@ export const useGlobalState = create<
         setError: (error: string | null) => set({ error }),
         isLoading: false,
         setIsLoading: (isLoading: boolean) => set({ isLoading }),
+        isProjectSwitching: false,
+        setIsProjectSwitching: (isSwitching: boolean) => set({ isProjectSwitching: isSwitching }),
         statusBarMessage: '',
         setStatusBarMessage: (message: string) => set({ statusBarMessage: message }),
         
@@ -621,13 +625,19 @@ export const useGlobalState = create<
               codebase: null,
               chatMessages: [],
               codeVersions: [],
+              isProjectSwitching: false,
             });
             return;
           }
 
+          // Only show loading for initial load, not project switching
+          const { activeProject: currentProject } = useGlobalState.getState();
+          const isFirstLoad = !currentProject;
+          
           set({
             activeProject: project,
-            isLoading: true,
+            isLoading: isFirstLoad,
+            isProjectSwitching: !isFirstLoad,
             codeVersions: await fetchCodeVersions(project.projectId, address),
             deploymentUrl: project.deploymentUrl,
             chatMessages: project.messages,
@@ -660,7 +670,7 @@ export const useGlobalState = create<
             set({ error: errorMessage });
             toast.error(errorMessage);
           } finally {
-            set({ isLoading: false });
+            set({ isLoading: false, isProjectSwitching: false });
           }
         },
         // fetchProjects: async () => {

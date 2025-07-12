@@ -11,6 +11,7 @@ import GithubDrawer from '@/components/common/GithubDrawer';
 import TitleBar from '@/components/pages/dashboard/TitleBar';
 import { ProjectInfoDrawer } from '@/components/common/ProjectInfoDrawer';
 import Sidebar from '@/components/layout/Sidebar';
+import Image from 'next/image';
 
 import {
   Dialog,
@@ -73,12 +74,11 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-const Layout = ({ children }: LayoutProps) => {
-  
+const ClientLayout = ({ children }: LayoutProps) => {
   const router = useRouter();
   // const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [showBanner, setShowBanner] = useState(false);
+  const [showBanner, setShowBanner] = useState(true);
   const [nameError, setNameError] = useState<string>('');
   const [mode, setMode] = useState<Framework>(Framework.React);
   const [commitMessage, setCommitMessage] = useState<string>('');
@@ -99,7 +99,10 @@ const Layout = ({ children }: LayoutProps) => {
     framework,
     activeProject,
     commitToRepository,
+    sidebarOpen,
   } = useGlobalState();
+
+  const { connected } = useWallet();
 
   const handleCreateProject = async (mode: Framework) => {
     if (!projectName.trim()) return;
@@ -195,7 +198,7 @@ const Layout = ({ children }: LayoutProps) => {
         <div className="relative bg-primary/5 border-b border-primary/10">
           <div className="max-w-screen-xl mx-auto py-2 px-3 sm:px-6 lg:px-8">
             <div className="pr-3 text-center text-sm font-medium text-primary/80">
-              <span>✨ Open with Cursor feature coming soon!</span>
+              <span>✨ Now you can set your own ARNS Domains!</span>
             </div>
             <button
               onClick={() => setShowBanner(false)}
@@ -212,21 +215,41 @@ const Layout = ({ children }: LayoutProps) => {
       </div>
 
       <div className="flex flex-1 min-h-0 overflow-hidden bg-background pb-2">
-        <aside
-          className={cn(
-            'transition-all duration-300 ease-in-out h-full border-r border-border',
-            useGlobalState((state) => state.sidebarOpen) 
-              ? 'w-64 translate-x-0' 
-              : 'w-0 -translate-x-full border-r-0'
-          )}
-        >
-          <Sidebar />
-        </aside>
+        {connected && (
+          <aside
+            className={cn(
+              'transition-all duration-300 ease-in-out h-full border-r border-border',
+              sidebarOpen
+                ? 'w-64 translate-x-0'
+                : 'w-0 -translate-x-full border-r-0'
+            )}
+          >
+            <Sidebar />
+          </aside>
+        )}
         <div
           id="main-container"
           className="flex-1 transition-all duration-300 ease-in-out overflow-auto"
         >
-          {children}
+          {connected ? (
+            children
+          ) : (
+            <div className="flex-1 overflow-auto p-8">
+              <div className="text-center py-16">
+                <Image
+                  src="https://media.tenor.com/cDwcajb6iSsAAAAi/dizeno0022sticker.gif"
+                  alt="kiryu"
+                  width={150}
+                  height={100}
+                  className="mx-auto mb-6"
+                />
+                <h2 className="text-xl font-semibold">Connect Wallet to Continue</h2>
+                <p className="text-muted-foreground mt-3">
+                  Please connect your wallet to access your projects and workspace.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -425,14 +448,8 @@ const Layout = ({ children }: LayoutProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* {isDashboard && (
-        <div className="shrink-0 border-t border-border">
-          <StatusBar />
-        </div>
-      )} */}
     </div>
   );
 };
 
-export default Layout;
+export default ClientLayout;

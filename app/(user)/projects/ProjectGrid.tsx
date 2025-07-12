@@ -1,11 +1,10 @@
-// app/(user)/projects/ProjectGrid.tsx
 'use client';
 import { motion } from 'framer-motion';
 import { Folder, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { frameworks } from '../layout';
 import { Project } from '@/types';
+import { frameworks } from '../layout';
 
 export default function ProjectGrid({
   projects,
@@ -49,7 +48,7 @@ export default function ProjectGrid({
                 className={selected ? 'text-primary' : 'text-muted-foreground'}
               />
               <div className="flex-1">
-                <div className='flex justify-between items-center' >
+                <div className="flex justify-between items-center">
                   <h3 className="font-medium truncate">{project.title}</h3>
                   <Badge variant="secondary" className="mt-1 text-xs">
                     {

@@ -45,7 +45,7 @@ const TitleBar = () => {
   const isLoading = useGlobalState((state) => state.isLoading);
   const isCodeGenerating = useGlobalState((state) => state.isCodeGenerating);
   const { openDrawer } = useGlobalState();
-  const { connected, shortAddress } = useWallet();
+  const { connected, connect, shortAddress } = useWallet();
   const {
     githubToken,
     isDeploying,
@@ -124,6 +124,24 @@ const TitleBar = () => {
 
   const isRepoReadyToCommit = githubStatus === GITHUB_STATUS.REPO_EXISTS;
 
+  const [isWalletLoading, setIsWalletLoading] = useState(false);
+  const handleConnectWallet = async () => {
+    if (!window.arweaveWallet) {
+      toast.error('Please install the Wander Wallet');
+      return;
+    }
+
+    try {
+      setIsWalletLoading(true);
+      await connect();
+    } catch (err) {
+      console.error(err);
+      toast.error('Error connecting wallet');
+    } finally {
+      setIsWalletLoading(false);
+    }
+  };
+
   useEffect(() => {
     const handleGithubAuth = async () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -185,24 +203,26 @@ const TitleBar = () => {
       <div className="border-b border-border/50 bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 flex items-center h-14 px-4">
         {/* Left section with sidebar toggle and logo */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={toggleSidebar}
-            className="h-9 w-9 bg-background/80 hover:bg-foreground/5 backdrop-blur-sm border border-border/40 rounded-md flex items-center justify-center hover:text-foreground transition-all duration-200 shadow-sm group"
-            title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
-            aria-label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
-          >
-            {sidebarOpen ? (
-              <PanelLeftClose
-                size={16}
-                className="text-muted-foreground group-hover:text-foreground transition-colors"
-              />
-            ) : (
-              <PanelLeftOpen
-                size={16}
-                className="text-muted-foreground group-hover:text-foreground transition-colors"
-              />
-            )}
-          </button>
+          {connected && (
+            <button
+              onClick={toggleSidebar}
+              className="h-9 w-9 bg-background/80 hover:bg-foreground/5 backdrop-blur-sm border border-border/40 rounded-md flex items-center justify-center hover:text-foreground transition-all duration-200 shadow-sm group"
+              title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+              aria-label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+            >
+              {sidebarOpen ? (
+                <PanelLeftClose
+                  size={16}
+                  className="text-muted-foreground group-hover:text-foreground transition-colors"
+                />
+              ) : (
+                <PanelLeftOpen
+                  size={16}
+                  className="text-muted-foreground group-hover:text-foreground transition-colors"
+                />
+              )}
+            </button>
+          )}
 
           {/* Logo with Link wrapper */}
           <Link
@@ -346,7 +366,7 @@ const TitleBar = () => {
           )}
 
           {/* Always show profile dropdown when connected */}
-          {connected && (
+          {connected ? (
             <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -382,6 +402,14 @@ const TitleBar = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+          ) : (
+            <Button
+              variant={'default'}
+              onClick={handleConnectWallet}
+              disabled={isWalletLoading}
+            >
+              {isWalletLoading ? 'Connecting...' : 'Sign In'}
+            </Button>
           )}
         </div>
       </div>
