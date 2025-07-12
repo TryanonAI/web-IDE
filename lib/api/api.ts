@@ -29,7 +29,6 @@ export const submitAccessRequest = async (
     }
 };
 
-// lib/api.ts
 
 import { Project } from '@/types';
 

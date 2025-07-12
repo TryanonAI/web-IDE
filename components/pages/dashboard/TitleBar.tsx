@@ -353,7 +353,7 @@ const TitleBar = () => {
                   disabled={
                     isCodeGenerating || isLoading || isDeploying || !connected
                   }
-                  className="rounded-md border bg-background shadow-xs hover:bg-primaryhover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 group h-9 px-3 py-5 flex items-center gap-2 tracking-wider text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="rounded-md border bg-background shadow-xs hover:bg-primary hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 group h-9 px-3 py-5 flex items-center gap-2 tracking-wider text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Avatar>
                     <AvatarImage src={user?.avatarUrl} alt={user?.username} />

@@ -630,7 +630,7 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
                         codeVersions?.find((v) => v.id === selectedVersion)
                           ?.timestamp || ''
                       )}`
-                    : 'Latest'}
+                    : 'Current'}
                   <ChevronDown
                     size={10}
                     className={cn(
