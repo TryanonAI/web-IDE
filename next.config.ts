@@ -4,6 +4,7 @@ import { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   // output: 'export',
   reactStrictMode: false,
+  productionBrowserSourceMaps:true,
   images: {
     unoptimized: true,
     remotePatterns: [
