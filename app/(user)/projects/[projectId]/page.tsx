@@ -7,12 +7,12 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { AlertTriangle, ArrowLeft } from 'lucide-react';
 
 import { ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import Codeview from '@/components/pages/dashboard/codeview/Codeview';
 import Chatview from '@/components/pages/dashboard/chatview/Chatview';
 import ProjectLoadingSkeleton from '@/components/pages/dashboard/ProjectLoadingSkeleton';
-import Image from 'next/image';
 
 interface DashboardProps {
   params: Promise<{
@@ -23,8 +23,10 @@ interface DashboardProps {
 const DashboardContent = ({ projectId }: { projectId: string }) => {
   const { address } = useWallet();
   const router = useRouter();
+  const isLoading = useGlobalState((state) => state.isLoading);
   const projects = useGlobalState((state) => state.projects);
   const loadProjectData = useGlobalState((state) => state.loadProjectData);
+  const setIsLoading = useGlobalState((state) => state.setIsLoading);
   const setProjects = useGlobalState((state) => state.setProjects);
   const activeProject = useGlobalState((state) => state.activeProject);
 
@@ -51,13 +53,7 @@ const DashboardContent = ({ projectId }: { projectId: string }) => {
         return;
       }
 
-      // Check if we already have the correct project loaded
-      if (activeProject?.projectId === projectId) {
-        setHasCheckedProject(true);
-        setIsProjectLoading(false);
-        return;
-      }
-
+      setIsLoading(true);
       setIsProjectLoading(true);
       setProjectNotFound(false);
       setHasCheckedProject(false);
@@ -79,6 +75,7 @@ const DashboardContent = ({ projectId }: { projectId: string }) => {
           console.error('Error fetching user projects:', error);
           toast.error('Failed to fetch your projects');
           setProjects([]);
+          setIsLoading(false);
           setIsProjectLoading(false);
           setHasCheckedProject(true);
           return;
@@ -87,33 +84,22 @@ const DashboardContent = ({ projectId }: { projectId: string }) => {
 
       const project = currentProjects.find((p) => p.projectId === projectId);
       if (project) {
-        try {
-          await loadProjectData(project, address);
-          setProjectNotFound(false);
-        } catch (err) {
-          console.error('Error loading project data:', err);
-          toast.error('Failed to load project data');
-          setProjectNotFound(true);
-        }
+        await loadProjectData(project, address);
+        setProjectNotFound(false);
       } else {
+        toast.error('Project not found or you do not have access.');
         setProjectNotFound(true);
       }
 
       setHasCheckedProject(true);
+      setIsLoading(false);
       setIsProjectLoading(false);
     };
 
     loadData();
-  }, [
-    projectId,
-    address,
-    projects,
-    activeProject?.projectId, // Only depend on the project ID, not the entire object
-    loadProjectData,
-    setProjects,
-  ]);
+  }, [projectId, address, loadProjectData, setIsLoading, setProjects]);
 
-  if (!hasCheckedProject || isProjectLoading) {
+  if (isLoading || !hasCheckedProject || isProjectLoading) {
     return <ProjectLoadingSkeleton />;
   }
 
@@ -122,28 +108,31 @@ const DashboardContent = ({ projectId }: { projectId: string }) => {
       <div className="flex flex-1 items-center justify-center bg-background h-screen">
         <div className="text-center space-y-6 max-w-md mx-auto p-6">
           <div className="flex justify-center">
-            <Image
-              src="/not-found.gif"
-              alt="project Not Found"
-              width={200}
-              height={200}
-              priority
-            />
+            <AlertTriangle className="h-16 w-16 text-destructive" />
           </div>
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-foreground">
               Project Not Found
             </h1>
-            <p className="text-muted-foreground max-w-2xs">
-              This project no longer exists or you don&apos;t have access to it.
+            <p className="text-muted-foreground">
+              The project with ID &quot;{projectId}&quot; could not be found or
+              you don&apos;t have access to it.
             </p>
           </div>
           <div className="flex gap-3 justify-center">
             <Button
+              variant="outline"
+              onClick={() => router.back()}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Go Back
+            </Button>
+            <Button
               onClick={() => router.push('/projects')}
               className="flex items-center gap-2"
             >
-              View Projects
+              View All Projects
             </Button>
           </div>
         </div>

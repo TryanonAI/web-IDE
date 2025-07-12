@@ -28,13 +28,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Settings, Globe, Loader2, Check, RefreshCw } from 'lucide-react';
+import { Settings, Globe, Loader2, Check } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { useGlobalState, useWallet } from '@/hooks';
-import { ARIO } from '@ar.io/sdk/web';
 
 // Types
 type ArnsRecord = {
@@ -232,6 +231,7 @@ export default function CustomDomain({ className }: { className?: string }) {
 
   useEffect(() => {
     async function getReservedName() {
+      const { ARIO } = await import('@ar.io/sdk');
       const ario = ARIO.mainnet();
 
       const reservedName = await ario.getArNSReservedName({ name: 'aykansal' });
@@ -310,15 +310,38 @@ export default function CustomDomain({ className }: { className?: string }) {
             className=" h-8"
           >
             {isLoading ? (
-              <RefreshCw className="mr-2 h-3 w-3 animate-spin" />
+              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
             ) : (
-              <RefreshCw className="mr-2 h-3 w-3" />
+              'Refresh'
             )}
           </Button>
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <div className="px-1.5 py-1 space-y-4">
+            {/* <Card className="p-2">
+              <CardContent className="space-y-2">
+                <div className="text-sm font-medium">{activeProject.title}</div>
+                <div className="text-xs text-muted-foreground">
+                  {activeProject.deploymentUrl ? (
+                    <a
+                      href={activeProject.deploymentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 hover:text-primary"
+                    >
+                      <span className="truncate">
+                        {activeProject.deploymentUrl}
+                      </span>
+                      <ExternalLink size={12} />
+                    </a>
+                  ) : (
+                    'No deployment URL'
+                  )}
+                </div>
+              </CardContent>
+            </Card> */}
+
             {currentMapping && (
               <Card>
                 <CardHeader className="pb-2">
@@ -353,11 +376,14 @@ export default function CustomDomain({ className }: { className?: string }) {
                 {isLoading ? (
                   <div className="flex items-center justify-center py-4">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="ml-2 text-sm">Fetching domains...</span>
+                    <span className="ml-2 text-sm">Loading domains...</span>
                   </div>
                 ) : arnsRecords.length === 0 ? (
                   <div className="text-center py-4 text-sm text-muted-foreground">
-                    No ARNS domains found.
+                    No ARNS domains found.{' '}
+                    <Button variant="link" className="p-0 h-auto text-xs">
+                      Purchase domains
+                    </Button>
                   </div>
                 ) : (
                   <>
@@ -366,6 +392,9 @@ export default function CustomDomain({ className }: { className?: string }) {
                       name="selectedArns"
                       render={({ field }) => (
                         <FormItem>
+                          {/* <FormLabel className="text-xs">
+                            Select ARNS Domain
+                          </FormLabel> */}
                           <Select
                             onValueChange={field.onChange}
                             value={field.value}
@@ -437,7 +466,10 @@ export default function CustomDomain({ className }: { className?: string }) {
                           Mapping...
                         </>
                       ) : (
-                        'Publish Domain'
+                        <>
+                          {/* <Link2 className="mr-2 h-3 w-3" /> */}
+                          Publish
+                        </>
                       )}
                     </Button>
 

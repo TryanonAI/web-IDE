@@ -1,5 +1,4 @@
 'use client';
-export const dynamic = 'force-dynamic';
 
 import { useWallet } from '@/hooks';
 import { Badge } from '@/components/ui/badge';
@@ -9,20 +8,37 @@ import { User, Wallet, Copy, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ProfilePage() {
-  const { address, shortAddress, user, disconnect } = useWallet();
+  const { connected, address, shortAddress, user, disconnect } = useWallet();
 
   const copyAddress = () => {
-    if (typeof window !== 'undefined' && address) {
+    if (address) {
       navigator.clipboard.writeText(address);
       toast.success('Address copied to clipboard');
     }
   };
-  
+
   const openArweaveExplorer = () => {
-    if (typeof window !== 'undefined' && address) {
+    if (address) {
       window.open(`https://arweave.app/address/${address}`, '_blank');
     }
   };
+
+  if (!connected) {
+    return (
+      <div className="flex-1 overflow-auto">
+        <div className="h-full p-8">
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <User size={64} className="text-muted-foreground/30 mb-6" />
+            <h1 className="text-2xl font-semibold mb-3">Connect Your Wallet</h1>
+            <p className="text-muted-foreground max-w-md">
+              Connect your Arweave wallet to view your profile information and
+              manage your account.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-auto">

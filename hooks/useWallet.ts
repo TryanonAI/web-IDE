@@ -244,6 +244,7 @@ export const useWallet = create<State>()(
 
                         case WalletConnectionResult.USER_CANCELLED:
                             console.log('[useWallet] User cancelled the wallet connection');
+                            toast.error('You declined the wallet connection');
                             get().resetWalletState();
                             useGlobalState.getState().setIsLoading(false);
                             return false;

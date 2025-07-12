@@ -69,16 +69,6 @@ const nextConfig: NextConfig = {
         tls: false,
         'canvas': false
       };
-    } else {
-      // Server-side specific configurations to handle browser globals
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        'self': false,
-        'window': false,
-        'document': false,
-        'navigator': false,
-        'location': false
-      };
     }
 
     return config;

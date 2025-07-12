@@ -47,11 +47,7 @@ interface CodeviewProps {
   isSaving?: boolean;
   onSendErrorToChat?: (errorMessage: string) => void;
 }
-const memeGifs = [
-  'https://media.tenor.com/7qFULBHgzlYAAAAi/bubu-cooking-dudu-bubu.gif',
-  'https://media.tenor.com/3WClDgCrUpUAAAAi/abster-abstract.gif',
-  'https://media.tenor.com/LCex2weU6isEAAAAi/benjammins-let-me-cook.gif',
-];
+
 // window.quickWallet = {
 //   connect: async (permissions = []) => {
 //     console.log('Simulated connect:', permissions);
@@ -74,7 +70,6 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
   const connected = useWallet((state) => state.connected);
   const codebase = useGlobalState((state) => state.codebase);
   const isLoading = useGlobalState((state) => state.isLoading);
-  const isProjectSwitching = useGlobalState((state) => state.isProjectSwitching);
   const setIsLoading = useGlobalState((state) => state.setIsLoading);
   const codeVersions = useGlobalState((state) => state.codeVersions);
   const activeProject = useGlobalState((state) => state.activeProject);
@@ -106,7 +101,7 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
 
   const commonDisabledState =
     isCodeGenerating ||
-    (isLoading && !isProjectSwitching) || // Only disable for initial loading, not project switching
+    isLoading ||
     isDeploying ||
     !connected ||
     !activeProject;
@@ -291,7 +286,7 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
   };
 
   const isEditorDisabled = () => {
-    return isSaving || isCodeGenerating || (isLoading && !isProjectSwitching);
+    return isSaving || isCodeGenerating || isLoading;
   };
 
   const formatTimestamp = (timestamp: string) => {
@@ -432,7 +427,11 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
         <div className="flex items-center justify-center h-full">
           {(() => {
             // Array of meme GIF URLs
-
+            const memeGifs = [
+              'https://media.tenor.com/7qFULBHgzlYAAAAi/bubu-cooking-dudu-bubu.gif',
+              'https://media.tenor.com/3WClDgCrUpUAAAAi/abster-abstract.gif',
+              'https://media.tenor.com/LCex2weU6isEAAAAi/benjammins-let-me-cook.gif',
+            ];
             // Pick a random meme each render
             const randomIndex = Math.floor(Math.random() * memeGifs.length);
             const memeSrc = memeGifs[randomIndex];

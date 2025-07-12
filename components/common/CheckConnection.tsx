@@ -5,7 +5,7 @@ import { useGlobalState, useWallet } from '@/hooks';
 import { notifyNoWallet } from '@/hooks/use-mobile';
 
 const CheckConnection = ({ children }: { children: React.ReactNode }) => {
-  const { setWalletLoaded, syncWithWallet, isWalletAvailable,checkWalletStatus } = useWallet();
+  const { setWalletLoaded, syncWithWallet, isWalletAvailable } = useWallet();
   const { refreshGlobalState } = useGlobalState();
 
   // useEffect(() => {
@@ -39,7 +39,7 @@ const CheckConnection = ({ children }: { children: React.ReactNode }) => {
       // We just trigger a status check here for extra safety
 
       await refreshGlobalState();
-      await checkWalletStatus();
+      // await checkWalletStatus();
     };
 
     // Add event listeners (these work alongside the ones in useWallet.ts)

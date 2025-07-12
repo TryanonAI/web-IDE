@@ -1,4 +1,3 @@
-import '@/lib/polyfills';
 import '@/styles/globals.css';
 import { Toaster } from 'sonner';
 import type { Metadata, Viewport } from 'next';
