@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { ConnectionStrategies, TrialStatus, User, WalletStatus } from "@/types";
 import { connectWallet, disconnectWallet, getWalletDetails, WalletConnectionResponse, WalletConnectionResult } from "@/lib/arkit";
 import { toast } from "sonner";
-import { createJSONStorage, devtools, persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { fetchCodeVersions, useGlobalState } from "./useGlobalState";
 import { notifyNoWallet } from "./use-mobile";
 
@@ -66,7 +66,6 @@ const Initial_WalletState = {
 };
 
 export const useWallet = create<State>()(
-    devtools(
         persist(
             (set, get) => ({
                 ...Initial_WalletState,
@@ -224,18 +223,8 @@ export const useWallet = create<State>()(
                                         dependencies: activeProject.externalPackages as Record<string, string>,
                                         codeVersions: await fetchCodeVersions(activeProject.projectId, details.walletAddress),
                                     })
-                                } else {
-                                    // const newProject = userData.projects.reverse()[0]
-                                    // useGlobalState.setState({
-                                        // projects: userData.projects,
-                                        // activeProject: newProject,
-                                        // codebase: newProject?.codebase || {},
-                                        // chatMessages: newProject?.messages || [],
-                                        // deploymentUrl: newProject?.deploymentUrl || '',
-                                        // dependencies: newProject?.externalPackages as Record<string, string> || {},
-                                        // codeVersions: await fetchCodeVersions(newProject.projectId, details.walletAddress),
-                                    // })
-                                }
+                                } 
+                                
 
                                 set({ walletStatus: WalletStatus.CONNECTED })
                                 useGlobalState.getState().setIsLoading(false);
@@ -296,7 +285,6 @@ export const useWallet = create<State>()(
                 storage: createJSONStorage(() => localStorage),
             }
         )
-    )
 );
 
 // Auto-sync wallet status periodically and on events

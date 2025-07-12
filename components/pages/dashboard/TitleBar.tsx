@@ -23,7 +23,7 @@ import { Octokit } from '@octokit/core';
 import Link from 'next/link';
 import { useCopyToClipboard } from '@uidotdev/usehooks';
 import { useRouter, usePathname } from 'next/navigation';
-import Logo from '@/public/logo_white.png';
+import Logo from '@/public/logo_white.webp';
 
 import {
   DropdownMenu,
