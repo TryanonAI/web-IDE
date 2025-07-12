@@ -70,7 +70,7 @@ export function ProjectDrawer() {
     if (selectedProject && address) {
       closeDrawer();
       // Update the URL with the selected project ID
-      router.push(`/dashboard/${projectId}`);
+      router.push(`/projects/${projectId}`);
       await loadProjectData(selectedProject, address);
     } else {
       console.error('Project not found with ID:', projectId);

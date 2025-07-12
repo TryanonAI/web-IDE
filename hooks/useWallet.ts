@@ -195,7 +195,6 @@ export const useWallet = create<State>()(
                     useGlobalState.getState().setIsLoading(true);
                     // get().resetWalletState();
                     const connectionResult: WalletConnectionResponse = await connectWallet();
-                    console.log('[useWallet] connectionResult:', connectionResult);
                     switch (connectionResult.status) {
                         case WalletConnectionResult.CONNECTED:
                             const details: { walletAddress: string; } = await getWalletDetails();

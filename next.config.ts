@@ -19,12 +19,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  env: {
-    NEXT_PUBLIC_BACKEND_URL:
-      process.env.NODE_ENV === 'development'
-        ? 'http://localhost:5000'
-        : 'https://backend.tryanon.ai'
-  },
 
   // Optimize webpack configuration for large modules
   webpack: (config, { isServer }) => {

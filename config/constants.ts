@@ -20,7 +20,7 @@ export const UI = {
 // Route Constants
 export const ROUTES = {
   HOME: '/',
-  DASHBOARD: '/dashboard',
+  DASHBOARD: '/projects',
   PROFILE: '/profile',
   SETTINGS: '/settings',
 };

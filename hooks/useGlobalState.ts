@@ -82,7 +82,13 @@ export interface DrawerState {
   closeDrawer: () => void;
 }
 
-export interface GlobalState extends GithubState, ProjectState, SandpackState, ModalState, DrawerState {
+export interface SidebarState {
+  sidebarOpen: boolean;
+  toggleSidebar: () => void;
+  setSidebarOpen: (open: boolean) => void;
+}
+
+export interface GlobalState extends GithubState, ProjectState, SandpackState, ModalState, DrawerState, SidebarState {
   isLoading: boolean;
   setIsLoading: (isLoading: boolean) => void;
   error: string | null;
@@ -870,6 +876,11 @@ export const useGlobalState = create<
         openModal: (modal: ModalType) => set({ activeModal: modal }),
         closeModal: () => set({ activeModal: null }),
         setProjectName: (name: string) => set({ projectName: name }),
+
+        // Sidebar States
+        sidebarOpen: true,
+        toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+        setSidebarOpen: (open: boolean) => set({ sidebarOpen: open }),
 
         setDependencies: (newDeps: Record<string, string>) => {
           set({ dependencies: newDeps });

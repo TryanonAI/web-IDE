@@ -1,7 +1,13 @@
 'use client';
 
 import { toast } from 'sonner';
-import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import {
   Loader2Icon,
   RefreshCw,
@@ -151,7 +157,7 @@ const Chatview = forwardRef<ChatviewRef>((props, ref) => {
 
   const handleSubmitWithMessage = async (messageText: string) => {
     if (!messageText.trim()) return;
-    
+
     // Use the provided message directly
     await submitMessage(messageText, false);
   };
@@ -163,12 +169,15 @@ const Chatview = forwardRef<ChatviewRef>((props, ref) => {
 
     const messageToSend = failedMessage || userInput;
     if (!messageToSend.trim()) return;
-    
+
     // Use the current input/failed message
     await submitMessage(messageToSend, !!failedMessage);
   };
 
-  const submitMessage = async (messageToSend: string, currentlyRetrying: boolean) => {
+  const submitMessage = async (
+    messageToSend: string,
+    currentlyRetrying: boolean
+  ) => {
     if (currentlyRetrying) {
       setIsRetrying(true);
     }
@@ -445,7 +454,8 @@ const Chatview = forwardRef<ChatviewRef>((props, ref) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-background relative">
+    <div className="h-full flex flex-col bg-background relative border-r-1">
+      {/* Sidebar Toggle Button - Top Left Corner */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages &&
           messages.length > 0 &&
@@ -534,12 +544,12 @@ const Chatview = forwardRef<ChatviewRef>((props, ref) => {
                 >
                   {mode === 'UI' ? (
                     <>
-                      <Layout className="h-2.5 w-2.5" />
+                      {/* <Layout className="h-2.5 w-2.5" /> */}
                       UI
                     </>
                   ) : (
                     <>
-                      <Zap className="h-2.5 w-2.5" />
+                      {/* <Zap className="h-2.5 w-2.5" /> */}
                       All
                     </>
                   )}
@@ -574,12 +584,12 @@ const Chatview = forwardRef<ChatviewRef>((props, ref) => {
                   >
                     {mode === 'UI' ? (
                       <>
-                        <Layout className="h-3 w-3" />
+                        {/* <Layout className="h-3 w-3" /> */}
                         UI
                       </>
                     ) : (
                       <>
-                        <Zap className="h-3 w-3" />
+                        {/* <Zap className="h-3 w-3" /> */}
                         All
                       </>
                     )}

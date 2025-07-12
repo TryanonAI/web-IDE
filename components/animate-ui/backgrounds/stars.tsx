@@ -122,14 +122,14 @@ function StarsBackground({
         className={cn({ 'pointer-events-none': !pointerEvents })}
       >
         <StarLayer
-          count={1000}
+          count={200}
           size={1}
           transition={{ repeat: Infinity, duration: speed, ease: 'linear' }}
           starColor={starColor}
         />
         <StarLayer
           count={400}
-          size={2}
+          size={1.5}
           transition={{
             repeat: Infinity,
             duration: speed * 2,
@@ -139,7 +139,7 @@ function StarsBackground({
         />
         <StarLayer
           count={200}
-          size={2.45}
+          size={1}
           transition={{
             repeat: Infinity,
             duration: speed * 3,
