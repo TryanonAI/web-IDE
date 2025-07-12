@@ -75,7 +75,7 @@ export default function CustomDomain({ className }: { className?: string }) {
 
     setIsLoading(true);
     try {
-      const { ANTRegistry, ARIO } = await import('@ar.io/sdk');
+      const { ANTRegistry, ARIO } = await import('@ar.io/sdk/web');
       const antRegistry = ANTRegistry.init();
       const ario = ARIO.mainnet();
 
@@ -134,7 +134,7 @@ export default function CustomDomain({ className }: { className?: string }) {
 
     setIsMigrating(true);
     try {
-      const { ANT, ArconnectSigner } = await import('@ar.io/sdk');
+      const { ANT, ArconnectSigner } = await import('@ar.io/sdk/web');
 
       if (!window.arweaveWallet) {
         throw new Error('ArConnect wallet not found');
@@ -231,7 +231,7 @@ export default function CustomDomain({ className }: { className?: string }) {
 
   useEffect(() => {
     async function getReservedName() {
-      const { ARIO } = await import('@ar.io/sdk');
+      const { ARIO } = await import('@ar.io/sdk/web');
       const ario = ARIO.mainnet();
 
       const reservedName = await ario.getArNSReservedName({ name: 'aykansal' });
