@@ -35,7 +35,11 @@ import {
 import { DrawerType, GITHUB_STATUS } from '@/hooks/useGlobalState';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
-import CustomDomain from '@/components/custom-domain';
+import dynamic from 'next/dynamic';
+
+const CustomDomain = dynamic(() => import('@/components/custom-domain'), {
+  ssr: false,
+});
 
 const TitleBar = () => {
   const disconnect = useWallet((state) => state.disconnect);
