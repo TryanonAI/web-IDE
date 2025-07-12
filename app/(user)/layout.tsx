@@ -59,12 +59,12 @@ interface FrameworkOption {
 export const frameworks: FrameworkOption[] = [
   {
     value: Framework.React,
-    label: 'Dev Mode',
+    label: 'Dev (React)',
     icon: <Code2 className="h-4 w-4" />,
   },
   {
     value: Framework.Html,
-    label: 'Vibe Mode',
+    label: 'No-Code (HTML)',
     icon: <Palette className="h-4 w-4" />,
   },
 ];
@@ -224,7 +224,7 @@ const Layout = ({ children }: LayoutProps) => {
         </aside>
         <div
           id="main-container"
-          className="flex-1 transition-all duration-300 ease-in-out overflow-hidden"
+          className="flex-1 transition-all duration-300 ease-in-out overflow-auto"
         >
           {children}
         </div>

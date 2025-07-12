@@ -32,7 +32,8 @@ export function Loading_Gif({
       src = '/postSubmit.gif';
       break;
     case 4:
-      src = 'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExajMyeDM4cGh1cXdxeTNrN3k3aWkyMnkzOHZiNGNyNXV1eG53amxtNSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/bGgsc5mWoryfgKBx1u/giphy.gif';
+      src =
+        'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExajMyeDM4cGh1cXdxeTNrN3k3aWkyMnkzOHZiNGNyNXV1eG53amxtNSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/bGgsc5mWoryfgKBx1u/giphy.gif';
       break;
     case 5:
       src = 'https://media1.tenor.com/m/V_0ti1a3_GoAAAAC/loading-azurlane.gif';

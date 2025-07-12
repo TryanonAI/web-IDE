@@ -173,7 +173,7 @@ const ARNS = () => {
     if (typeof window === 'undefined') return null;
 
     try {
-      const { ARIO } = await import('@ar.io/sdk');
+      const { ARIO } = await import('@ar.io/sdk/web');
       const ario = ARIO.mainnet();
       const primary = await ario.getPrimaryName({ address: userAddress });
       console.log('Primary name:', primary);
@@ -323,12 +323,6 @@ const ARNS = () => {
     }
   };
 
-  useEffect(() => {
-    if (connected && address && lastAddress !== address) {
-      fetchUserData();
-    }
-  }, [connected, address, lastAddress, fetchUserData]);
-
   const filteredRecords = arnsRecords.filter((record) =>
     record.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -336,6 +330,12 @@ const ARNS = () => {
   const formatTimestamp = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString();
   };
+
+  useEffect(() => {
+    if (connected && address && lastAddress !== address) {
+      fetchUserData();
+    }
+  }, [connected, address, lastAddress, fetchUserData]);
 
   if (!connected) {
     return (

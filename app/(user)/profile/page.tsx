@@ -31,7 +31,8 @@ export default function ProfilePage() {
             <User size={64} className="text-muted-foreground/30 mb-6" />
             <h1 className="text-2xl font-semibold mb-3">Connect Your Wallet</h1>
             <p className="text-muted-foreground max-w-md">
-              Connect your Arweave wallet to view your profile information and manage your account.
+              Connect your Arweave wallet to view your profile information and
+              manage your account.
             </p>
           </div>
         </div>
@@ -79,13 +80,17 @@ export default function ProfilePage() {
                     <Copy size={14} className="mr-1" />
                     Copy
                   </Button>
-                  <Button variant="outline" size="sm" onClick={openArweaveExplorer}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={openArweaveExplorer}
+                  >
                     <ExternalLink size={14} className="mr-1" />
                     Explorer
                   </Button>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-3 border rounded-lg">
                   <div className="text-sm text-muted-foreground">Status</div>
@@ -95,7 +100,9 @@ export default function ProfilePage() {
                 </div>
                 {user && (
                   <div className="p-3 border rounded-lg">
-                    <div className="text-sm text-muted-foreground">Projects</div>
+                    <div className="text-sm text-muted-foreground">
+                      Projects
+                    </div>
                     <div className="text-lg font-medium mt-1">
                       {user.projects?.length || 0}
                     </div>

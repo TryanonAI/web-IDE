@@ -35,9 +35,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import OpenWithCursor from '../OpenWithCursor';
 import ErrorFixButton from './ErrorFixButton';
 import Image from 'next/image';
+import OpenWithIDE from '../OpenWithIDE';
 
 interface CodebaseType {
   [key: string]: string;
@@ -79,13 +79,15 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
   const isDeploying = useGlobalState((state) => state.isDeploying);
   const deploymentUrl = useGlobalState((state) => state.deploymentUrl);
   const addConsoleError = useGlobalState((state) => state.addConsoleError);
-  const clearConsoleErrors = useGlobalState((state) => state.clearConsoleErrors);
+  const clearConsoleErrors = useGlobalState(
+    (state) => state.clearConsoleErrors
+  );
 
   const { sandpack } = useSandpack();
-  const { logs } = useSandpackConsole({ 
-    maxMessageCount: 1000, 
+  const { logs } = useSandpackConsole({
+    maxMessageCount: 1000,
     resetOnPreviewRestart: true,
-    showSyntaxError: true 
+    showSyntaxError: true,
   });
 
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
@@ -125,23 +127,23 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
     if (!logs || !activeProject) return;
 
     // Check for new ERRORS only (exclude warnings)
-    const newErrors = logs.filter(log => {
+    const newErrors = logs.filter((log) => {
       const isError = log.method === 'error'; // Only actual errors, not warnings
       const isNotProcessed = !processedErrorIds.current.has(log.id);
       return isError && isNotProcessed;
     });
 
     // Add new errors to global state
-    newErrors.forEach(log => {
+    newErrors.forEach((log) => {
       if (!log.data) return;
-      
+
       const error = {
         id: log.id,
         message: log.data.join(' '),
         type: 'error' as const,
         timestamp: Date.now(),
       };
-      
+
       console.log('Sandpack console error detected:', error);
       addConsoleError(error);
       processedErrorIds.current.add(log.id);
@@ -307,7 +309,9 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
     }
   };
 
-  const [activeTab, setActiveTab] = useState<'code' | 'preview' | 'console'>('code');
+  const [activeTab, setActiveTab] = useState<'code' | 'preview' | 'console'>(
+    'code'
+  );
 
   const handleRefreshClick = () => {
     setIsRefreshing(true);
@@ -322,7 +326,9 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
       onSendErrorToChat(errorMessage);
     } else {
       console.log('Sending error to chat:', errorMessage);
-      toast.info('Error details will be sent to chat when integration is complete');
+      toast.info(
+        'Error details will be sent to chat when integration is complete'
+      );
     }
   };
 
@@ -414,7 +420,9 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
   }
 
   return (
-    <div className={`${isFullscreen ? 'fixed inset-0 z-[9999] bg-background' : 'h-full w-full relative'}`}>
+    <div
+      className={`${isFullscreen ? 'fixed inset-0 z-[9999] bg-background' : 'h-full w-full relative'}`}
+    >
       {isCodeGenerating ? (
         <div className="flex items-center justify-center h-full">
           {(() => {
@@ -587,7 +595,7 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
               <div className="relative opacity-80">
                 <Tooltip>
                   <TooltipTrigger asChild disabled={commonDisabledState}>
-                    <OpenWithCursor
+                    <OpenWithIDE
                       disabled={commonDisabledState}
                       activeProject={activeProject as Project}
                     />
@@ -604,7 +612,11 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
                   onClick={() =>
                     setIsVersionDropdownOpen(!isVersionDropdownOpen)
                   }
-                  disabled={isEditorDisabled() || codeVersions?.length === 0 || !activeProject}
+                  disabled={
+                    isEditorDisabled() ||
+                    codeVersions?.length === 0 ||
+                    !activeProject
+                  }
                   className={cn(
                     'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
                     (isEditorDisabled() || codeVersions?.length === 0) &&
@@ -618,7 +630,7 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
                         codeVersions?.find((v) => v.id === selectedVersion)
                           ?.timestamp || ''
                       )}`
-                    : 'Current (Latest)'}
+                    : 'Latest'}
                   <ChevronDown
                     size={10}
                     className={cn(
@@ -739,14 +751,17 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
           </div>
         </div>
       )}
-      
+
       {/* Error Fix Button - shows when console errors are detected */}
       <ErrorFixButton onSendErrorToChat={handleSendErrorToChat} />
     </div>
   );
 }
 
-export default function Codeview({ isSaving, onSendErrorToChat }: CodeviewProps) {
+export default function Codeview({
+  isSaving,
+  onSendErrorToChat,
+}: CodeviewProps) {
   const codebase = useGlobalState((state) => state.codebase);
   const dependencies = useGlobalState((state) => state.dependencies);
 
@@ -806,7 +821,10 @@ export default function Codeview({ isSaving, onSendErrorToChat }: CodeviewProps)
         autoReload: true,
       }}
     >
-      <CodeviewInner isSaving={isSaving} onSendErrorToChat={onSendErrorToChat} />
+      <CodeviewInner
+        isSaving={isSaving}
+        onSendErrorToChat={onSendErrorToChat}
+      />
     </SandpackProvider>
   );
 }

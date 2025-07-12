@@ -28,3 +28,34 @@ export const submitAccessRequest = async (
         };
     }
 };
+
+// lib/api.ts
+
+import { Project } from '@/types';
+
+
+export async function getProjectsForWallet(walletAddress: string): Promise<Project[]> {
+  if (!walletAddress) return [];
+
+  try {
+    const res = await fetch(`${API_URL}/projects?walletAddress=${walletAddress}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Optional: enable cache control if needed
+      cache: 'no-store', // or 'force-cache' depending on your use case
+    });
+
+    if (!res.ok) {
+      console.error(`Failed to fetch projects: ${res.statusText}`);
+      return [];
+    }
+
+    const data = await res.json();
+    return data.projects || [];
+  } catch (error) {
+    console.error('Error fetching projects on server:', error);
+    return [];
+  }
+}

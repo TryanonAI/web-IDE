@@ -4,7 +4,6 @@ import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useGlobalState, useWallet } from '@/hooks';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import {
   PlusIcon,
@@ -12,13 +11,12 @@ import {
   FolderOpen,
   Code2,
   Palette,
-  Globe,
+  // Globe,
   FileText,
 } from 'lucide-react';
 
-// Common sidebar button class for navigation and project list
 const sidebarButtonClass =
-  'w-full flex items-center px-3 py-2 text-sm font-medium transition-colors';
+  'w-full flex items-center px-3 py-2 text-sm tracking-wide font-medium transition-colors rounded-md';
 
 export default function Sidebar() {
   const router = useRouter();
@@ -29,7 +27,7 @@ export default function Sidebar() {
 
   const navigationTabs = [
     {
-      label: 'View all projects',
+      label: 'Projects',
       path: '/projects',
       icon: <Folder size={18} />,
     },
@@ -38,11 +36,11 @@ export default function Sidebar() {
       path: '/templates',
       icon: <FileText size={18} />,
     },
-    {
-      label: 'ARNS',
-      path: '/arns',
-      icon: <Globe size={18} />,
-    },
+    // {
+    //   label: 'ARNS',
+    //   path: '/arns',
+    //   icon: <Globe size={18} />,
+    // },
   ];
 
   const handleCreateProject = () => {
@@ -87,7 +85,6 @@ export default function Sidebar() {
     }
   };
 
-  // Sort projects by creation date (newest first)
   const sortedProjects = React.useMemo(() => {
     if (!projects) return [];
     return [...projects].sort(
@@ -98,21 +95,17 @@ export default function Sidebar() {
 
   return (
     <div className="w-64 bg-background flex flex-col h-full overflow-hidden border-r-[1px]">
-      {/* Top - New Project Button */}
-      <div className="p-4 border-b border-border">
-        <Button
-          onClick={handleCreateProject}
-          className="w-full rounded-none"
-          disabled={!connected}
-        >
-          <PlusIcon size={16} className="mr-2" />
-          New Project
-        </Button>
-      </div>
-
-      {/* Middle - Navigation Tabs */}
       <div className="border-b border-border">
         <nav className="p-2 space-y-1">
+          <Button
+            onClick={handleCreateProject}
+            className="w-full rounded-md mb-2"
+            disabled={!connected}
+          >
+            <PlusIcon size={16} className="mr-2" />
+            New Project
+          </Button>
+
           {navigationTabs.map((tab) => {
             const isActive = pathname === tab.path;
             return (
@@ -135,11 +128,9 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* Projects Section */}
       <div className="flex-1 flex flex-col min-h-0">
-        {/* Fixed Projects Header */}
-        <div className="px-5 py-2 border-b border-border/50">
-          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="px-5 py-2 ">
+          <div className="text-sm font-medium text-muted-foreground tracking-wider">
             Recent Projects
           </div>
         </div>
@@ -170,8 +161,7 @@ export default function Sidebar() {
                 {sortedProjects.map((project) => {
                   const isActive =
                     activeProject?.projectId === project.projectId;
-                  const isCurrentPath =
-                    pathname === `/projects/${project.projectId}`;
+                  // const isCurrentPath = pathname === `/projects/${project.projectId}`;
 
                   return (
                     <button
@@ -180,9 +170,9 @@ export default function Sidebar() {
                       className={cn(
                         sidebarButtonClass,
                         'gap-3 text-left group',
-                        isCurrentPath
+                        isActive
                           ? 'bg-primary/10 text-primary'
-                          : 'text-foreground hover:bg-primary/50'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-primary/20'
                       )}
                     >
                       <div className="shrink-0">
@@ -193,11 +183,6 @@ export default function Sidebar() {
                           {project.title}
                         </div>
                       </div>
-                      {isActive && !isCurrentPath && (
-                        <Badge variant="secondary" className="text-xs">
-                          Active
-                        </Badge>
-                      )}
                     </button>
                   );
                 })}
@@ -206,7 +191,7 @@ export default function Sidebar() {
           </div>
 
           {/* Bottom Fade Effect */}
-          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
+          <div className="absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
         </div>
       </div>
     </div>

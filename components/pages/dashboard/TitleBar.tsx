@@ -11,6 +11,8 @@ import {
   LogOutIcon,
   UserIcon,
   SquareArrowOutUpRight,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { useWallet } from '@/hooks';
 import { Button } from '@/components/ui/button';
@@ -33,13 +35,13 @@ import {
 import { DrawerType, GITHUB_STATUS } from '@/hooks/useGlobalState';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
+import CustomDomain from '@/components/custom-domain';
 
 const TitleBar = () => {
   const disconnect = useWallet((state) => state.disconnect);
   const [, copyToClipboard] = useCopyToClipboard();
   const [copy, setCopy] = useState<boolean>(false);
   const pathname = usePathname();
-
   const isLoading = useGlobalState((state) => state.isLoading);
   const isCodeGenerating = useGlobalState((state) => state.isCodeGenerating);
   const { openDrawer } = useGlobalState();
@@ -53,6 +55,8 @@ const TitleBar = () => {
     setGithubToken,
     setGithubStatus,
     setGithubUsername,
+    sidebarOpen,
+    toggleSidebar,
   } = useGlobalState();
 
   const { activeProject } = useGlobalState();
@@ -178,23 +182,46 @@ const TitleBar = () => {
 
   return (
     <>
-      <div className="border-b border-border/50 bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 flex justify-between items-center pl-2 pr-5">
-        {/* Logo with Link wrapper */}
-        <Link
-          href="/projects"
-          className="w-[20%] sm:w-[15%] md:w-[12%] lg:w-[10%] xl:w-[9.5%] max-w-[120px] py-2 cursor-pointer hover:opacity-80 transition-opacity"
-        >
-          <Image
-            className="w-full h-[36px] object-contain"
-            src={Logo}
-            alt="Logo"
-            width={290}
-            height={290}
-            priority
-          />
-        </Link>
-        {/* Main Toolbar */}
-        <div className="h-14 flex items-center gap-4 max-w-screen-2xl">
+      <div className="border-b border-border/50 bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 flex items-center h-14 px-4">
+        {/* Left section with sidebar toggle and logo */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleSidebar}
+            className="h-9 w-9 bg-background/80 hover:bg-foreground/5 backdrop-blur-sm border border-border/40 rounded-md flex items-center justify-center hover:text-foreground transition-all duration-200 shadow-sm group"
+            title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+            aria-label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+          >
+            {sidebarOpen ? (
+              <PanelLeftClose
+                size={16}
+                className="text-muted-foreground group-hover:text-foreground transition-colors"
+              />
+            ) : (
+              <PanelLeftOpen
+                size={16}
+                className="text-muted-foreground group-hover:text-foreground transition-colors"
+              />
+            )}
+          </button>
+
+          {/* Logo with Link wrapper */}
+          <Link
+            href="/projects"
+            className="flex items-center py-2 cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <Image
+              className="h-8 w-auto object-contain"
+              src={Logo}
+              alt="Logo"
+              width={290}
+              height={290}
+              priority
+            />
+          </Link>
+        </div>
+
+        {/* Main Toolbar - Right section */}
+        <div className="flex items-center gap-3 ml-auto">
           {/* Only show utility buttons in codeview */}
           {isCodeView && activeProject?.framework !== Framework.Html && (
             <>
@@ -275,42 +302,45 @@ const TitleBar = () => {
           {isCodeView && activeProject?.framework === Framework.Html && (
             <div className="flex items-center gap-2">
               {deploymentUrl && (
-                <div className="flex items-center bg-card/50 rounded-lg border border-border shadow-sm overflow-hidden">
-                  <Link
-                    href={deploymentUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center px-4 py-2 transition-colors duration-200 border-r border-border/50"
-                  >
-                    <SquareArrowOutUpRight
-                      size={16}
-                      className="text-primary mr-2"
-                    />
-                    <span className="text-sm font-medium">View Permaweb</span>
-                  </Link>
-                  <button
-                    className="flex items-center px-4 py-2 transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    onClick={() => {
-                      setCopy(true);
-                      copyToClipboard(deploymentUrl);
-                      toast.success('Deployment URL copied to clipboard');
-                      setTimeout(() => setCopy(false), 2000);
-                    }}
-                    title="Copy deployment URL"
-                  >
-                    {copy ? (
-                      <div className="flex items-center text-green-600 dark:text-green-400">
-                        <Check size={16} className="mr-2" />
-                        <span className="text-sm font-medium">Copied!</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center">
-                        <Copy size={16} className="mr-2" />
-                        <span className="text-sm font-medium">Copy URL</span>
-                      </div>
-                    )}
-                  </button>
-                </div>
+                <>
+                  <div className="flex items-center bg-card/50 rounded-lg border border-border shadow-sm overflow-hidden">
+                    <Link
+                      href={deploymentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center px-4 py-2 transition-colors duration-200 border-r border-border/50"
+                    >
+                      <SquareArrowOutUpRight
+                        size={16}
+                        className="text-primary mr-2"
+                      />
+                      <span className="text-sm font-medium">View</span>
+                    </Link>
+                    <button
+                      className="flex items-center px-4 py-2 transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      onClick={() => {
+                        setCopy(true);
+                        copyToClipboard(deploymentUrl);
+                        toast.success('Deployment URL copied to clipboard');
+                        setTimeout(() => setCopy(false), 2000);
+                      }}
+                      title="Copy deployment URL"
+                    >
+                      {copy ? (
+                        <div className="flex items-center text-green-600 dark:text-green-400">
+                          <Check size={16} className="mr-2" />
+                          <span className="text-sm font-medium">Copied!</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center">
+                          <Copy size={16} className="mr-2" />
+                          <span className="text-sm font-medium">Copy URL</span>
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                  <CustomDomain className="mr-5 mt-4" />
+                </>
               )}
             </div>
           )}
@@ -323,7 +353,7 @@ const TitleBar = () => {
                   disabled={
                     isCodeGenerating || isLoading || isDeploying || !connected
                   }
-                  className="rounded-md border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 group h-9 px-3 py-5 flex items-center gap-2 tracking-wider text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="rounded-md border bg-background shadow-xs hover:bg-primaryhover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 group h-9 px-3 py-5 flex items-center gap-2 tracking-wider text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Avatar>
                     <AvatarImage src={user?.avatarUrl} alt={user?.username} />

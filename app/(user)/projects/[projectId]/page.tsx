@@ -1,22 +1,18 @@
 'use client';
 
-import { use, useEffect, useState, useRef } from 'react';
+import { use, useEffect, useState, useRef, Suspense } from 'react';
 import { useGlobalState } from '@/hooks';
 import { useWallet } from '@/hooks';
-import { Loading_Gif } from '@/app/loading';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
 
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@/components/ui/resizable';
+import { ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import Codeview from '@/components/pages/dashboard/codeview/Codeview';
 import Chatview from '@/components/pages/dashboard/chatview/Chatview';
+import ProjectLoadingSkeleton from '@/components/pages/dashboard/ProjectLoadingSkeleton';
 
 interface DashboardProps {
   params: Promise<{
@@ -24,9 +20,7 @@ interface DashboardProps {
   }>;
 }
 
-const Dashboard = ({ params }: DashboardProps) => {
-  // Properly unwrap the params promise
-  const { projectId } = use(params);
+const DashboardContent = ({ projectId }: { projectId: string }) => {
   const { address } = useWallet();
   const router = useRouter();
   const isLoading = useGlobalState((state) => state.isLoading);
@@ -36,16 +30,14 @@ const Dashboard = ({ params }: DashboardProps) => {
   const setProjects = useGlobalState((state) => state.setProjects);
   const activeProject = useGlobalState((state) => state.activeProject);
 
-  // State to track if project was found
   const [projectNotFound, setProjectNotFound] = useState(false);
   const [hasCheckedProject, setHasCheckedProject] = useState(false);
+  const [isProjectLoading, setIsProjectLoading] = useState(false);
 
-  // Ref to access chat functionality
   const chatRef = useRef<{ sendMessage: (message: string) => void } | null>(
     null
   );
 
-  // Function to send error messages to chat
   const handleSendErrorToChat = (errorMessage: string) => {
     if (chatRef.current) {
       chatRef.current.sendMessage(errorMessage);
@@ -55,7 +47,6 @@ const Dashboard = ({ params }: DashboardProps) => {
     }
   };
 
-  // Load project data when component mounts or projectId changes
   useEffect(() => {
     const loadData = async () => {
       if (!address || !projectId) {
@@ -63,12 +54,12 @@ const Dashboard = ({ params }: DashboardProps) => {
       }
 
       setIsLoading(true);
+      setIsProjectLoading(true);
       setProjectNotFound(false);
       setHasCheckedProject(false);
 
       let currentProjects = projects;
 
-      // If projects are not loaded, fetch them
       if (currentProjects.length === 0) {
         try {
           const response = await axios.get(
@@ -85,12 +76,12 @@ const Dashboard = ({ params }: DashboardProps) => {
           toast.error('Failed to fetch your projects');
           setProjects([]);
           setIsLoading(false);
+          setIsProjectLoading(false);
           setHasCheckedProject(true);
           return;
         }
       }
 
-      // Now find and load the specific project
       const project = currentProjects.find((p) => p.projectId === projectId);
       if (project) {
         await loadProjectData(project, address);
@@ -102,28 +93,19 @@ const Dashboard = ({ params }: DashboardProps) => {
 
       setHasCheckedProject(true);
       setIsLoading(false);
+      setIsProjectLoading(false);
     };
 
     loadData();
   }, [projectId, address, loadProjectData, setIsLoading, setProjects]);
 
-  // Show loading while checking
-  if (isLoading || !hasCheckedProject) {
-    return (
-      <div className="flex flex-1 items-center justify-center bg-background">
-        <Loading_Gif count={3} />
-      </div>
-    );
+  if (isLoading || !hasCheckedProject || isProjectLoading) {
+    return <ProjectLoadingSkeleton />;
   }
 
-  // Show error page if project not found
-  if (
-    projectNotFound ||
-    !activeProject ||
-    activeProject.projectId !== projectId
-  ) {
+  if (projectNotFound) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-background">
+      <div className="flex flex-1 items-center justify-center bg-background h-screen">
         <div className="text-center space-y-6 max-w-md mx-auto p-6">
           <div className="flex justify-center">
             <AlertTriangle className="h-16 w-16 text-destructive" />
@@ -158,16 +140,34 @@ const Dashboard = ({ params }: DashboardProps) => {
     );
   }
 
+  if (!activeProject || activeProject.projectId !== projectId) {
+    return <ProjectLoadingSkeleton />;
+  }
+
   return (
     <ResizablePanelGroup direction="horizontal">
-      <ResizablePanel defaultSize={50} minSize={20}>
-        <Chatview ref={chatRef} />
+      <ResizablePanel defaultSize={43} minSize={43}>
+        <Suspense fallback={<ProjectLoadingSkeleton />}>
+          <Chatview ref={chatRef} />
+        </Suspense>
       </ResizablePanel>
-      <ResizableHandle />
-      <ResizablePanel defaultSize={50} minSize={40}>
-        <Codeview onSendErrorToChat={handleSendErrorToChat} />
+      {/* <ResizableHandle /> */}
+      <ResizablePanel defaultSize={57} minSize={57}>
+        <Suspense fallback={<ProjectLoadingSkeleton />}>
+          <Codeview onSendErrorToChat={handleSendErrorToChat} />
+        </Suspense>
       </ResizablePanel>
     </ResizablePanelGroup>
+  );
+};
+
+const Dashboard = ({ params }: DashboardProps) => {
+  const { projectId } = use(params);
+
+  return (
+    <Suspense fallback={<ProjectLoadingSkeleton />}>
+      <DashboardContent projectId={projectId} />
+    </Suspense>
   );
 };
 
