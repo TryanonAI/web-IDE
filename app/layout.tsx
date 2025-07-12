@@ -5,6 +5,7 @@ import type { Metadata, Viewport } from 'next';
 import { ThemeProvider } from 'next-themes';
 import { Analytics } from '@vercel/analytics/react';
 import CheckConnection from '@/components/common/CheckConnection';
+import ClientInitializer from '@/components/codesandbox_not-used/ClientInitializer';
 import { MobileProvider } from '@/hooks/use-mobile';
 import { GoogleAnalytics, GoogleTagManager } from '@next/third-parties/google';
 
@@ -41,6 +42,7 @@ export default function RootLayout({
               {children}
               <Toaster position="bottom-center" />
             </CheckConnection>
+            <ClientInitializer />
             <Analytics />
           </MobileProvider>
         </ThemeProvider>
