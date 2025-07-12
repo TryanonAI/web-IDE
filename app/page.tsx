@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Zap, Github, Twitter, ArrowRight, Loader2 } from 'lucide-react';
-import Logo from '@/public/logo_white.png';
+import Logo from '@/public/logo_white.webp';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -21,7 +21,6 @@ const socialLinks = [
     label: 'GitHub',
   },
 ];
-// import { Pause, Play } from 'lucide-react';
 import { AuroraText } from '@/components/magicui/aurora-text';
 
 export default function AnonLanding() {
@@ -29,17 +28,29 @@ export default function AnonLanding() {
   const [isLoading, setIsLoading] = useState(false);
   const [wallet, setWallet] = useState('');
   const { connect } = useWallet();
-  const videoRef = useRef<HTMLVideoElement>(null);
-
   const handleConnectWallet = async () => {
     if (!window.arweaveWallet) {
       toast.error('Please install the Wander Wallet');
       return;
     }
+
     try {
       setIsLoading(true);
-      await connect();
-      const address = await window.arweaveWallet.getActiveAddress();
+
+      let address;
+
+      try {
+        address = await window.arweaveWallet.getActiveAddress();
+      } catch (error) {
+        // @ts-expect-error ignore
+        if (error.includes('Missing permission')) {
+          await connect();
+          address = await window.arweaveWallet.getActiveAddress();
+        } else {
+          throw error;
+        }
+      }
+
       setWallet(address);
       toast.success('Wallet connected successfully');
     } catch (err) {
@@ -107,9 +118,8 @@ export default function AnonLanding() {
             </div>
           </div>
         </header>
-
         {/* Hero Section */}
-        <section className="relative z-10 max-w-7xl my-auto mx-auto px-8 pt-20 pb-10">
+        <section className="relative z-10 max-w-7xl h-[83vh] my-auto mx-auto px-8 pt-24 pb-10">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1 bg-gradient-to-r from-[#00FFD1]/20 to-[#00FFD1]/20 border border-[#00FFD1]/30 backdrop-blur-sm rounded-sm mb-8">
               <Zap className="h-4 w-4 text-[#00FFD1]" />
@@ -120,11 +130,9 @@ export default function AnonLanding() {
 
             <h1 className="text-6xl md:text-8xl font-semibold leading-tight mb-7 text-white/90">
               Build your{' '}
-              {/* <span className="bg-gradient-to-r from-white/90 via-[#00FFD1] to-[#7C3AED] bg-clip-text text-transparent"> */}
               <AuroraText colors={['#00FFD1', '#7C3AED']}>
                 {'<'}dApp{'>'}
               </AuroraText>
-              {/* </span> */}
             </h1>
 
             <p className="text-xl text-white/70 mb-16 max-w-2xl mx-auto leading-relaxed">
@@ -164,43 +172,18 @@ export default function AnonLanding() {
         </section>
 
         {/* Video */}
-        <div className=" group relative max-w-[75%] mx-auto aspect-video bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-white/20 overflow-hidden group">
-          <video
-            ref={videoRef}
-            muted
-            controls
-            autoPlay
-            loop
-            playsInline
-            preload="auto"
-            className="w-full h-full object-cover"
-          >
-            <source src="/videos/hero_demo_tryanonai.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/30 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-          {/* Unified Center Control Button */}
-          {/* <button
-            onClick={toggleVideo}
-            className={`
-      absolute inset-0 flex items-center justify-center
-      transition-opacity duration-300
-      ${isVideoPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}
-    `}
-          >
-            <span className="bg-white/10 border border-white/20 backdrop-blur-md text-white rounded-full p-3 hover:bg-white/20 transition-all duration-300">
-              {isVideoPlaying ? (
-                <Pause className="w-6 h-6" />
-              ) : (
-                <Play className="w-6 h-6 ml-0.5" />
-              )}
-            </span>
-          </button> */}
+        <div className="group relative w-[75vw] aspect-video mx-auto aspect-video bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-white/20 overflow-hidden group rounded-sm">
+          <iframe
+            src="https://www.youtube.com/embed/T0GJ6qHNprA?si=g4gZT8E9YSNwwDny"
+            title="ANON AI Demo Video"
+            id="ytplayer"
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            loading="lazy"
+          />
         </div>
 
-        {/* Mobile-only note */}
         <div className="flex md:hidden max-w- mx-auto mt-10 px-4 text-center text-white/70 text-sm">
           <p>
             This dApp is currently only available on desktop devices. Please
@@ -208,7 +191,6 @@ export default function AnonLanding() {
           </p>
         </div>
 
-        {/* Footer */}
         <footer className="relative z-10 mt-20 border-t border-white/5 bg-gradient-to-t from-black/30 to-transparent backdrop-blur-sm">
           <div className="max-w-7xl mx-auto px-8 py-8">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
@@ -254,5 +236,9 @@ export default function AnonLanding() {
 }
 
 const StarBg = ({ children }: Readonly<{ children: React.ReactNode }>) => {
-  return <StarsBackground>{children}</StarsBackground>;
+  return (
+    <StarsBackground className="bg-[radial-gradient(ellipse_at_bottom,_#262626_0%,_#000_100%)]">
+      {children}
+    </StarsBackground>
+  );
 };

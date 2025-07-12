@@ -231,7 +231,7 @@ export default function CustomDomain({ className }: { className?: string }) {
 
   useEffect(() => {
     async function getReservedName() {
-      const { ARIO } = await import('@ar.io/sdk/web');
+      const { ARIO } = await import('@ar.io/sdk');
       const ario = ARIO.mainnet();
 
       const reservedName = await ario.getArNSReservedName({ name: 'aykansal' });

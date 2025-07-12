@@ -634,31 +634,6 @@ export const useGlobalState = create<
             dependencies: project.externalPackages as Record<string, string>,
           });
 
-          // Get existing stored projects
-          // const existingStoredProjects = JSON.parse(localStorage.getItem('storedActiveProjects') || '[]');
-
-          // Create new project entry
-          // const newStoredProject = {
-          //   storedProjectId: project.projectId,
-          //   ownerAddress: address,
-          // };
-
-          // Check if project already exists for this wallet
-          // const projectIndex = existingStoredProjects.findIndex(
-          //   (p: { ownerAddress: string }) => p.ownerAddress === address
-          // );
-
-          // if (projectIndex >= 0) {
-          // Update existing entry
-          //   existingStoredProjects[projectIndex] = newStoredProject;
-          // } else {
-          // Add new entry
-          //   existingStoredProjects.push(newStoredProject);
-          // }
-
-          // Store updated projects array
-          // localStorage.setItem('storedActiveProjects', JSON.stringify(existingStoredProjects));
-
           try {
             // Fetch codebase
             console.log('Fetching codebase');
