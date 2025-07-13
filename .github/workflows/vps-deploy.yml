@@ -38,13 +38,13 @@ jobs:
 
           echo "Deploying branch '$BRANCH' to tmux session '$SESSION' on port $PORT..."
 
-          ssh -i ~/.ssh/github-contabo -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
+          ssh -i ~/.ssh/github-contabo -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} bash -s <<ENDSSH
             set -e
             cd /home/aykansal/tryanon/frontend
 
             echo "Fetching latest code..."
-            git fetch origin '"$BRANCH"'
-            git reset --hard origin/'"$BRANCH"'
+            git fetch origin "$BRANCH"
+            git reset --hard origin/"$BRANCH"
 
             echo "Installing dependencies..."
             npm install
@@ -52,14 +52,13 @@ jobs:
             echo "Building project..."
             npm run build
 
-            if tmux has-session -t '"$SESSION"' 2>/dev/null; then
-              echo "Restarting existing tmux session: '"$SESSION"'"
-              tmux send-keys -t '"$SESSION"' C-c
+            if tmux has-session -t "$SESSION" 2>/dev/null; then
+              echo "Restarting existing tmux session: $SESSION"
+              tmux send-keys -t "$SESSION" C-c
               sleep 1
-              tmux send-keys -t '"$SESSION"' "PORT='"$PORT"' npm run start" C-m
+              tmux send-keys -t "$SESSION" "PORT=$PORT npm run start" C-m
             else
-              echo "Starting new tmux session: '"$SESSION"'"
-              tmux new-session -d -s '"$SESSION"' "PORT='"$PORT"' npm run start"
+              echo "Starting new tmux session: $SESSION"
+              tmux new-session -d -s "$SESSION" "PORT=$PORT npm run start"
             fi
           ENDSSH
-
