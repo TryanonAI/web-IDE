@@ -47,3 +47,4 @@ jobs:
           else
             vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
           fi
+EOF

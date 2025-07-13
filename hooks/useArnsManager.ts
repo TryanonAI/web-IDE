@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { ANT, ArconnectSigner } from '@ar.io/sdk/web';
+import { ANT, ArconnectSigner } from '@ar.io/sdk';
 
 export type ArnsRecord = {
   name: string;
