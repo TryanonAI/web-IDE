@@ -62,4 +62,3 @@ jobs:
               echo "Starting new tmux session: $SESSION"
               tmux new-session -d -s "$SESSION" "PORT=$PORT npm run start"
             fi
-EOF
