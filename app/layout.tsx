@@ -2,7 +2,6 @@ import '@/styles/globals.css';
 import { Toaster } from 'sonner';
 import type { Metadata, Viewport } from 'next';
 import { ThemeProvider } from 'next-themes';
-import { Analytics } from '@vercel/analytics/react';
 import CheckConnection from '@/components/common/CheckConnection';
 import { MobileProvider } from '@/hooks/use-mobile';
 import { GoogleAnalytics, GoogleTagManager } from '@next/third-parties/google';
@@ -40,7 +39,6 @@ export default function RootLayout({
               {children}
               <Toaster position="bottom-center" />
             </CheckConnection>
-            <Analytics />
           </MobileProvider>
         </ThemeProvider>
       </body>
