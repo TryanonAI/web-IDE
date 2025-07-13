@@ -17,8 +17,8 @@ jobs:
       - name: Set up SSH Access
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.VPS_KEY }}" > ~/.ssh/github-contabo
+          chmod 600 ~/.ssh/github-contabo
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy to VPS with tmux
@@ -38,7 +38,7 @@ jobs:
 
           echo "Deploying branch '$BRANCH' to tmux session '$SESSION' on port $PORT..."
 
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
+          ssh -i ~/.ssh/github-contabo -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
             set -e
             cd /home/aykansal/tryanon/frontend
 
