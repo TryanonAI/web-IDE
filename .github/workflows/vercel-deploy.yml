@@ -1,4 +1,4 @@
-name: Vercel Deployment
+name: Vercel Conditional Deployment
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -24,18 +24,26 @@ jobs:
       - name: Install Vercel CLI
         run: bun install --global vercel@latest
 
-      - name: Pull Vercel Environment Information
+      - name: Pull Vercel Environment Info
         run: |
-          vercel pull --yes --environment=${{ github.ref_name == 'main' && 'production' || 'preview' }} --token=${{ secrets.VERCEL_TOKEN }}
+          if [[ "${GITHUB_REF##*/}" == "master" ]]; then
+            vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+          else
+            vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+          fi
 
       - name: Build Project Artifacts
         run: |
-          vercel build \
-            --token=${{ secrets.VERCEL_TOKEN }} \
-            ${{ github.ref_name == 'main' && '--prod' || '' }}
+          if [[ "${GITHUB_REF##*/}" == "master" ]]; then
+            vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+          else
+            vercel build --token=${{ secrets.VERCEL_TOKEN }}
+          fi
 
-      - name: Deploy Project Artifacts to Vercel
+      - name: Deploy to Vercel
         run: |
-          vercel deploy --prebuilt \
-            --token=${{ secrets.VERCEL_TOKEN }} \
-            ${{ github.ref_name == 'main' && '--prod' || '' }}
+          if [[ "${GITHUB_REF##*/}" == "master" ]]; then
+            vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+          else
+            vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+          fi
