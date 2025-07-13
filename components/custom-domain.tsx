@@ -1,11 +1,9 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -31,18 +29,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Settings, Globe, Loader2, Check } from 'lucide-react';
-
-import { useWallet } from '@/hooks/useWallet';
-import { useGlobalState } from '@/hooks/useGlobalState';
+import { Settings, Globe, Loader2, Check, RefreshCw } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { useGlobalState, useWallet } from '@/hooks';
 import { useArnsManager } from '@/hooks/useArnsManager';
 
 const FormSchema = z.object({
   selectedArns: z.string().min(1, 'Please select an ARNS domain'),
   undername: z.string().optional(),
 });
-
-type FormSchemaType = z.infer<typeof FormSchema>;
 
 export default function CustomDomain({ className }: { className?: string }) {
   const { connected, address } = useWallet();
@@ -57,7 +52,7 @@ export default function CustomDomain({ className }: { className?: string }) {
     migrateToArns,
   } = useArnsManager(address, connected, activeProject);
 
-  const form = useForm<FormSchemaType>({
+  const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       selectedArns: '',
@@ -65,16 +60,8 @@ export default function CustomDomain({ className }: { className?: string }) {
     },
   });
 
-  // Load records on connect or address change
-  useEffect(() => {
-    if (connected && address) {
-      fetchArnsRecords();
-    }
-  }, [connected, address, fetchArnsRecords]);
-
-  const onSubmit = (data: FormSchemaType) => {
-    migrateToArns(data.selectedArns, data.undername);
-    form.reset();
+  const onSubmit = async (data: z.infer<typeof FormSchema>) => {
+    await migrateToArns(data.selectedArns, data.undername);
   };
 
   if (!connected) {
@@ -142,14 +129,16 @@ export default function CustomDomain({ className }: { className?: string }) {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchArnsRecords}
+            onClick={async () => {
+              await fetchArnsRecords();
+            }}
             disabled={isLoading}
             className=" h-8"
           >
             {isLoading ? (
-              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+              <RefreshCw className="mr-2 h-3 w-3 animate-spin" />
             ) : (
-              'Refresh'
+              <RefreshCw className="mr-2 h-3 w-3" />
             )}
           </Button>
         </div>
@@ -190,11 +179,11 @@ export default function CustomDomain({ className }: { className?: string }) {
                 {isLoading ? (
                   <div className="flex items-center justify-center py-4">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="ml-2 text-sm">Loading domains...</span>
+                    <span className="ml-2 text-sm">Fetching domains...</span>
                   </div>
                 ) : arnsRecords.length === 0 ? (
-                  <div className="text-sm text-muted-foreground text-center py-4">
-                    No ARNS domains found. Please register a domain first.
+                  <div className="text-center py-4 text-sm text-muted-foreground">
+                    No ARNS domains found.
                   </div>
                 ) : (
                   <>
@@ -203,30 +192,31 @@ export default function CustomDomain({ className }: { className?: string }) {
                       name="selectedArns"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Select ARNS Domain</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             value={field.value}
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Choose a domain" />
-                            </SelectTrigger>
+                            <FormControl>
+                              <SelectTrigger className="h-8">
+                                <SelectValue placeholder="Choose domain" />
+                              </SelectTrigger>
+                            </FormControl>
                             <SelectContent>
                               {arnsRecords.map((record) => (
                                 <SelectItem
                                   key={record.name}
                                   value={record.name}
                                 >
-                                  <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center justify-between w-full">
                                     <span>{record.name}</span>
-                                    {record.isPrimary && (
+                                    {/* {record.isPrimary && (
                                       <Badge
                                         variant="secondary"
-                                        className="text-xs"
+                                        className="ml-2 text-xs"
                                       >
                                         Primary
                                       </Badge>
-                                    )}
+                                    )} */}
                                   </div>
                                 </SelectItem>
                               ))}
@@ -242,13 +232,21 @@ export default function CustomDomain({ className }: { className?: string }) {
                       name="undername"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Subdomain (optional)</FormLabel>
+                          <FormLabel className="text-xs">
+                            Subdomain (optional)
+                          </FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="@ or yoursubdomain"
                               {...field}
+                              placeholder="eg. xyz_domain.ar.io"
+                              className="h-8"
                             />
                           </FormControl>
+                          <div className="text-xs text-muted-foreground">
+                            {field.value
+                              ? `Will create: ${field.value}_${form.watch('selectedArns') || 'domain'}.ar.io`
+                              : `default: ${form.watch('selectedArns') || 'domain'}.ar.io`}
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -256,18 +254,17 @@ export default function CustomDomain({ className }: { className?: string }) {
 
                     <Button
                       type="submit"
-                      disabled={isMigrating || isLoading}
-                      className="w-full"
+                      className="w-full h-8"
+                      disabled={isMigrating || !activeProject.deploymentUrl}
                     >
-                      {isMigrating ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Mapping...
-                        </>
-                      ) : (
-                        'Map Domain'
-                      )}
+                      {isMigrating ? 'Publishing...' : 'Publish Domain'}
                     </Button>
+
+                    {!activeProject.deploymentUrl && (
+                      <div className="text-xs text-destructive text-center">
+                        Project must be deployed before mapping a domain
+                      </div>
+                    )}
                   </>
                 )}
               </form>
