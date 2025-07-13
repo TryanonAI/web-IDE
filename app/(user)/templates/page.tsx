@@ -1,13 +1,17 @@
-import { FolderOpen } from "lucide-react";
+import Image from 'next/image';
 
-export default function Templates() {
+export default function Page() {
   return (
-    <div className="text-center py-16">
-      <FolderOpen size={48} className="mx-auto text-muted-foreground/30 mb-6" />
-      <h2 className="text-xl font-semibold mb-3">Templates Coming Soon</h2>
-      <p className="text-muted-foreground">
-        We&apos;re working on bringing you a collection of cool designs to help
-        you get started.
+    <div className="flex flex-col gap-3 items-center justify-center h-full">
+      <Image
+        src="/soon.webp"
+        alt="project Not Found"
+        width={200}
+        height={200}
+        priority
+      />
+      <p className="text-muted-foreground max-w-2xs text-center">
+        Bringing you cool designs to kickstart your project.
       </p>
     </div>
   );
