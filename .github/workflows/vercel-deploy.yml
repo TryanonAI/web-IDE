@@ -1,31 +1,41 @@
-  name: Vercel Production Deployment
-  env:
-    VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-    VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-  on:
-    push:
-      branches:
-        - ario
+name: Vercel Deployment
 
-  jobs:
-    Deploy-Production:
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v2
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-        - name: Install Bun
-          run: |
-            curl -fsSL https://bun.sh/install | bash
-            echo "$HOME/.bun/bin" >> $GITHUB_PATH
+on:
+  push:
+    branches:
+      - master
+      - ario
 
-        - name: Install Vercel CLI
-          run: bun install --global vercel@latest
+jobs:
+  Deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
 
-        - name: Pull Vercel Environment Information
-          run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Install Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
 
-        - name: Build Project Artifacts
-          run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Install Vercel CLI
+        run: bun install --global vercel@latest
 
-        - name: Deploy Project Artifacts to Vercel
-          run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Pull Vercel Environment Information
+        run: |
+          vercel pull --yes --environment=${{ github.ref_name == 'main' && 'production' || 'preview' }} --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: |
+          vercel build \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            ${{ github.ref_name == 'main' && '--prod' || '' }}
+
+      - name: Deploy Project Artifacts to Vercel
+        run: |
+          vercel deploy --prebuilt \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            ${{ github.ref_name == 'main' && '--prod' || '' }}
