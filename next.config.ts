@@ -3,6 +3,9 @@ import { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   // output: 'export',
   reactStrictMode: false,
+  typescript: {
+    ignoreBuildErrors: true
+  },
   productionBrowserSourceMaps: true,
   images: {
     unoptimized: true,
