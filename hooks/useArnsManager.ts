@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import { ANT, ArconnectSigner } from '@ar.io/sdk/web';
 
 export type ArnsRecord = {
   name: string;
@@ -211,8 +212,9 @@ export function useArnsManager(
 
       setIsMigrating(true);
       try {
-        const { ANT, ArconnectSigner } = await import('@ar.io/sdk/web');
-
+        if (typeof window === 'undefined' || !window.arweaveWallet) {
+          throw new Error('ArConnect wallet not found');
+        }
         if (!window.arweaveWallet) {
           throw new Error('ArConnect wallet not found');
         }
