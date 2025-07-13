@@ -237,6 +237,7 @@ export const useWallet = create<State>()(
                                     useGlobalState.getState().setIsLoading(false);
                                     return false;
                                 }
+                                await disconnectWallet()
                                 set({ walletStatus: WalletStatus.DISCONNECTED })
                                 useGlobalState.getState().setIsLoading(false);
                                 return false;

@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_BACKEND_URL: process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://backend.tryanon.ai',
   },
   webpack: (config) => {
+    config.cache = false;
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,

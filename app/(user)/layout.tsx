@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/command';
 import TitleBar from '@/components/pages/dashboard/TitleBar';
 import Sidebar from '@/components/layout/Sidebar';
+import { toast } from 'sonner';
 
 interface StatusStep {
   id: string;
@@ -190,7 +191,41 @@ const ClientLayout = ({ children }: LayoutProps) => {
       setCommitInProgress(false);
     }
   };
+  const { connect } = useWallet();
+  const [isWalletLoading, setIsWalletLoading] = useState(false);
 
+  const handleConnectWallet = async () => {
+    if (!window.arweaveWallet) {
+      toast.error('Please install the Wander Wallet');
+      return;
+    }
+
+    try {
+      setIsWalletLoading(true);
+
+      let address;
+
+      try {
+        address = await window.arweaveWallet.getActiveAddress();
+      } catch (error) {
+        // @ts-expect-error ignore
+        if (error.includes('Missing permission')) {
+          await connect();
+          address = await window.arweaveWallet.getActiveAddress();
+          console.log('Connected address:', address);
+        } else {
+          throw error;
+        }
+      }
+
+      toast.success('Wallet connected successfully');
+    } catch (err) {
+      console.error(err);
+      toast.error('Error connecting wallet');
+    } finally {
+      setIsWalletLoading(false);
+    }
+  };
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       {showBanner && (
@@ -245,6 +280,13 @@ const ClientLayout = ({ children }: LayoutProps) => {
                 <h2 className="text-xl font-semibold">
                   Connect Wallet to Continue
                 </h2>
+                <button
+                  onClick={handleConnectWallet}
+                  disabled={isWalletLoading}
+                  className="px-16 py-4 bg-gradient-to-r from-[#00FFD1] to-[#4ECDC4] text-black font-bold text-lg hover:from-[#00FFD1]/90 hover:to-[#4ECDC4]/90 transition-all duration-300 hover:shadow-lg hover:shadow-[#00FFD1]/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center rounded-sm gap-2"
+                >
+                  {isWalletLoading ? 'Connecting...' : 'Connect Wallet'}
+                </button>
                 <p className="text-muted-foreground mt-3">
                   Please connect your wallet to access your projects and
                   workspace.
