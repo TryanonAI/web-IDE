@@ -8,7 +8,7 @@ on:
   push:
     branches:
       - master
-      - ario
+      - feature/*
 
 jobs:
   Deploy:
