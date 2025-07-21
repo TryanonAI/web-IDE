@@ -1,3 +1,28 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist 
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 testdev.json
 # dependencies
@@ -13,10 +38,6 @@ testdev.json
 
 # testing
 /coverage
-
-# next.js
-/.next/
-/out/
 
 # production
 /build
@@ -42,43 +63,13 @@ yarn-error.log*
 next-env.d.ts
 
 customCodeEditor.tsx
+test.*
 *.test.*
 
-#question to be asked to the users 
+.vscode
+pnpm-workspace.yaml
+.cursorignore
+.kiro
+.vercel
 
-General Impressions
-1. What are your first impressions of the product?
-2. What do you like most about using the product?
-3. How does this product compare to your expectations?
-4.What features stood out to you, and why?
-
-Usability and Experience
-5. What aspects of the product did you find difficult or confusing to use?
-6. Were there any features or processes that felt unnecessarily complicated?
-7. How intuitive did you find the user interface? Can you suggest improvements?
-8. How much time did it take for you to feel comfortable using the product?
-
-Value and Pricing
-9. How valuable do you think this product is for solving your problem?
-10. If this product were available today, how much would you be willing to pay for it?
-11. Do you think the product’s features justify its potential price? Why or why not?
-12. What additional features or services would make you willing to pay more?
-
-Problem-Solving and Benefits
-13. How well does the product solve the problem it is intended to address?
-14. What specific tasks or challenges did the product help you with?
-15. Are there any unmet needs or gaps in the product that you noticed?
-
-Future Improvements
-16. What features or functionality would you like to see in future versions of the product?
-17. Are there any integrations or compatibility improvements that would enhance the product?
-18. What additional tools or resources would make the product more useful to you?
-
-Overall Feedback
-19. If you could change one thing about the product, what would it be?
-20. Would you recommend this product to others? Why or why not?
-
-// ao data
-langDbModel.jsx
-filterForGoogleStudio.txt
-googleStudio.txt
+next_old/*
