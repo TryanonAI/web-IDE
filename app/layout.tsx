@@ -6,6 +6,7 @@ import { Analytics } from '@vercel/analytics/react';
 import CheckConnection from '@/components/common/CheckConnection';
 import { MobileProvider } from '@/hooks/use-mobile';
 import { GoogleAnalytics, GoogleTagManager } from '@next/third-parties/google';
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export const viewport: Viewport = {
   themeColor: '#3e7452',
@@ -41,6 +42,7 @@ export default function RootLayout({
               <Toaster position="bottom-center" />
             </CheckConnection>
             <Analytics />
+            <SpeedInsights/>
           </MobileProvider>
         </ThemeProvider>
       </body>
