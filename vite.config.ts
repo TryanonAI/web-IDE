@@ -4,8 +4,6 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
-// polyfill plugins
-
 export default defineConfig({
   plugins: [react(), tailwindcss(), nodePolyfills({
     globals: {
@@ -14,6 +12,9 @@ export default defineConfig({
       // process: true,
     },
   })],
+  build: {
+    outDir: 'dist',
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
