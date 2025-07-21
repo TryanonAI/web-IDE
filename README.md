@@ -1,5 +1,5 @@
 # Anon
-Turn your Web3 ideas into production-ready Arweave dApps via plain text DMs.
+Turn your ideas into production-ready Arweave dApps via plain text messages.
 
 ## 🤔 What is Anon?
 
@@ -25,69 +25,61 @@ Think of it as ChatGPT, but specifically designed for building web applications 
    - Test your app immediately
 
 4. **Deploy Forever**: When you're happy, publish your app to Arweave
-   - Your app becomes permanently accessible on the internet
    - No monthly hosting fees
    - Truly decentralized and censorship-resistant
+   - Your app becomes permanently accessible on the internet
 
 You don't need to know React, HTML, CSS, or any programming language. Just describe what you want, and Anon builds it for you. It's like having a full development team in your pocket.
 
 ## 🚀 Features
 
 ### Core Functionality
-- **AI-Based Code Generation**: Chat-based interface for generating React and HTML applications
-- **Real-time Code Editor**: Monaco Editor integration with live preview using Sandpack
+- **AI-Based Code Generation** : Chat-based interface for generating React and HTML applications
+- **Real-time Code Editor** : Monaco Editor integration with live preview using Sandpack
 - **Dual Development Modes**:
-  - **Dev Mode**: Full React development environment with component-based architecture
-  - **Vibe Mode**: HTML/CSS/JS for rapid prototyping and creative development
-- **Arweave Integration**: Deploy directly to the Arweave permaweb
-- **Project Management**: Create, save, and manage multiple projects
-- **Version Control**: Track code changes and revert to previous versions
-
-## 🏗️ Architecture Patterns
-
-### State Management
-- **Zustand**: Lightweight state management for global app state
-- **Local State**: React hooks for component-specific state
-- **Persistent Storage**: Wallet connection and user preferences
-
-### API Integration
-- **Axios**: HTTP client for backend communication
-- **Error Handling**: Comprehensive error boundaries and user feedback
-- **Loading States**: Visual feedback for all async operations
-
-### UI/UX Patterns
-- **Responsive Design**: Mobile-first approach with progressive enhancement
-- **Dark Theme**: Default dark theme with system preference detection
-- **Accessible Components**: Radix UI primitives for accessibility
-- **Animation**: Subtle animations for enhanced user experience
+  - **Dev Mode** : Full React development environment with component-based architecture
+  - **Vibe Mode** : HTML/CSS/JS for rapid prototyping and creative development
+- **Arweave Integration** : Deploy directly to the Arweave permaweb
+- **Project Management** : Create, save, and manage multiple projects
+- **Version Control** : Track code changes and revert to previous versions
 
 
 ## 📚 Technical Stack
 
 ### Framework & Core
-- `next`: React framework with App Router
-- `react` & `react-dom`: UI library
-- `typescript`: Type safety
+- `Vite`
+- `React`
+- `ReactRouter`
+- `typescript`
 
 ### UI & Styling
-- `@radix-ui/*`: Accessible UI primitives
-- `tailwindcss`: Utility-first CSS
-- `framer-motion`: Animation library
-- `lucide-react`: Icon library
+- `Shadcn`
+- `tailwindcss`
+- `framer-motion`
 
 ### Development Tools
-- `@codesandbox/sandpack-react`: In-browser code execution
-- `@monaco-editor/react`: Code editor
-- `zustand`: State management
+- `zustand` : State management
+- `@monaco-editor/react` : Code editor
+- `@codesandbox/sandpack-react` : In-browser code execution
 
 ### Blockchain & AI
-- `@ardrive/turbo-sdk`: Arweave integration
-- `arweave`: Arweave blockchain client
+- `arweave` : Arweave blockchain client
+- `OpenAI SDK` : base infra for llm callings
+- `@ardrive/turbo-sdk` : Upload to Arweave Tooling
 
-## 📝 Notes
+## 📬 Get In Touch
 
-- The application uses Next.js App Router with nested layouts
-- Sandpack provides the in-browser development environment
-- AI chat integration supports multiple providers for redundancy
-- Wallet integration is essential for user authentication and deployment
-- The codebase follows modern React patterns with hooks and functional components
+We'd love to hear from you! Whether you have questions, feedback, or just want to share what you've built with Anon, here's how to reach us:
+
+### 🌐 Social & Community
+- **X (Twitter)**: [@tryanonai](https://x.com/tryanonai)
+- **Email**: [hello@tryanon.ai](mailto:hello@tryanon.ai) 
+
+### 💬 Support & Feedback
+- **Feature Requests**: Have an idea to make Anon better? We're all ears
+- **Bug Reports**: Found an issue? Reach out via email / Raise a Git Issue 
+- **Community Showcases**: Built something cool? Tag us on X - we love featuring community creations!
+
+---
+
+*Bullish on Permaweb 🐘🐘*
