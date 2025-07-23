@@ -11,7 +11,7 @@ import {
   // Globe,
   FileText,
 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router";
+import { useNavigate, NavLink } from "react-router";
 import { useGlobalState, useWallet } from "../../hooks";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -21,8 +21,7 @@ const sidebarButtonClass =
 
 export default function Sidebar() {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
-  const { projects, activeProject, openModal } = useGlobalState();
+  const { projects, openModal } = useGlobalState();
   const { connected, address } = useWallet();
   const [loadingProjectId, setLoadingProjectId] = useState<string | null>(null);
 
@@ -126,22 +125,23 @@ export default function Sidebar() {
           </Button>
 
           {navigationTabs.map((tab) => {
-            const isActive = pathname === tab.path;
             return (
-              <button
+              <NavLink
                 key={tab.path}
-                onClick={() => navigate(tab.path)}
-                className={cn(
-                  sidebarButtonClass,
-                  "gap-3",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-primary/20"
-                )}
+                to={tab.path}
+                className={({ isActive }) =>
+                  cn(
+                    sidebarButtonClass,
+                    "gap-3",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-primary/20"
+                  )
+                }
               >
                 {tab.icon}
                 {tab.label}
-              </button>
+              </NavLink>
             );
           })}
         </nav>
@@ -178,26 +178,32 @@ export default function Sidebar() {
             ) : (
               <div className="space-y-1">
                 {sortedProjects.map((project) => {
-                  const isActive =
-                    activeProject?.projectId === project.projectId;
                   const isLoading = loadingProjectId === project.projectId;
-                  // const isCurrentPath = pathname === `/projects/${project.projectId}`;
+                  const projectPath = `/projects/${project.projectId}`;
 
                   return (
-                    <button
+                    <NavLink
                       key={project.projectId}
-                      onClick={() => handleProjectClick(project.projectId)}
-                      disabled={!!loadingProjectId}
-                      className={cn(
-                        sidebarButtonClass,
-                        "gap-3 text-left group",
-                        isActive
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:text-foreground hover:bg-primary/20",
-                        loadingProjectId &&
-                          !isLoading &&
-                          "opacity-50 cursor-not-allowed"
-                      )}
+                      to={projectPath}
+                      onClick={(e) => {
+                        if (loadingProjectId) {
+                          e.preventDefault();
+                          return;
+                        }
+                        handleProjectClick(project.projectId);
+                      }}
+                      className={({ isActive }) =>
+                        cn(
+                          sidebarButtonClass,
+                          "gap-3 text-left group",
+                          isActive
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:text-foreground hover:bg-primary/20",
+                          loadingProjectId &&
+                            !isLoading &&
+                            "opacity-50 cursor-not-allowed"
+                        )
+                      }
                     >
                       <div className="shrink-0">
                         {isLoading ? (
@@ -206,7 +212,10 @@ export default function Sidebar() {
                             className="animate-spin text-primary"
                           />
                         ) : (
-                          getFrameworkIcon(project.framework, isActive)
+                          getFrameworkIcon(
+                            project.framework,
+                            location.pathname === projectPath
+                          )
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -214,7 +223,7 @@ export default function Sidebar() {
                           {project.title}
                         </div>
                       </div>
-                    </button>
+                    </NavLink>
                   );
                 })}
               </div>

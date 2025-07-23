@@ -19,10 +19,11 @@ export default function Projects() {
   const [navigatingProjectId, setNavigatingProjectId] = useState<string | null>(
     null
   );
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!address) return;
+    setLoading(true);
 
     const fetchProjects = async () => {
       try {
