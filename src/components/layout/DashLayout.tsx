@@ -194,10 +194,10 @@ const DashLayout: React.FC = () => {
         {connected && (
           <aside
             className={cn(
-              "transition-all duration-300 ease-in-out h-full border-r border-border",
+              "transition-all duration-300 ease-in-out h-full border-r border-border overflow-hidden",
               sidebarOpen
-                ? "w-64 translate-x-0"
-                : "w-0 -translate-x-full border-r-0"
+                ? "w-64 translate-x-0 opacity-100"
+                : "w-0 -translate-x-full opacity-0 border-r-0"
             )}
           >
             <Sidebar />
@@ -207,7 +207,6 @@ const DashLayout: React.FC = () => {
           id="main-container"
           className="flex-1 transition-all duration-300 ease-in-out overflow-auto"
         >
-          {/* Remove the conditional rendering and just show Outlet since we redirect on disconnect */}
           <Outlet />
         </div>
       </div>
