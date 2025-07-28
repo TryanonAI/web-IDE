@@ -31,7 +31,8 @@ import { DrawerType, GITHUB_STATUS } from "@/hooks/useGlobalState";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CustomDomain from "@/components/custom-domain";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { CanvasTitle } from "@/components/dashboard/canvas";
+// import { CanvasTitle } from "@/components/dashboard/canvas";
+import { uploadToTurbo } from "@/lib";
 
 const TitleBar = () => {
   const navigate = useNavigate();
