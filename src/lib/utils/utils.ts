@@ -63,4 +63,30 @@ const convertToFilePathCodeMap = (
   return output;
 };
 
-export { cn, validateProjectName, convertToFilePathCodeMap, mergeDependencies };
+function generateSrcDocFromCodebase(codebase: Record<string, string>): string {
+  let html = codebase["/index.html"] || "<!DOCTYPE html><html><head></head><body></body></html>";
+  const css = codebase["/style.css"] || "";
+  const js = codebase["/script.js"] || "";
+
+  // 1. Remove script tag with type="module" and src="./script.js"
+  html = html.replace(
+    /<script\s+type=["']module["']\s+src=["']\.\/script\.js["']><\/script>/gi,
+    ""
+  );
+
+  // 2. Inject <style> into <head>
+  const headInjection = css ? `<style>${css}</style>` : "";
+
+  // 3. Inject <script> into <body>
+  const bodyInjection = js ? `<script type="module">${js}</script>` : "";
+
+  // 4. Place them in the correct spots
+  html = html.replace("</head>", `${headInjection}</head>`);
+  html = html.replace("</body>", `${bodyInjection}</body>`);
+
+  return html;
+}
+
+
+
+export { cn, validateProjectName, convertToFilePathCodeMap, mergeDependencies, generateSrcDocFromCodebase };

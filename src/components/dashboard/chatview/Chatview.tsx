@@ -1,5 +1,5 @@
 import LLMRenderer from "@/components/dashboard/chatview/LLMRenderer";
-import { API_CONFIG } from "@/config/constants";
+import { API_CONFIG } from "@/lib/constants";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Framework } from "@/types";
 import { handleRunLua } from "@/lib/arkit";
@@ -26,13 +26,14 @@ import {
   type ChatMessage,
   Role,
   type Project,
-  type CodebaseType,
+  // type CodebaseType,
 } from "@/types";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { generateSrcDocFromCodebase } from "@/lib/utils";
 
 const MessageRenderer = ({ message }: { message: ChatMessage }) => {
   // const [isExpanded, setIsExpanded] = useState(false);
@@ -118,13 +119,14 @@ export interface ChatviewRef {
 const Chatview = forwardRef<ChatviewRef>((_props, ref) => {
   const user = useWallet((state) => state.user);
   const setCodebase = useGlobalState((state) => state.setCodebase);
-  const chatMessages = useGlobalState((state) => state.chatMessages);
-  const activeProject = useGlobalState((state) => state.activeProject);
-  const setDependencies = useGlobalState((state) => state.setDependencies);
-  const isCodeGenerating = useGlobalState((state) => state.isCodeGenerating);
-  const setIsCodeGenerating = useGlobalState(
-    (state) => state.setIsCodeGenerating
-  );
+  const {
+    chatMessages,
+    activeProject,
+    setDependencies,
+    isCodeGenerating,
+    setIsCodeGenerating,
+    setSrcDocCode,
+  } = useGlobalState();
 
   const [userInput, setUserInput] = useState("");
   const [isRetrying, setIsRetrying] = useState(false);
@@ -228,10 +230,7 @@ const Chatview = forwardRef<ChatviewRef>((_props, ref) => {
         mode: activeProject?.framework === Framework.Html ? mode : undefined,
       };
 
-      const handleStreamEvents = (
-        eventSource: EventSource,
-        isHtmlStream: boolean = false
-      ) => {
+      const handleStreamEvents = (eventSource: EventSource) => {
         let accumulatedText = "";
         let lastProcessedLength = 0;
 
@@ -329,45 +328,9 @@ const Chatview = forwardRef<ChatviewRef>((_props, ref) => {
             toast.info("Code updated.", {
               duration: 3000,
             });
+            const srcDoc = generateSrcDocFromCodebase(codebaserec);
+            setSrcDocCode(srcDoc);
             setIsCodeGenerating(false);
-            if (isHtmlStream) {
-              if (codebaserec["/index.html"]) {
-                try {
-                  console.log(
-                    "🚀 Starting auto-deployment for HTML project..."
-                  );
-                  const deploymentUrl = await useGlobalState
-                    .getState()
-                    .autoDeployProject(
-                      activeProject as Project,
-                      codebaserec as CodebaseType,
-                      user?.walletAddress as string
-                    );
-
-                  if (deploymentUrl) {
-                    toast.success("Code updated and deployed!", {
-                      duration: 5000,
-                      description: "Your app is now live on the permaweb",
-                      action: {
-                        label: "Open",
-                        onClick: () => window.open(deploymentUrl, "_blank"),
-                      },
-                    });
-                  } else {
-                    throw new Error("Deployment URL not returned");
-                  }
-                } catch (error) {
-                  console.error("Auto-deployment failed:", error);
-                  toast.error("Code updated but deployment failed", {
-                    duration: 7000,
-                    description:
-                      error instanceof Error
-                        ? error.message
-                        : "Please try deploying manually",
-                  });
-                }
-              }
-            }
           });
         });
       };
@@ -389,7 +352,7 @@ const Chatview = forwardRef<ChatviewRef>((_props, ref) => {
             requestBody.prompt.content
           )}&mode=${mode}`
         );
-        handleStreamEvents(eventSource, true);
+        handleStreamEvents(eventSource);
       }
       setTimeout(scrollToBottom, 2000);
     } catch (error) {
@@ -506,7 +469,7 @@ const Chatview = forwardRef<ChatviewRef>((_props, ref) => {
                       }`
                     : `min-h-[40px] max-h-[40px] ${
                         activeProject?.framework === Framework.Html
-                          ? "pt-2 pl-16"
+                          ? "pt-2 pl-3.5"
                           : "pt-2 pl-3"
                       }`
                 }`}
@@ -516,12 +479,11 @@ const Chatview = forwardRef<ChatviewRef>((_props, ref) => {
                     ? "AI response failed. Retry or type new prompt."
                     : isInputMaximized
                     ? `Type your prompt... (Ctrl+Enter to send)`
-                    : `Type your prompt... (Enter to send)`
+                    : `Type your prompt...`
                 }
                 rows={isInputMaximized ? 5 : 1}
               />
-              {/* Mode indicator in the input area - only for HTML framework */}
-              {activeProject?.framework === Framework.Html && (
+              {/* {activeProject?.framework === Framework.Html && (
                 <div
                   className={`absolute ${
                     isInputMaximized ? "top-2 left-2" : "top-2 left-2"
@@ -531,19 +493,9 @@ const Chatview = forwardRef<ChatviewRef>((_props, ref) => {
                       : "bg-orange-500/10 text-orange-500 border border-orange-500/20"
                   }`}
                 >
-                  {mode === "UI" ? (
-                    <>
-                      {/* <Layout className="h-2.5 w-2.5" /> */}
-                      UI
-                    </>
-                  ) : (
-                    <>
-                      {/* <Zap className="h-2.5 w-2.5" /> */}
-                      All
-                    </>
-                  )}
+                  {mode === "UI" ? "UI" : "All"}
                 </div>
-              )}
+              )} */}
               <button
                 type="button"
                 onClick={() => setIsInputMaximized(!isInputMaximized)}
@@ -571,17 +523,7 @@ const Chatview = forwardRef<ChatviewRef>((_props, ref) => {
                         : "bg-orange-500/10 border-orange-500/20 text-orange-500 hover:bg-orange-500/15"
                     }`}
                   >
-                    {mode === "UI" ? (
-                      <>
-                        {/* <Layout className="h-3 w-3" /> */}
-                        UI
-                      </>
-                    ) : (
-                      <>
-                        {/* <Zap className="h-3 w-3" /> */}
-                        All
-                      </>
-                    )}
+                    {mode === "UI" ? "UI" : "All"}
                   </button>
                 </TooltipTrigger>
                 <TooltipContent

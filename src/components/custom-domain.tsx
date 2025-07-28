@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Globe, Loader2, Check, RefreshCw } from "lucide-react";
+import { Settings, Globe, Check, RefreshCw } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useGlobalState, useWallet } from "../hooks";
 import { useArnsManager } from "../hooks/useArnsManager";
@@ -61,29 +61,6 @@ export default function CustomDomain({ className }: { className?: string }) {
     await migrateToArns(data.selectedArns, data.undername);
   };
 
-  if (!connected) {
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            title="Custom Domain"
-            aria-label="Custom Domain"
-          >
-            <Settings size={16} className="text-primary/80" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-80" align="start">
-          <DropdownMenuLabel>Custom Domain</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <div className="p-4 text-center text-sm text-muted-foreground">
-            Connect your wallet to manage ARNS domains
-          </div>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
-  }
-
   if (!activeProject) {
     return (
       <DropdownMenu>
@@ -116,6 +93,7 @@ export default function CustomDomain({ className }: { className?: string }) {
           aria-label="Custom Domain"
         >
           <Globe size={16} className="text-primary/80" />
+          ARNS
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className={`w-96 ${className}`} align="start">
@@ -127,6 +105,7 @@ export default function CustomDomain({ className }: { className?: string }) {
             variant="outline"
             size="sm"
             onClick={async () => {
+              if (isLoading) return;
               await fetchArnsRecords();
             }}
             disabled={isLoading}
@@ -170,8 +149,9 @@ export default function CustomDomain({ className }: { className?: string }) {
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center py-4">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="ml-2 text-sm">Fetching domains...</span>
+                    <span className="ml-2 text-sm animate-pulse">
+                      Fetching domains...
+                    </span>
                   </div>
                 ) : arnsRecords.length === 0 ? (
                   <div className="text-center py-4 text-sm text-muted-foreground">
