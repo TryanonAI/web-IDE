@@ -19,9 +19,9 @@ import {
   type CodeVersion,
 } from '@/types';
 import { ANON_LUA_TEMPLATE } from '@/constant/templateFiles';
-import type { ImperativePanelHandle } from 'react-resizable-panels';
-import type { TNodeType } from '@/react-flow/nodes/index/type';
-import { type Node } from '@/react-flow/nodes/index';
+// import type { ImperativePanelHandle } from 'react-resizable-panels';
+// import type { TNodeType } from '@/react-flow/nodes/index/type';
+// import { type Node } from '@/react-flow/nodes/index';
 
 export type AOMessage = {
   id: string;
@@ -108,49 +108,49 @@ export interface SidebarState {
   setSidebarOpen: (open: boolean) => void;
 }
 
-export interface CanvasState {
-  historyIndex?: number;
-  historyLength?: number;
-  isFlowRunning?: boolean;
-  selectedNode?: { id: string; type: string } | null;
-  isNodeDropdownOpen?: boolean;
+// export interface CanvasState {
+//   historyIndex?: number;
+//   historyLength?: number;
+//   isFlowRunning?: boolean;
+//   selectedNode?: { id: string; type: string } | null;
+//   isNodeDropdownOpen?: boolean;
 
-  consoleRef: React.RefObject<ImperativePanelHandle> | null;
-  sidebarRef: React.RefObject<ImperativePanelHandle> | null;
-  setConsoleRef: (ref: React.RefObject<ImperativePanelHandle>) => void;
-  setSidebarRef: (ref: React.RefObject<ImperativePanelHandle>) => void;
-  toggleRightSidebar: (open: boolean) => void;
-  outputs: OutputType[];
-  addOutput: (output: OutputType) => void;
-  clearOutputs: () => void;
-  attach: string | undefined;
-  setAttach: (attach: string | undefined) => void;
-  availableNodes: TNodeType[];
-  setAvailableNodes: (nodes: TNodeType[]) => void;
-  order: { [id: string]: number };
-  setOrder: (order: { [id: string]: number }) => void;
+//   consoleRef: React.RefObject<ImperativePanelHandle> | null;
+//   sidebarRef: React.RefObject<ImperativePanelHandle> | null;
+//   setConsoleRef: (ref: React.RefObject<ImperativePanelHandle>) => void;
+//   setSidebarRef: (ref: React.RefObject<ImperativePanelHandle>) => void;
+//   toggleRightSidebar: (open: boolean) => void;
+//   outputs: OutputType[];
+//   addOutput: (output: OutputType) => void;
+//   clearOutputs: () => void;
+//   attach: string | undefined;
+//   setAttach: (attach: string | undefined) => void;
+//   availableNodes: TNodeType[];
+//   setAvailableNodes: (nodes: TNodeType[]) => void;
+//   order: { [id: string]: number };
+//   setOrder: (order: { [id: string]: number }) => void;
 
-  activeNode: Node | undefined;
-  setActiveNode: (node: Node | undefined) => void;
+//   activeNode: Node | undefined;
+//   setActiveNode: (node: Node | undefined) => void;
 
-  flowIsRunning: boolean;
-  setFlowIsRunning: (running: boolean) => void;
-  runningNodes: Node[];
-  addRunningNode: (node: Node) => void;
-  successNodes: Node[];
-  addSuccessNode: (node: Node) => void;
-  errorNodes: Node[];
-  addErrorNode: (node: Node) => void;
-  resetNodes: () => void;
+//   flowIsRunning: boolean;
+//   setFlowIsRunning: (running: boolean) => void;
+//   runningNodes: Node[];
+//   addRunningNode: (node: Node) => void;
+//   successNodes: Node[];
+//   addSuccessNode: (node: Node) => void;
+//   errorNodes: Node[];
+//   addErrorNode: (node: Node) => void;
+//   resetNodes: () => void;
 
-  resetNode: (id: string) => void;
+//   resetNode: (id: string) => void;
 
-  // AI Copilot platform selection
-  selectedPlatforms: string[];
-  setSelectedPlatforms: (platforms: string[]) => void;
-  togglePlatform: (platform: string) => void;
-  setIsNodeDropdownOpen: (open: boolean) => void;
-};
+//   // AI Copilot platform selection
+//   selectedPlatforms: string[];
+//   setSelectedPlatforms: (platforms: string[]) => void;
+//   togglePlatform: (platform: string) => void;
+//   setIsNodeDropdownOpen: (open: boolean) => void;
+// };
 
 export interface GlobalState extends GithubState, ProjectState, SandpackState, ModalState, DrawerState, SidebarState {
   isLoading: boolean;
@@ -273,7 +273,8 @@ const Initial_ConsoleState = {
 }
 
 export const useGlobalState = create<
-  GlobalState & GithubState & ProjectState & SandpackState & CanvasState
+  GlobalState & GithubState & ProjectState & SandpackState 
+  // & CanvasState
 >()(
   persist(
     (set, get) => ({
@@ -770,7 +771,7 @@ export const useGlobalState = create<
 
 
       // ----------------Canvas States----------------
-
+/*
       consoleRef: null,
       setConsoleRef: (ref: React.RefObject<ImperativePanelHandle>) => set({ consoleRef: ref }),
 
@@ -858,7 +859,7 @@ export const useGlobalState = create<
           };
         }),
 
-
+*/
       setDependencies: (newDeps: Record<string, string>) => {
         set({ dependencies: newDeps });
       },
