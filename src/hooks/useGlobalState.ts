@@ -1,8 +1,8 @@
 import axios from 'axios';
 import mime from 'mime-types';
 import { create } from 'zustand';
-import { defaultFiles } from '@/lib/utils';
-import { API_CONFIG } from '@/config/constants';
+import { defaultFiles, generateSrcDocFromCodebase } from '@/lib/utils';
+import { API_CONFIG, templateSrcDoc } from '@/lib/constants';
 import { persist } from 'zustand/middleware';
 import { fetchCodeVersions, fetchProjectData, uploadToTurbo } from '@/lib';
 import { toast } from 'sonner';
@@ -215,6 +215,8 @@ export const useGlobalState = create<
 >()(
   persist(
     (set, get) => ({
+      srcDocCode: templateSrcDoc,
+      setSrcDocCode: (srcDocCode: string) => set({ srcDocCode }),
       // ----------------Global States----------------
       setIsDeploying: (isDeploying) => {
         set({ isDeploying })
@@ -552,6 +554,7 @@ export const useGlobalState = create<
           console.log('[useGlobalState] codebaseResponse', codebaseResponse);
           if (codebaseResponse) {
             set({ codebase: codebaseResponse.codebase || {} });
+            set({ srcDocCode: generateSrcDocFromCodebase(codebaseResponse.codebase || {}) });
             if (codebaseResponse.externalPackages && Object.keys(codebaseResponse.externalPackages).length > 0) {
               set({ dependencies: codebaseResponse.externalPackages as Record<string, string> });
             }
@@ -662,7 +665,7 @@ export const useGlobalState = create<
             useWallet.getState().address as string
           );
 
-          toast.success('Project created successfully');
+          // toast.success('Project created successfully');
           return newProject;
         } catch (error) {
           console.error('Error creating project:', error);

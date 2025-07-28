@@ -2,7 +2,7 @@ import axios from "axios";
 import ErrorFixButton from "./ErrorFixButton";
 import OpenWithIDE from "../OpenWithIDE";
 import Sprv from "./Sprv";
-import { API_CONFIG } from "@/config/constants";
+import { API_CONFIG, templateSrcDoc } from "@/lib/constants";
 import { BASE_DEPENDENCIES, DEV_DEPENDENCIES } from "@/constant/dependencies";
 import { cn, defaultFiles } from "@/lib/utils";
 import { toast } from "sonner";
@@ -64,22 +64,24 @@ interface CodeviewProps {
 
 // Create a separate component that uses useSandpack hook inside the provider
 function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const address = useWallet((state) => state.address);
   const connected = useWallet((state) => state.connected);
-  const codebase = useGlobalState((state) => state.codebase);
-  const isLoading = useGlobalState((state) => state.isLoading);
-  const setIsLoading = useGlobalState((state) => state.setIsLoading);
-  const codeVersions = useGlobalState((state) => state.codeVersions);
-  const activeProject = useGlobalState((state) => state.activeProject);
-  const isCodeGenerating = useGlobalState((state) => state.isCodeGenerating);
-  const setCodebase = useGlobalState((state) => state.setCodebase);
-  const setDependencies = useGlobalState((state) => state.setDependencies);
-  const isDeploying = useGlobalState((state) => state.isDeploying);
-  const deploymentUrl = useGlobalState((state) => state.deploymentUrl);
-  const addConsoleError = useGlobalState((state) => state.addConsoleError);
-  const clearConsoleErrors = useGlobalState(
-    (state) => state.clearConsoleErrors
-  );
+
+  const {
+    codebase,
+    isLoading,
+    setIsLoading,
+    codeVersions,
+    activeProject,
+    isCodeGenerating,
+    setCodebase,
+    setDependencies,
+    srcDocCode,
+    isDeploying,
+    addConsoleError,
+    clearConsoleErrors,
+  } = useGlobalState();
 
   const { sandpack } = useSandpack();
   const { logs } = useSandpackConsole({
@@ -329,6 +331,28 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
     }
   };
 
+  // to bypass sandboxing and inject the wallet extension into the iframe
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    const injectWallet = () => {
+      const iframeWindow = iframe.contentWindow;
+      if (iframeWindow && window.arweaveWallet) {
+        // Inject the wallet object into iframe's window
+        iframeWindow.arweaveWallet = window.arweaveWallet;
+        console.log("🔵 Wallet injected into iframe");
+      }
+    };
+
+    // Inject wallet after iframe loads
+    iframe.addEventListener("load", injectWallet);
+
+    return () => {
+      iframe.removeEventListener("load", injectWallet);
+    };
+  }, []);
+
   if (activeProject?.framework === Framework.Html) {
     return (
       <div
@@ -390,28 +414,31 @@ function CodeviewInner({ isSaving, onSendErrorToChat }: CodeviewProps) {
             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
               <div className="text-center">
                 <Loader2Icon className="w-8 h-8 animate-spin mx-auto mb-4" />
-                <p className="text-lg font-medium">Generating code...</p>
+                <p className="text-lg font-medium animate-pulse">
+                  Generating code...
+                </p>
               </div>
             </div>
           ) : isDeploying ? (
             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
               <div className="text-center">
                 <Loader2Icon className="w-8 h-8 animate-spin mx-auto mb-4" />
-                <p className="text-lg font-medium">Deploying to Permaweb...</p>
+                <p className="text-lg font-medium animate-pulse">
+                  Deploying to Permaweb...
+                </p>
               </div>
             </div>
           ) : null}
 
           <iframe
-            key={isRefreshing ? "refreshing" : "normal"}
-            src={
-              deploymentUrl ||
-              "https://arweave.net/UaRwv7Wlkh2jB_YAMeKML7hNMJdm87gzHAv9LwXPWpY"
-            }
-            className="w-full h-full"
+            ref={iframeRef}
+            id="iframe-code-preview"
             sandbox="allow-scripts allow-same-origin allow-modals"
-            aria-label="Code Preview"
-            title="Code Preview"
+            key={isRefreshing ? "refreshing" : "normal"}
+            srcDoc={srcDocCode || templateSrcDoc}
+            className="w-full h-full"
+            aria-label="iframe-code-preview"
+            title="iframe-code-preview"
           />
         </div>
       </div>

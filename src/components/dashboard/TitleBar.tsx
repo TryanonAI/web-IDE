@@ -31,18 +31,20 @@ import { DrawerType, GITHUB_STATUS } from "@/hooks/useGlobalState";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CustomDomain from "@/components/custom-domain";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
+import { CanvasTitle } from "@/components/dashboard/canvas";
 
 const TitleBar = () => {
-  const { pathname } = useLocation();
   const navigate = useNavigate();
-  const disconnect = useWallet((state) => state.disconnect);
+  const { pathname } = useLocation();
   const [, copyToClipboard] = useCopyToClipboard();
+
   const [copy, setCopy] = useState<boolean>(false);
-  const isLoading = useGlobalState((state) => state.isLoading);
-  const isCodeGenerating = useGlobalState((state) => state.isCodeGenerating);
-  const { openDrawer } = useGlobalState();
-  const { connected, shortAddress } = useWallet();
+
+  const { user, connected, shortAddress, disconnect, address } = useWallet();
   const {
+    isCodeGenerating,
+    isLoading,
+    openDrawer,
     githubToken,
     isDeploying,
     githubStatus,
@@ -53,14 +55,20 @@ const TitleBar = () => {
     setGithubUsername,
     sidebarOpen,
     toggleSidebar,
+    activeProject,
+    activeNode,
   } = useGlobalState();
 
-  const { activeProject } = useGlobalState();
-
-  const { user } = useWallet();
+  const isRepoReadyToCommit = githubStatus === GITHUB_STATUS.REPO_EXISTS;
 
   // Check if we're in the codeview route
-  const isCodeView = pathname?.includes("/projects/") && activeProject;
+  const isCodeView =
+    pathname?.includes("/projects") &&
+    activeProject &&
+    activeProject.framework !== Framework.Canvas;
+
+  // Check if we're in the canvas route
+  // const isCanvasView = pathname === "/canvas";
 
   const commonDisabledState =
     isCodeGenerating ||
@@ -117,7 +125,32 @@ const TitleBar = () => {
     }
   };
 
-  const isRepoReadyToCommit = githubStatus === GITHUB_STATUS.REPO_EXISTS;
+  const handleDeployProject = async () => {
+    if (!activeProject || !address) {
+      toast.error("No active project or wallet address to deploy");
+      return;
+    }
+    const deploymentUrl = await useGlobalState
+      .getState()
+      .autoDeployProject(
+        activeProject,
+        activeProject.codebase,
+        user?.walletAddress as string
+      );
+
+    if (deploymentUrl) {
+      toast.success("Code updated and deployed!", {
+        duration: 5000,
+        description: "Your app is now live on the permaweb",
+        action: {
+          label: "Open",
+          onClick: () => window.open(deploymentUrl, "_blank"),
+        },
+      });
+    } else {
+      throw new Error("Deployment URL not returned");
+    }
+  };
 
   useEffect(() => {
     const handleGithubAuth = async () => {
@@ -205,17 +238,20 @@ const TitleBar = () => {
             className="flex items-center py-2 cursor-pointer hover:opacity-80 transition-opacity"
           >
             <img
-              className="h-8 w-auto object-contain"
+              className="h-[2.35rem] w-auto object-contain"
               src="/logo_white.webp"
-              alt="logo"
-              width={290}
-              height={290}
+              alt="anon-logo"
             />
           </NavLink>
         </div>
 
         {/* Main Toolbar - Right section */}
         <div className="flex items-center gap-3 ml-auto">
+          {/* Canvas-specific controls */}
+          {activeProject?.framework === Framework.Canvas && (
+            <CanvasTitle activeNode={activeNode} />
+          )}
+
           {/* Only show utility buttons in codeview */}
           {isCodeView && activeProject?.framework !== Framework.Html && (
             <>
@@ -336,6 +372,13 @@ const TitleBar = () => {
                   <CustomDomain className="mr-5 mt-4" />
                 </>
               )}
+              <Button
+                className="flex items-center px-4 py-2 transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                onClick={handleDeployProject}
+                title="Copy deployment URL"
+              >
+                Publish Project
+              </Button>
             </div>
           )}
 
