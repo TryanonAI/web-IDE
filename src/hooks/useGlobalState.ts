@@ -19,6 +19,21 @@ import {
   type CodeVersion,
 } from '@/types';
 import { ANON_LUA_TEMPLATE } from '@/constant/templateFiles';
+import type { ImperativePanelHandle } from 'react-resizable-panels';
+import type { TNodeType } from '@/react-flow/nodes/index/type';
+import { type Node } from '@/react-flow/nodes/index';
+
+export type AOMessage = {
+  id: string;
+  // @ts-expect-error ignore
+  Output;
+  // @ts-expect-error ignore
+  Messages;
+  // @ts-expect-error ignore
+  Spawns;
+  // @ts-expect-error ignore
+  Error?;
+}
 
 export interface GithubError extends Error {
   status?: number;
@@ -34,6 +49,8 @@ export interface GithubFile {
   filePath: string;
   code: string;
 }
+
+export type OutputType = { type: "output" | "error" | "success" | "info" | "warning", message: string, preMessage?: string, aoMessage?: AOMessage };
 
 export interface TreeItem {
   path: string;
@@ -91,6 +108,50 @@ export interface SidebarState {
   setSidebarOpen: (open: boolean) => void;
 }
 
+export interface CanvasState {
+  historyIndex?: number;
+  historyLength?: number;
+  isFlowRunning?: boolean;
+  selectedNode?: { id: string; type: string } | null;
+  isNodeDropdownOpen?: boolean;
+
+  consoleRef: React.RefObject<ImperativePanelHandle> | null;
+  sidebarRef: React.RefObject<ImperativePanelHandle> | null;
+  setConsoleRef: (ref: React.RefObject<ImperativePanelHandle>) => void;
+  setSidebarRef: (ref: React.RefObject<ImperativePanelHandle>) => void;
+  toggleRightSidebar: (open: boolean) => void;
+  outputs: OutputType[];
+  addOutput: (output: OutputType) => void;
+  clearOutputs: () => void;
+  attach: string | undefined;
+  setAttach: (attach: string | undefined) => void;
+  availableNodes: TNodeType[];
+  setAvailableNodes: (nodes: TNodeType[]) => void;
+  order: { [id: string]: number };
+  setOrder: (order: { [id: string]: number }) => void;
+
+  activeNode: Node | undefined;
+  setActiveNode: (node: Node | undefined) => void;
+
+  flowIsRunning: boolean;
+  setFlowIsRunning: (running: boolean) => void;
+  runningNodes: Node[];
+  addRunningNode: (node: Node) => void;
+  successNodes: Node[];
+  addSuccessNode: (node: Node) => void;
+  errorNodes: Node[];
+  addErrorNode: (node: Node) => void;
+  resetNodes: () => void;
+
+  resetNode: (id: string) => void;
+
+  // AI Copilot platform selection
+  selectedPlatforms: string[];
+  setSelectedPlatforms: (platforms: string[]) => void;
+  togglePlatform: (platform: string) => void;
+  setIsNodeDropdownOpen: (open: boolean) => void;
+};
+
 export interface GlobalState extends GithubState, ProjectState, SandpackState, ModalState, DrawerState, SidebarState {
   isLoading: boolean;
   setIsLoading: (isLoading: boolean) => void;
@@ -100,6 +161,9 @@ export interface GlobalState extends GithubState, ProjectState, SandpackState, M
   setStatusBarMessage: (message: string) => void;
   refreshGlobalState: () => Promise<void>;
   resetGlobalState: () => void;
+  srcDocCode: string;
+  setSrcDocCode: (srcDocCode: string) => void;
+
   // Console Error tracking
   consoleErrors: ConsoleError[];
   addConsoleError: (error: ConsoleError) => void;
@@ -111,8 +175,6 @@ export interface GlobalState extends GithubState, ProjectState, SandpackState, M
 interface GithubState {
   githubStatus: GITHUB_STATUS;
   setGithubStatus: (githubStatus: GITHUB_STATUS) => void;
-  // error: string | null;
-  // setError: (error: string | null) => void;
   octokit: Octokit | null;
   setOctokit: (octokit: Octokit | null) => void;
   githubToken: string | null;
@@ -211,7 +273,7 @@ const Initial_ConsoleState = {
 }
 
 export const useGlobalState = create<
-  GlobalState & GithubState & ProjectState & SandpackState
+  GlobalState & GithubState & ProjectState & SandpackState & CanvasState
 >()(
   persist(
     (set, get) => ({
@@ -705,6 +767,97 @@ export const useGlobalState = create<
       sidebarOpen: true,
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
       setSidebarOpen: (open: boolean) => set({ sidebarOpen: open }),
+
+
+      // ----------------Canvas States----------------
+
+      consoleRef: null,
+      setConsoleRef: (ref: React.RefObject<ImperativePanelHandle>) => set({ consoleRef: ref }),
+
+      sidebarRef: null,
+      setSidebarRef: (ref: React.RefObject<ImperativePanelHandle>) => set({ sidebarRef: ref }),
+
+      toggleRightSidebar: (open: boolean) => {
+        const sidebarRef = get().sidebarRef;
+        const ref = sidebarRef?.current;
+        console.log('toggleRightSidebar called:', { open, hasRef: !!ref, hasSidebarRef: !!sidebarRef });
+        if (ref) {
+          if (open) {
+            ref.expand?.();
+            ref.resize?.(40);
+          } else {
+            ref.collapse?.();
+          }
+        } else {
+          console.warn('Sidebar ref not available, retrying in 100ms...');
+          setTimeout(() => {
+            const retryRef = get().sidebarRef?.current;
+            if (retryRef) {
+              if (open) {
+                retryRef.expand?.();
+                retryRef.resize?.(40);
+              } else {
+                retryRef.collapse?.();
+              }
+            }
+          }, 100);
+        }
+      },
+
+      outputs: [],
+      addOutput: (output: OutputType) =>
+        set((state) => ({ outputs: [...state.outputs, output] })),
+      clearOutputs: () => set({ outputs: [] }),
+
+      attach: undefined,
+      setAttach: (attach: string | undefined) => set({ attach }),
+
+      availableNodes: [],
+      setAvailableNodes: (nodes: TNodeType[]) => set({ availableNodes: nodes }),
+
+      order: {},
+      setOrder: (order: { [id: string]: number }) => set({ order }),
+
+      historyIndex: 0,
+      historyLength: 0,
+      isFlowRunning: false,
+      selectedNode: null,
+      isNodeDropdownOpen: false,
+      setIsNodeDropdownOpen: (open: boolean) => set({ isNodeDropdownOpen: open }),
+
+      activeNode: undefined,
+      setActiveNode: (node: Node | undefined) => set({ activeNode: node }),
+
+      flowIsRunning: false,
+      setFlowIsRunning: (running: boolean) => set({ flowIsRunning: running }),
+
+      runningNodes: [],
+      addRunningNode: (node: Node) =>
+        set((state) => ({ runningNodes: [...state.runningNodes, node] })),
+
+      successNodes: [],
+      addSuccessNode: (node: Node) =>
+        set((state) => ({ successNodes: [...state.successNodes, node] })),
+
+      errorNodes: [],
+      addErrorNode: (node: Node) =>
+        set((state) => ({ errorNodes: [...state.errorNodes, node] })),
+
+      resetNodes: () => set(() => ({ runningNodes: [], successNodes: [], errorNodes: [] })),
+      resetNode: (id: string) => set((state) => ({ runningNodes: state.runningNodes.filter((node) => node.id !== id), successNodes: state.successNodes.filter((node) => node.id !== id), errorNodes: state.errorNodes.filter((node) => node.id !== id) })),
+
+      selectedPlatforms: [],
+      setSelectedPlatforms: (platforms: string[]) => set({ selectedPlatforms: platforms }),
+      togglePlatform: (platform: string) =>
+        set((state) => {
+          const selected = state.selectedPlatforms.includes(platform);
+          return {
+            selectedPlatforms: selected
+              ? state.selectedPlatforms.filter((p) => p !== platform)
+              : [...state.selectedPlatforms, platform],
+          };
+        }),
+
 
       setDependencies: (newDeps: Record<string, string>) => {
         set({ dependencies: newDeps });

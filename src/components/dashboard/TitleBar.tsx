@@ -32,7 +32,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CustomDomain from "@/components/custom-domain";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
 // import { CanvasTitle } from "@/components/dashboard/canvas";
-import { uploadToTurbo } from "@/lib";
 
 const TitleBar = () => {
   const navigate = useNavigate();
@@ -57,7 +56,7 @@ const TitleBar = () => {
     sidebarOpen,
     toggleSidebar,
     activeProject,
-    activeNode,
+    // activeNode,
   } = useGlobalState();
 
   const isRepoReadyToCommit = githubStatus === GITHUB_STATUS.REPO_EXISTS;
@@ -249,9 +248,9 @@ const TitleBar = () => {
         {/* Main Toolbar - Right section */}
         <div className="flex items-center gap-3 ml-auto">
           {/* Canvas-specific controls */}
-          {activeProject?.framework === Framework.Canvas && (
+          {/* {activeProject?.framework === Framework.Canvas && (
             <CanvasTitle activeNode={activeNode} />
-          )}
+          )} */}
 
           {/* Only show utility buttons in codeview */}
           {isCodeView && activeProject?.framework !== Framework.Html && (
@@ -376,9 +375,10 @@ const TitleBar = () => {
               <Button
                 className="flex items-center px-4 py-2 transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 onClick={handleDeployProject}
+                disabled={commonDisabledState || isDeploying}
                 title="Copy deployment URL"
               >
-                Publish Project
+                Publish
               </Button>
             </div>
           )}
