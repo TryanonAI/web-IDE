@@ -123,7 +123,7 @@ export default function CustomDomain({ className }: { className?: string }) {
           <div className="px-1.5 py-1 space-y-4">
             {currentMapping && (
               <Card className="p-2">
-                <CardContent className="space-y-2">
+                <CardContent className="p-0 space-y-2">
                   <div className="flex items-center gap-2">
                     <Check size={14} className="text-green-600" />
                     <a
@@ -135,7 +135,10 @@ export default function CustomDomain({ className }: { className?: string }) {
                       {currentMapping.domain}
                     </a>
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div
+                    className="text-xs text-muted-foreground truncate"
+                    title={currentMapping.url}
+                  >
                     {currentMapping.url}
                   </div>
                 </CardContent>
