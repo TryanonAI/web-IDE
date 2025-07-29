@@ -9,10 +9,10 @@ const TURBO_AR_ADDRESS = 'JNC6vBhjHY1EPwV3pEeNmrsgFMxH5d38_LHsZ7jful8'
 
 // Initialize authenticated client with Wander
 console.log('Checking for arweaveWallet...', !!window.arweaveWallet);
-if (!window.arweaveWallet) {
-    console.error('ArweaveWallet not found - Please install Wander');
-    throw new Error('Please install Wander')
-}
+// if (!window.arweaveWallet) {
+//     console.error('ArweaveWallet not found - Please install Wander');
+//     throw new Error('Please install Wander')
+// }
 console.log('ArweaveWallet found, initializing...');
 
 const arweave = Arweave.init({
