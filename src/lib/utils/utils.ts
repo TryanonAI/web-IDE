@@ -88,5 +88,15 @@ function generateSrcDocFromCodebase(codebase: Record<string, string>): string {
 }
 
 
+export const trackPageView = (url: string) => {
+  // @ts-expect-error ino
+  window.dataLayer = window.dataLayer || []
+  // @ts-expect-error ino
+  window.dataLayer.push({
+    event: 'pageview',
+    page: url,
+  })
+}
+
 
 export { cn, validateProjectName, convertToFilePathCodeMap, mergeDependencies, generateSrcDocFromCodebase };
