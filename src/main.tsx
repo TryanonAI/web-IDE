@@ -11,6 +11,7 @@ import { createHashRouter, RouterProvider } from "react-router";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 
+import { trackPageView } from "./lib/utils/utils.ts";
 const router = createHashRouter([
   {
     path: "/",
@@ -57,6 +58,11 @@ const router = createHashRouter([
     ],
   },
 ]);
+
+router.subscribe(() => {
+  const url = window.location.hash.replace(/^#/, "") || "/";
+  trackPageView(url);
+});
 
 createRoot(document.getElementById("root")!).render(
   <RouterProvider router={router} />
