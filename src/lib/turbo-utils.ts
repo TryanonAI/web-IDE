@@ -3,16 +3,21 @@ import { ArconnectSigner, TurboFactory } from "@ardrive/turbo-sdk/web";
 import axios from 'axios';
 import Arweave from 'arweave';
 
+// Custom error class for insufficient balance
+export class InsufficientBalanceError extends Error {
+    constructor(required: number, current: number) {
+        super(`Insufficient AR balance. Required: ${required.toFixed(4)} AR, Current: ${current.toFixed(4)} AR`);
+        this.name = 'InsufficientBalanceError';
+    }
+}
+
 const FREE_UPLOAD_SIZE = 100 * 1024 // 100KB in bytes
 const PRICE_BUFFER = 1.1 // 10% buffer for price fluctuations
 const TURBO_AR_ADDRESS = 'JNC6vBhjHY1EPwV3pEeNmrsgFMxH5d38_LHsZ7jful8'
 
 // Initialize authenticated client with Wander
 console.log('Checking for arweaveWallet...', !!window.arweaveWallet);
-if (!window.arweaveWallet) {
-    console.error('ArweaveWallet not found - Please install Wander');
-    throw new Error('Please install Wander')
-}
+
 console.log('ArweaveWallet found, initializing...');
 
 const arweave = Arweave.init({
@@ -87,6 +92,7 @@ const calculateTokenAmount = async (
 const ensureSufficientBalance = async (
     fileSize: number,
     tokenType: string,
+    walletAddress: string
 ) => {
     console.log(`Ensuring sufficient balance for file size: ${fileSize} bytes, token type: ${tokenType}`);
 
@@ -119,6 +125,16 @@ const ensureSufficientBalance = async (
         requiredWinc.toString(),
         tokenType
     )
+
+    const currentARbalance = await arweave.wallets.getBalance(walletAddress).then((winston) => {
+        const ar = arweave.ar.winstonToAr(winston);
+        return parseFloat(ar);
+    })
+
+    if (currentARbalance < tokenAmount) {
+        console.error(`Insufficient AR balance: ${currentARbalance} AR, required: ${tokenAmount} AR`);
+        return false
+    }
 
     console.log(`Creating transaction for ${tokenAmount} AR tokens`);
     // Create transaction
@@ -153,6 +169,58 @@ const ensureSufficientBalance = async (
     return true
 }
 
+// Function to check if user has sufficient balance for deployment
+export const checkBalanceForDeployment = async (fileSize: number, walletAddress: string) => {
+    console.log(`Checking balance for deployment - file size: ${fileSize} bytes, wallet: ${walletAddress}`);
+
+    // If file is under 100KB, it's free
+    if (fileSize <= FREE_UPLOAD_SIZE) {
+        console.log('File is under 100KB, upload is free');
+        return { sufficient: true, required: 0, current: 0 };
+    }
+
+    try {
+        // Check current Turbo balance
+        const balance = await turbo.getBalance();
+        console.log('Current Turbo balance:', balance);
+        const currentWinc = BigInt(balance.controlledWinc);
+
+        // Get upload cost
+        const costs = await turbo.getUploadCosts({ bytes: [fileSize] });
+        console.log('Upload costs:', costs);
+        const requiredWinc = BigInt(costs[0].winc);
+
+        // If we have enough Turbo balance, return true
+        if (currentWinc >= requiredWinc) {
+            console.log('Sufficient Turbo balance available');
+            return { sufficient: true, required: 0, current: 0 };
+        }
+
+        // Calculate required AR tokens
+        const tokenAmount = await calculateTokenAmount(
+            requiredWinc.toString(),
+            'arweave'
+        );
+
+        // Check current AR balance
+        const currentARbalance = await arweave.wallets.getBalance(walletAddress).then((winston) => {
+            const ar = arweave.ar.winstonToAr(winston);
+            return parseFloat(ar);
+        });
+
+        console.log(`AR Balance check - Current: ${currentARbalance} AR, Required: ${tokenAmount} AR`);
+
+        return {
+            sufficient: currentARbalance >= tokenAmount,
+            required: tokenAmount,
+            current: currentARbalance
+        };
+    } catch (error) {
+        console.error('Error checking balance:', error);
+        return { sufficient: false, required: 0, current: 0, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+};
+
 export const uploadToTurbo = async (file: File, walletAddress: string, isManifest = false) => {
     console.log(`Starting upload to Turbo for file: ${file.name}, size: ${file.size} bytes, wallet: ${walletAddress}, isManifest: ${isManifest}`);
 
@@ -162,7 +230,21 @@ export const uploadToTurbo = async (file: File, walletAddress: string, isManifes
 
     console.log(`File details - Name: ${fileName}, Size: ${fileSize}, Content-Type: ${contentType}`);
 
-    await ensureSufficientBalance(file.size, 'arweave');
+    // Check balance before attempting upload
+    const balanceCheck = await checkBalanceForDeployment(file.size, walletAddress);
+    
+    if (!balanceCheck.sufficient) {
+        if (balanceCheck.error) {
+            throw new Error(`Balance check failed: ${balanceCheck.error}`);
+        }
+        throw new InsufficientBalanceError(balanceCheck.required, balanceCheck.current);
+    }
+
+    const status = await ensureSufficientBalance(file.size, 'arweave', walletAddress);
+    
+    if (!status) {
+        throw new Error('INSUFFICIENT_BALANCE');
+    }
 
     try {
         console.log('Converting file to buffer...');
