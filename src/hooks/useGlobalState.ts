@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { defaultFiles, generateSrcDocFromCodebase } from '@/lib/utils';
 import { API_CONFIG, templateSrcDoc } from '@/lib/constants';
 import { persist } from 'zustand/middleware';
-import { fetchCodeVersions, fetchProjectData, uploadToTurbo } from '@/lib';
+import { fetchCodeVersions, fetchProjectData, uploadToTurbo, checkBalanceForDeployment, InsufficientBalanceError } from '@/lib';
 import { toast } from 'sonner';
 import { useWallet } from './useWallet';
 import { Octokit } from '@octokit/core';
@@ -870,14 +870,50 @@ export const useGlobalState = create<
         set({ isDeploying: true });
         try {
           console.log("🚀 Starting deployment...");
+          
+          // Calculate total size of all files to check balance upfront
+          let totalSize = 0;
+          const files: File[] = [];
+          
+          for (const [filename, content] of Object.entries(codebase)) {
+            const cleanName = filename.replace(/^\//, '');
+            const type = mime.lookup(cleanName) || 'application/octet-stream';
+            const blob = new Blob([content], { type });
+            const file = new File([blob], cleanName, { type });
+            files.push(file);
+            totalSize += file.size;
+          }
+          
+          // Add manifest file size (approximate)
+          const manifestSize = 1024; // 1KB estimate for manifest
+          totalSize += manifestSize;
+          
+          console.log(`Total deployment size: ${totalSize} bytes`);
+          
+          // Check balance for total deployment
+          const balanceCheck = await checkBalanceForDeployment(totalSize, walletAddress);
+          
+          if (!balanceCheck.sufficient) {
+            if (balanceCheck.error) {
+              toast.error("Balance check failed", {
+                description: balanceCheck.error,
+              });
+              return null;
+            }
+            
+            const deficit = balanceCheck.required - balanceCheck.current;
+            toast.error("Insufficient AR balance for deployment", {
+              description: `You need ${balanceCheck.required.toFixed(4)} AR but only have ${balanceCheck.current.toFixed(4)} AR. Please add ${deficit.toFixed(4)} AR to your wallet and try again.`,
+              duration: 10000,
+            });
+            return null;
+          }
+
           const uploadedMap: Record<string, string> = {};
           const manifestPaths: Record<string, { id: string }> = {};
 
           // Step 1: Upload all files and store txIds
-          for (const [filename, content] of Object.entries(codebase)) {
-            const cleanName = filename.replace(/^\//, '');
-            const type = mime.lookup(cleanName) || 'application/octet-stream';
-            const file = new File([new Blob([content], { type })], cleanName, { type });
+          for (const file of files) {
             const txId = await uploadToTurbo(file, walletAddress);
             // @ts-expect-error ignore
             uploadedMap[cleanName] = txId;
@@ -924,6 +960,22 @@ export const useGlobalState = create<
           }
         } catch (err) {
           console.error("❌ Deployment failed:", err);
+          
+          if (err instanceof InsufficientBalanceError) {
+            toast.error("Insufficient AR balance", {
+              description: err.message,
+              duration: 10000,
+            });
+          } else if (err instanceof Error) {
+            toast.error("Deployment failed", {
+              description: err.message,
+            });
+          } else {
+            toast.error("Deployment failed", {
+              description: "An unknown error occurred during deployment",
+            });
+          }
+          
           return null;
         } finally {
           set({ isDeploying: false });

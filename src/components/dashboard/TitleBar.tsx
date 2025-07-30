@@ -31,6 +31,11 @@ import { DrawerType, GITHUB_STATUS } from "@/hooks/useGlobalState";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CustomDomain from "@/components/custom-domain";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
+// import {
+//   uploadToTurbo,
+//   checkBalanceForDeployment,
+//   InsufficientBalanceError,
+// } from "@/lib";
 // import { CanvasTitle } from "@/components/dashboard/canvas";
 
 const TitleBar = () => {
@@ -60,12 +65,13 @@ const TitleBar = () => {
   } = useGlobalState();
 
   const isRepoReadyToCommit = githubStatus === GITHUB_STATUS.REPO_EXISTS;
+  // const [deployFile, setDeployFile] = useState<File | null>(null);
 
   // Check if we're in the codeview route
   const isCodeView =
     pathname?.includes("/projects") &&
-    activeProject &&
-    activeProject.framework !== Framework.Canvas;
+    activeProject 
+    // && activeProject.framework !== Framework.Canvas;
 
   // Check if we're in the canvas route
   // const isCanvasView = pathname === "/canvas";
@@ -125,30 +131,111 @@ const TitleBar = () => {
     }
   };
 
+  // const handleDeployProject_Dev = async () => {
+  //   if (!deployFile) {
+  //     alert("Please select a file to deploy.");
+  //     return;
+  //   }
+
+  //   if (!activeProject || !address) {
+  //     toast.error("No active project or wallet address to deploy");
+  //     return;
+  //   }
+
+  //   try {
+  //     // Check balance before starting deployment
+  //     toast.info("Checking balance for deployment...");
+  //     const balanceCheck = await checkBalanceForDeployment(
+  //       deployFile.size,
+  //       address
+  //     );
+
+  //     if (!balanceCheck.sufficient) {
+  //       if (balanceCheck.error) {
+  //         toast.error("Balance check failed", {
+  //           description: balanceCheck.error,
+  //         });
+  //         return;
+  //       }
+
+  //       const deficit = balanceCheck.required - balanceCheck.current;
+  //       toast.error("Insufficient AR balance for deployment", {
+  //         description: `You need ${balanceCheck.required.toFixed(
+  //           4
+  //         )} AR but only have ${balanceCheck.current.toFixed(
+  //           4
+  //         )} AR. Please add ${deficit.toFixed(
+  //           4
+  //         )} AR to your wallet and try again.`,
+  //         duration: 10000,
+  //       });
+  //       return;
+  //     }
+
+  //     toast.info("Deploying to Arweave...");
+  //     const deploymentUrl = await uploadToTurbo(deployFile, address, true);
+
+  //     if (deploymentUrl) {
+  //       toast.success("Code updated and deployed!", {
+  //         duration: 5000,
+  //         description: "Your app is now live on the permaweb",
+  //         action: {
+  //           label: "Open",
+  //           onClick: () => window.open(deploymentUrl, "_blank"),
+  //         },
+  //       });
+  //     } else {
+  //       throw new Error("Deployment URL not returned");
+  //     }
+  //   } catch (error) {
+  //     console.error("Deployment error:", error);
+
+  //     if (error instanceof InsufficientBalanceError) {
+  //       toast.error("Insufficient AR balance", {
+  //         description: error.message,
+  //         duration: 10000,
+  //       });
+  //     } else if (error instanceof Error) {
+  //       toast.error("Deployment failed", {
+  //         description: error.message,
+  //       });
+  //     } else {
+  //       toast.error("Deployment failed", {
+  //         description: "An unknown error occurred during deployment",
+  //       });
+  //     }
+  //   }
+  // };
+
   const handleDeployProject = async () => {
     if (!activeProject || !address) {
       toast.error("No active project or wallet address to deploy");
       return;
     }
-    const deploymentUrl = await useGlobalState
-      .getState()
-      .autoDeployProject(
-        activeProject,
-        activeProject.codebase,
-        user?.walletAddress as string
-      );
 
-    if (deploymentUrl) {
-      toast.success("Code updated and deployed!", {
-        duration: 5000,
-        description: "Your app is now live on the permaweb",
-        action: {
-          label: "Open",
-          onClick: () => window.open(deploymentUrl, "_blank"),
-        },
-      });
-    } else {
-      throw new Error("Deployment URL not returned");
+    try {
+      toast.info("Starting deployment...");
+      const deploymentUrl = await useGlobalState
+        .getState()
+        .autoDeployProject(
+          activeProject,
+          activeProject.codebase,
+          user?.walletAddress as string
+        );
+
+      if (deploymentUrl) {
+        toast.success("Code updated and deployed!", {
+          duration: 5000,
+          description: "Your app is now live on the permaweb",
+          action: {
+            label: "Open",
+            onClick: () => window.open(deploymentUrl, "_blank"),
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Deployment error:", error);
+      // Error handling is already done in autoDeployProject
     }
   };
 
@@ -372,6 +459,24 @@ const TitleBar = () => {
                   <CustomDomain className="mr-5 mt-4" />
                 </>
               )}
+              {/* <input
+                type="file"
+                id="deploy-file"
+                onChange={(e) => {
+                  const file = e?.target?.files?.[0];
+                  if (file) {
+                    setDeployFile(file);
+                  }
+                }}
+              />
+              <Button
+                className="flex items-center px-4 py-2 transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                onClick={handleDeployProject_Dev}
+                disabled={commonDisabledState || isDeploying}
+                title="Copy deployment URL"
+              >
+                Publish Dev
+              </Button> */}
               <Button
                 className="flex items-center px-4 py-2 transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 onClick={handleDeployProject}
