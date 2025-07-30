@@ -273,8 +273,8 @@ const Initial_ConsoleState = {
 }
 
 export const useGlobalState = create<
-  GlobalState & GithubState & ProjectState & SandpackState 
-  // & CanvasState
+  GlobalState & GithubState & ProjectState & SandpackState
+// & CanvasState
 >()(
   persist(
     (set, get) => ({
@@ -771,95 +771,95 @@ export const useGlobalState = create<
 
 
       // ----------------Canvas States----------------
-/*
-      consoleRef: null,
-      setConsoleRef: (ref: React.RefObject<ImperativePanelHandle>) => set({ consoleRef: ref }),
-
-      sidebarRef: null,
-      setSidebarRef: (ref: React.RefObject<ImperativePanelHandle>) => set({ sidebarRef: ref }),
-
-      toggleRightSidebar: (open: boolean) => {
-        const sidebarRef = get().sidebarRef;
-        const ref = sidebarRef?.current;
-        console.log('toggleRightSidebar called:', { open, hasRef: !!ref, hasSidebarRef: !!sidebarRef });
-        if (ref) {
-          if (open) {
-            ref.expand?.();
-            ref.resize?.(40);
-          } else {
-            ref.collapse?.();
-          }
-        } else {
-          console.warn('Sidebar ref not available, retrying in 100ms...');
-          setTimeout(() => {
-            const retryRef = get().sidebarRef?.current;
-            if (retryRef) {
-              if (open) {
-                retryRef.expand?.();
-                retryRef.resize?.(40);
+      /*
+            consoleRef: null,
+            setConsoleRef: (ref: React.RefObject<ImperativePanelHandle>) => set({ consoleRef: ref }),
+      
+            sidebarRef: null,
+            setSidebarRef: (ref: React.RefObject<ImperativePanelHandle>) => set({ sidebarRef: ref }),
+      
+            toggleRightSidebar: (open: boolean) => {
+              const sidebarRef = get().sidebarRef;
+              const ref = sidebarRef?.current;
+              console.log('toggleRightSidebar called:', { open, hasRef: !!ref, hasSidebarRef: !!sidebarRef });
+              if (ref) {
+                if (open) {
+                  ref.expand?.();
+                  ref.resize?.(40);
+                } else {
+                  ref.collapse?.();
+                }
               } else {
-                retryRef.collapse?.();
+                console.warn('Sidebar ref not available, retrying in 100ms...');
+                setTimeout(() => {
+                  const retryRef = get().sidebarRef?.current;
+                  if (retryRef) {
+                    if (open) {
+                      retryRef.expand?.();
+                      retryRef.resize?.(40);
+                    } else {
+                      retryRef.collapse?.();
+                    }
+                  }
+                }, 100);
               }
-            }
-          }, 100);
-        }
-      },
-
-      outputs: [],
-      addOutput: (output: OutputType) =>
-        set((state) => ({ outputs: [...state.outputs, output] })),
-      clearOutputs: () => set({ outputs: [] }),
-
-      attach: undefined,
-      setAttach: (attach: string | undefined) => set({ attach }),
-
-      availableNodes: [],
-      setAvailableNodes: (nodes: TNodeType[]) => set({ availableNodes: nodes }),
-
-      order: {},
-      setOrder: (order: { [id: string]: number }) => set({ order }),
-
-      historyIndex: 0,
-      historyLength: 0,
-      isFlowRunning: false,
-      selectedNode: null,
-      isNodeDropdownOpen: false,
-      setIsNodeDropdownOpen: (open: boolean) => set({ isNodeDropdownOpen: open }),
-
-      activeNode: undefined,
-      setActiveNode: (node: Node | undefined) => set({ activeNode: node }),
-
-      flowIsRunning: false,
-      setFlowIsRunning: (running: boolean) => set({ flowIsRunning: running }),
-
-      runningNodes: [],
-      addRunningNode: (node: Node) =>
-        set((state) => ({ runningNodes: [...state.runningNodes, node] })),
-
-      successNodes: [],
-      addSuccessNode: (node: Node) =>
-        set((state) => ({ successNodes: [...state.successNodes, node] })),
-
-      errorNodes: [],
-      addErrorNode: (node: Node) =>
-        set((state) => ({ errorNodes: [...state.errorNodes, node] })),
-
-      resetNodes: () => set(() => ({ runningNodes: [], successNodes: [], errorNodes: [] })),
-      resetNode: (id: string) => set((state) => ({ runningNodes: state.runningNodes.filter((node) => node.id !== id), successNodes: state.successNodes.filter((node) => node.id !== id), errorNodes: state.errorNodes.filter((node) => node.id !== id) })),
-
-      selectedPlatforms: [],
-      setSelectedPlatforms: (platforms: string[]) => set({ selectedPlatforms: platforms }),
-      togglePlatform: (platform: string) =>
-        set((state) => {
-          const selected = state.selectedPlatforms.includes(platform);
-          return {
-            selectedPlatforms: selected
-              ? state.selectedPlatforms.filter((p) => p !== platform)
-              : [...state.selectedPlatforms, platform],
-          };
-        }),
-
-*/
+            },
+      
+            outputs: [],
+            addOutput: (output: OutputType) =>
+              set((state) => ({ outputs: [...state.outputs, output] })),
+            clearOutputs: () => set({ outputs: [] }),
+      
+            attach: undefined,
+            setAttach: (attach: string | undefined) => set({ attach }),
+      
+            availableNodes: [],
+            setAvailableNodes: (nodes: TNodeType[]) => set({ availableNodes: nodes }),
+      
+            order: {},
+            setOrder: (order: { [id: string]: number }) => set({ order }),
+      
+            historyIndex: 0,
+            historyLength: 0,
+            isFlowRunning: false,
+            selectedNode: null,
+            isNodeDropdownOpen: false,
+            setIsNodeDropdownOpen: (open: boolean) => set({ isNodeDropdownOpen: open }),
+      
+            activeNode: undefined,
+            setActiveNode: (node: Node | undefined) => set({ activeNode: node }),
+      
+            flowIsRunning: false,
+            setFlowIsRunning: (running: boolean) => set({ flowIsRunning: running }),
+      
+            runningNodes: [],
+            addRunningNode: (node: Node) =>
+              set((state) => ({ runningNodes: [...state.runningNodes, node] })),
+      
+            successNodes: [],
+            addSuccessNode: (node: Node) =>
+              set((state) => ({ successNodes: [...state.successNodes, node] })),
+      
+            errorNodes: [],
+            addErrorNode: (node: Node) =>
+              set((state) => ({ errorNodes: [...state.errorNodes, node] })),
+      
+            resetNodes: () => set(() => ({ runningNodes: [], successNodes: [], errorNodes: [] })),
+            resetNode: (id: string) => set((state) => ({ runningNodes: state.runningNodes.filter((node) => node.id !== id), successNodes: state.successNodes.filter((node) => node.id !== id), errorNodes: state.errorNodes.filter((node) => node.id !== id) })),
+      
+            selectedPlatforms: [],
+            setSelectedPlatforms: (platforms: string[]) => set({ selectedPlatforms: platforms }),
+            togglePlatform: (platform: string) =>
+              set((state) => {
+                const selected = state.selectedPlatforms.includes(platform);
+                return {
+                  selectedPlatforms: selected
+                    ? state.selectedPlatforms.filter((p) => p !== platform)
+                    : [...state.selectedPlatforms, platform],
+                };
+              }),
+      
+      */
       setDependencies: (newDeps: Record<string, string>) => {
         set({ dependencies: newDeps });
       },
@@ -870,11 +870,11 @@ export const useGlobalState = create<
         set({ isDeploying: true });
         try {
           console.log("🚀 Starting deployment...");
-          
+
           // Calculate total size of all files to check balance upfront
           let totalSize = 0;
           const files: File[] = [];
-          
+
           for (const [filename, content] of Object.entries(codebase)) {
             const cleanName = filename.replace(/^\//, '');
             const type = mime.lookup(cleanName) || 'application/octet-stream';
@@ -883,16 +883,15 @@ export const useGlobalState = create<
             files.push(file);
             totalSize += file.size;
           }
-          
           // Add manifest file size (approximate)
           const manifestSize = 1024; // 1KB estimate for manifest
           totalSize += manifestSize;
-          
+
           console.log(`Total deployment size: ${totalSize} bytes`);
-          
+
           // Check balance for total deployment
           const balanceCheck = await checkBalanceForDeployment(totalSize, walletAddress);
-          
+
           if (!balanceCheck.sufficient) {
             if (balanceCheck.error) {
               toast.error("Balance check failed", {
@@ -900,7 +899,7 @@ export const useGlobalState = create<
               });
               return null;
             }
-            
+
             const deficit = balanceCheck.required - balanceCheck.current;
             toast.error("Insufficient AR balance for deployment", {
               description: `You need ${balanceCheck.required.toFixed(4)} AR but only have ${balanceCheck.current.toFixed(4)} AR. Please add ${deficit.toFixed(4)} AR to your wallet and try again.`,
@@ -916,9 +915,8 @@ export const useGlobalState = create<
           for (const file of files) {
             const txId = await uploadToTurbo(file, walletAddress);
             // @ts-expect-error ignore
-            uploadedMap[cleanName] = txId;
-            // @ts-expect-error ignore
-            manifestPaths[cleanName] = { id: txId };
+            uploadedMap[file.name] = txId;
+            manifestPaths[file.name] = { id: txId! };
           }
 
           // Step 2: Construct the AR.IO manifest
@@ -960,7 +958,7 @@ export const useGlobalState = create<
           }
         } catch (err) {
           console.error("❌ Deployment failed:", err);
-          
+
           if (err instanceof InsufficientBalanceError) {
             toast.error("Insufficient AR balance", {
               description: err.message,
@@ -975,7 +973,7 @@ export const useGlobalState = create<
               description: "An unknown error occurred during deployment",
             });
           }
-          
+
           return null;
         } finally {
           set({ isDeploying: false });
