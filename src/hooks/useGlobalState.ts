@@ -227,7 +227,7 @@ export interface ProjectState {
   createProject: (
     projectName: string,
     framework: Framework,
-    creationType: ProjectCreationType
+    creationType?: ProjectCreationType
   ) => Promise<Project | null>;
   loadProjectData: (project: Project | null, address: string) => Promise<void>;
   deploymentUrl: string | null;
@@ -645,7 +645,7 @@ export const useGlobalState = create<
       createProject: async (
         projectName: string,
         framework: Framework,
-        creationType: ProjectCreationType
+        creationType: ProjectCreationType = ProjectCreationType.Local
       ): Promise<Project | null> => {
         try {
           get().validateWalletConnection();

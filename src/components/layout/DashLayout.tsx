@@ -35,7 +35,7 @@ import { ProjectInfoDrawer } from "../common/ProjectInfoDrawer";
 import TitleBar from "@/components/dashboard/TitleBar";
 import Sidebar from "./Sidebar";
 import { useGlobalState, useWallet } from "@/hooks";
-import { Framework, ProjectCreationType } from "@/types";
+import { Framework } from "@/types";
 
 interface StatusStep {
   id: string;
@@ -51,9 +51,6 @@ const DashLayout: React.FC = () => {
   const [showBanner, setShowBanner] = useState(true);
   const [nameError, setNameError] = useState<string>("");
   const [mode, setMode] = useState<Framework>(Framework.React);
-  const [creationType, setCreationType] = useState<ProjectCreationType>(
-    ProjectCreationType.Blockchain
-  );
   const [commitMessage, setCommitMessage] = useState<string>("");
   const [statusSteps, setStatusSteps] = useState<StatusStep[]>([]);
   const [commitInProgress, setCommitInProgress] = useState<boolean>(false);
@@ -83,10 +80,7 @@ const DashLayout: React.FC = () => {
     }
   }, [connected, navigate]);
 
-  const handleCreateProject = async (
-    mode: Framework,
-    selectedCreationType: ProjectCreationType
-  ) => {
+  const handleCreateProject = async (mode: Framework) => {
     if (!projectName.trim()) return;
 
     setIsLoading(true);
@@ -95,11 +89,7 @@ const DashLayout: React.FC = () => {
 
     try {
       console.log("Creating project from modal:", projectName);
-      const newProject = await createProject(
-        projectName.trim(),
-        mode,
-        selectedCreationType
-      );
+      const newProject = await createProject(projectName.trim(), mode);
       setProjectName("");
 
       closeModal();
@@ -250,7 +240,7 @@ const DashLayout: React.FC = () => {
           <form
             onSubmit={async (e) => {
               e.preventDefault();
-              await handleCreateProject(mode, creationType);
+              await handleCreateProject(mode);
             }}
             className="space-y-4"
           >
@@ -326,38 +316,6 @@ const DashLayout: React.FC = () => {
                 </Popover>
                 <p className="text-xs text-muted-foreground mt-1.5">
                   Select the mode for your project.
-                </p>
-              </div>
-              <div className="flex flex-col justify-center gap-2 mt-4">
-                <label className="text-sm font-medium">Creation Type</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant={
-                      creationType === ProjectCreationType.Blockchain
-                        ? "default"
-                        : "outline"
-                    }
-                    disabled={isCreating}
-                    onClick={() => setCreationType(ProjectCreationType.Blockchain)}
-                  >
-                    Blockchain
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={
-                      creationType === ProjectCreationType.Local
-                        ? "default"
-                        : "outline"
-                    }
-                    disabled={isCreating}
-                    onClick={() => setCreationType(ProjectCreationType.Local)}
-                  >
-                    No Blockchain
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  No Blockchain skips AO process setup and creates a regular local project.
                 </p>
               </div>
             </div>
