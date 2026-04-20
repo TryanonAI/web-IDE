@@ -14,6 +14,7 @@ import {
   type ChatMessage,
   type StatusTimelineEvent,
   Framework,
+  ProjectCreationType,
   SandpackAction,
   type CodebaseType,
   type CodeVersion,
@@ -223,7 +224,11 @@ export interface ProjectState {
   statusTimeline: StatusTimelineEvent[];
   setCodebase: (codebase: CodebaseType | null) => void;
   setCodeVersions: (codeVersions: CodeVersion[]) => void;
-  createProject: (projectName: string, framework: Framework) => Promise<Project | null>;
+  createProject: (
+    projectName: string,
+    framework: Framework,
+    creationType: ProjectCreationType
+  ) => Promise<Project | null>;
   loadProjectData: (project: Project | null, address: string) => Promise<void>;
   deploymentUrl: string | null;
   setDeploymentUrl: (url: string | null) => void;
@@ -639,7 +644,8 @@ export const useGlobalState = create<
       },
       createProject: async (
         projectName: string,
-        framework: Framework
+        framework: Framework,
+        creationType: ProjectCreationType
       ): Promise<Project | null> => {
         try {
           get().validateWalletConnection();
@@ -669,43 +675,48 @@ export const useGlobalState = create<
             statusTimeline: [
               {
                 id: Date.now().toString(),
-                message: `Creating new project: ${projectName}...`,
+                message: `Creating ${creationType} project: ${projectName}...`,
                 timestamp: Date.now(),
               },
             ],
           });
 
-          // Spawn a process for the project using arkit.ts
-          const processId = await spawnProcess(projectName, [
-            { name: 'Action', value: 'create-project' },
-          ]);
+          let processId: string | undefined;
 
-          if (!processId || typeof processId !== 'string') {
-            throw new Error('Failed to generate process ID');
+          if (creationType === ProjectCreationType.Blockchain) {
+            // Existing blockchain flow: spawn AO process and initialize Lua runtime.
+            processId = await spawnProcess(projectName, [
+              { name: 'Action', value: 'create-project' },
+            ]);
+
+            if (!processId || typeof processId !== 'string') {
+              throw new Error('Failed to generate process ID');
+            }
+
+            const luaResult = await runLua({
+              process: processId,
+              code: ANON_LUA_TEMPLATE,
+              tags: [
+                {
+                  name: 'Description',
+                  value: `${projectName} added lsqlite3 and @rakis/DbAdmin support.`,
+                },
+              ],
+            });
+
+            console.log(
+              'Successfully added @rakis/DbAdmin support to Lua:',
+              luaResult.id
+            );
           }
-
-          const luaResult = await runLua({
-            process: processId,
-            code: ANON_LUA_TEMPLATE,
-            tags: [
-              {
-                name: 'Description',
-                value: `${projectName} added lsqlite3 and @rakis/DbAdmin support.`,
-              },
-            ],
-          });
-
-          console.log(
-            'Successfully added @rakis/DbAdmin support to Lua:',
-            luaResult.id
-          );
 
           // Create the project in the backend
           const res = await axios.post(`${API_CONFIG.BACKEND_URL}/projects`, {
             processId,
             framework,
             title: projectName,
-            walletAddress: useWallet.getState().address
+            walletAddress: useWallet.getState().address,
+            creationType,
           });
 
           if (!res.data?.project) {

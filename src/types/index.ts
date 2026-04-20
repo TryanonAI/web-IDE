@@ -63,6 +63,7 @@ export type Project = {
   title: string;
   processId: string;
   projectId: string;
+  creationType?: ProjectCreationType;
   messages: ChatMessage[];
   favorite: boolean;
   privacy: Privacy;
@@ -138,6 +139,14 @@ export const Framework = {
 } as const;
 
 export type Framework = typeof Framework[keyof typeof Framework];
+
+export const ProjectCreationType = {
+  Blockchain: 'blockchain',
+  Local: 'local',
+} as const;
+
+export type ProjectCreationType =
+  typeof ProjectCreationType[keyof typeof ProjectCreationType];
 
 export const WalletStatus = {
   DISCONNECTED: 'disconnected',
